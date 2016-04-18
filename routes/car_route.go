@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/eGobie/server/controllers"
+	"github.com/eGobie/egobie-server/controllers"
 )
 
 func initCarRoutes() {
