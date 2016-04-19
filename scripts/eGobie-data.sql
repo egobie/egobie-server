@@ -1,5 +1,36 @@
 use egobie;
 
+DROP PROCEDURE IF EXISTS INSERT_OPENING;
+
+DELIMITER $$
+CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count INT) BEGIN
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 1, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 2, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 3, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 4, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 5, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 6, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 7, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 8, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 9, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 10, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 11, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 12, opening_count);
+END $$
+DELIMITER ;
+
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);
+
+
 INSERT INTO car_maker (id, name, title) VALUES
 (1, 'ACURA', 'Acura'),
 (2, 'ALFA', 'Alfa Romeo'),

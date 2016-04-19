@@ -143,5 +143,17 @@ CREATE TABLE user_notification (
     INDEX(user_id)
 );
 
+-- 8.am - 20.pm
+-- 1=8-9, 2=9-10, 3=10-11, 4=11-12, 5=12-13, 6=13-14
+-- 7=14-15, 8=15-16, 9=16-17, 10=17-18, 11=18-19, 12=19-20
+CREATE TABLE opening (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    day DATE NOT NULL,
+    period INT NOT NULL,
+    count INT NOT NULL DEFAULT 2,
+    demand INT NOT NULL DEFAULT 0,
+    UNIQUE KEY (day, period)
+);
 
+drop table opening;
 
