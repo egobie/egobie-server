@@ -9,4 +9,6 @@ func initServiceRoutes() {
 	serviceRouter.POST("/", controllers.GetService)
 
 	serviceRouter.POST("/user", controllers.GetUserService)
+
+	serviceRouter.GET("/opening", controllers.GetOpening)
 }

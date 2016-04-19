@@ -88,7 +88,7 @@ func GetUserService(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, userServices)
 }
 
-func PrepareOrder(c *gin.Context) {
+func OnDemand(c *gin.Context) {
 	query := `
 		select COUNT(*), SUM(estimated_time)
 		from user_service
@@ -107,6 +107,54 @@ func PrepareOrder(c *gin.Context) {
 	} else {
 		c.IndentedJSON(http.StatusOK, err.Error())
 	}
+}
+
+func GetOpening(c *gin.Context) {
+	query := `
+		select id, day, period from opening where count > 0 order by day, period
+	`
+	var (
+		rows     *sql.Rows
+		err      error
+		preDay   string
+		openings []modules.Opening
+	)
+
+	if rows, err = config.DB.Query(query); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		temp := struct {
+			Id     int32
+			Day    string
+			Period int32
+		}{}
+
+		if err = rows.Scan(&temp.Id, &temp.Day, &temp.Period); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		} else {
+			if preDay != temp.Day {
+				preDay = temp.Day
+				openings = append(openings, modules.Opening{})
+				openings[len(openings)-1].Day = temp.Day
+			}
+
+			openings[len(openings)-1].Range = append(
+				openings[len(openings)-1].Range,
+				modules.Period{
+					temp.Id, 8 + (temp.Period - 1), 8 + temp.Period,
+				},
+			)
+		}
+	}
+
+	c.IndentedJSON(http.StatusOK, openings)
 }
 
 //func PlaceOrder(c *gin.Context) {

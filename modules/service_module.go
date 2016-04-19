@@ -69,6 +69,17 @@ type UserService struct {
 	ServiceList []Service   `json:"services"`
 }
 
+type Period struct {
+	Id    int32 `json:"id"`
+	Start int32 `json:"start"`
+	End   int32 `json:"end"`
+}
+
+type Opening struct {
+	Day   string   `json:"day"`
+	Range []Period `json:"range"`
+}
+
 type OrderRequest struct {
 	UserId    int32       `json:"user_id"`
 	CarId     int32       `json:"car_id"`
