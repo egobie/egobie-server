@@ -120,7 +120,7 @@ func request(c *gin.Context) {
 }
 
 func sleep(c *gin.Context) {
-	time.Sleep(1 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	c.Next();
 }
