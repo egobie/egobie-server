@@ -30,6 +30,216 @@ CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);
 
+--
+-- 'CAR_WASH', 'OIL_CHANGE', 'IN_DETAILING', 'EX_DETAILING', 'REPAIR'
+--
+INSERT INTO service (name, type, description, items, estimated_price, estimated_time, addons) VALUES
+--
+-- 'Car Wash'
+--
+('Premium (Full)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Total Interior Wipe-down",
+"Interior Vacuum",
+"Trunk Vacuum"
+]', 25.00, 30, 0),
+
+('Premium Plus (Full)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Total Interior Wipe-down",
+"Interior Vacuum",
+"Trunk Vacuum",
+"+Paint Protection",
+"+Windshield Protectant",
+"+Interior Wipe-down With Protectants"
+]', 45.00, 45, 0),
+
+('Prestige (Full)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Total Interior Wipe-down",
+"Interior Vacuum",
+"Trunk Vacuum",
+"+Paint Protection",
+"+Windshield Protectant",
+"+Interior Wipe-down With Protectants"
+"+Hand wax",
+"+Leather Cleaning and Protectant"
+]', 75.00, 60, 0),
+
+('Premium (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse"
+]', 22.00, 20, 0),
+
+('Premium Plus (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"+Paint Protection",
+"+Windshield Protectant"
+]', 40.00, 35, 0),
+
+('Prestige (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"+Paint Protection",
+"+Windshield Protectant",
+"+Hand wax"
+]', 65.00, 50, 0),
+
+('Exterior', 'DETAILING', 'Detailing', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Paint Protection",
+"Windshield Protectant",
+"Hand wax",
+"Engine cleaning",
+"Headlight restoration",
+"Compressed air detailing in tight spaces",
+"Multi-layer wax + polish",
+"Multi-layer paint protectant"
+]', 175.00, 90, 0),
+
+('Interior', 'DETAILING', 'Detailing', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Total Interior Wipe-down",
+"Interior Vacuum",
+"Trunk Vacuum",
+"Paint Protection",
+"Windshield Protectant",
+"Interior Wipe-down With Protectants"
+"Hand wax",
+"Leather Cleaning and Protectant",
+"Hot Carpet Extraction",
+"Detailed Shampoo Seating + Mats + Carpets",
+"Stain and debris removal in all tight spaces"
+]', 100.00, 70, 0),
+
+('Full', 'DETAILING', 'Detailing', '[
+"Full Exterior Hand Wash",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Total Interior Wipe-down",
+"Interior Vacuum",
+"Trunk Vacuum",
+"Paint Protection",
+"Windshield Protectant",
+"Interior Wipe-down With Protectants"
+"Hand wax",
+"Leather Cleaning and Protectant",
+"Engine cleaning",
+"Hot Carpet Extraction",
+"Detailed Shampoo Seating + Mats + Carpets",
+"Stain and debris removal in all tight spaces"
+"Headlight restoration",
+"Compressed air detailing in tight spaces",
+"Multi-layer wax + polish",
+"Multi-layer paint protectant"
+]', 250.00, 120, 0),
+
+('Hand Wax', 'DETAILING', 'Detailing', '[
+"Hand Wax"
+]', 35.00, 20, 1),
+
+('Headlight Reconditioning', 'DETAILING', 'Detailing', '[
+"Headlight Reconditioning"
+]', 65.00, 30, 1),
+
+('Engine Cleaning', 'DETAILING', 'Detailing', '[
+"Engine Cleaning"
+]', 50.00, 30, 1),
+
+('Multi-layer wax + polish', 'DETAILING', 'Detailing', '[
+"Multi-layer wax + polish"
+]', 75.00, 40, 1),
+
+('Multi-layer paint protectant', 'DETAILING', 'Detailing', '[
+"Multi-layer paint protectant"
+]', 50.00, 35, 1),
+
+('Detailed Shampoo Seating + Mats + Carpets', 'DETAILING', 'Detailing', '[
+"Detailed Shampoo Seating + Mats + Carpets"
+]', 60.00, 40, 1),
+
+('Hot Carpet Extraction', 'DETAILING', 'Detailing', '[
+"Hot Carpet Extraction"
+]', 60.00, 40, 1),
+
+('Basic Oil & Filter', 'OIL_CHANGE', 'Change Oil', '[
+"Brand Name Conventional Oil (Up to 5 quarts)",
+"Oil Filter",
+"Check Tire Pressure & Fill if Necessary",
+"Check Windshield Wiper Fluid & Fill if Necessary",
+"Check transmission fluid",
+"Check brake fluid",
+"Check power steering fluid",
+"Check exterior lights",
+"Check Coolant",
+"Check Engine and Cabine Air Filtration",
+"Check Serpentine belts"
+]', 45, 20, 0),
+
+('Full Synthetic Oil & Filter', 'OIL_CHANGE', 'Change Oil', '[
+"Full Brand Name Synthetic Oil",
+"Oil Filter",
+"Check Tire Pressure & Fill if Necessary",
+"Check Windshield Wiper Fluid & Fill if Necessary",
+"Check transmission fluid",
+"Check brake fluid",
+"Check power steering fluid",
+"Check exterior lights",
+"Check Coolant",
+"Check Engine and Cabine Air Filtration",
+"Check Serpentine belts"
+]', 75, 30, 0),
+
+('Extra Quarts of Conventional Oil', 'OIL_CHANGE', 'Change Oil', '[
+"Extra Quarts of Conventional Oil"
+]', 4, 0, 1),
+
+('Extra Quarts of Synthetic Oil', 'OIL_CHANGE', 'Change Oil', '[
+"Extra Quarts of Synthetic Oil"
+]', 8, 0, 1),
+
+('Transmission Flush', 'REPAIR', 'Repair & Replace', '[
+"Transmission Flush"
+]', 175, 40, 0),
+
+('Brake fluid', 'REPAIR', 'Repair & Replace', '[
+"Brake fluid"
+]', 85, 20, 0),
+
+('Power steering fluid', 'REPAIR', 'Repair & Replace', '[
+"Power steering fluid"
+]', 15, 10, 0),
+
+('Coolant Refill', 'REPAIR', 'Repair & Replace', '[
+"Coolant Refill"
+]', 10, 5, 0),
+
+('Engine Filter', 'REPAIR', 'Repair & Replace', '[
+"Engine Filter"
+]', 45, 20, 0),
+
+('Cabine Air Filters', 'REPAIR', 'Repair & Replace', '[
+"Cabine Air Filters"
+]', 45, 20, 0),
+
+('Serpentine belts', 'REPAIR', 'Repair & Replace', '[
+"Serpentine belts"
+]', 150, 30, 0);
+
 
 INSERT INTO car_maker (id, name, title) VALUES
 (1, 'ACURA', 'Acura'),
@@ -1426,10 +1636,6 @@ INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 (3, 'RESIDENTIAL', 'test2', '50cef261a53165f08cb20850ac4047b45ca530d5058fc808bd427bca', 'test2@egobie.com', '1234567890'),
 (4, 'RESIDENTIAL', 'bhuang3', '92540fa6e7340a2855d5358eadcf5c71ec84dc8e354bb2a9aff06bd853ba6135', 'bhuang1228@gmail.com', '2019120383');
 
-INSERT INTO service (id, name, description, estimated_price, estimated_time) VALUES
-(1, 'Car Wash', 'Wash Car', 45.99, 30),
-(2, 'Oil Change', 'Change Oil', 25.99, 15);
-
 INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id) VALUES
 (1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519);
 
@@ -1445,7 +1651,7 @@ INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, estimated_t
 
 INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (1, 1, 1),
-(2, 2, 1),
-(3, 1, 2),
+(2, 7, 1),
+(3, 9, 2),
 (4, 2, 2),
-(5, 1, 3);
+(5, 17, 3);

@@ -33,10 +33,13 @@ CREATE TABLE user (
 
 CREATE TABLE service (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(32) NOT NULL,
-    description VARCHAR(256) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    type ENUM('CAR_WASH', 'OIL_CHANGE', 'DETAILING', 'REPAIR'),
+    items TEXT NOT NULL,
+    description VARCHAR(1024) NOT NULL,
     estimated_price FLOAT NOT NULL,
     estimated_time INT NOT NULL,
+    addons BIT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -155,5 +158,4 @@ CREATE TABLE opening (
     UNIQUE KEY (day, period)
 );
 
-drop table opening;
 
