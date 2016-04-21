@@ -5,7 +5,7 @@ import (
 )
 
 func initPaymentRoutes() {
-	paymentRouter.POST("/", controllers.GetPaymentById)
+//	paymentRouter.POST("/", controllers.GetPaymentById)
 
 	paymentRouter.POST("/user", controllers.GetPaymentByUserId)
 

@@ -67,7 +67,7 @@ INSERT INTO service (name, type, description, items, estimated_price, estimated_
 "Trunk Vacuum",
 "+Paint Protection",
 "+Windshield Protectant",
-"+Interior Wipe-down With Protectants"
+"+Interior Wipe-down With Protectants",
 "+Hand wax",
 "+Leather Cleaning and Protectant"
 ]', 75.00, 60, 0),
@@ -118,7 +118,7 @@ INSERT INTO service (name, type, description, items, estimated_price, estimated_
 "Trunk Vacuum",
 "Paint Protection",
 "Windshield Protectant",
-"Interior Wipe-down With Protectants"
+"Interior Wipe-down With Protectants",
 "Hand wax",
 "Leather Cleaning and Protectant",
 "Hot Carpet Extraction",
@@ -135,13 +135,13 @@ INSERT INTO service (name, type, description, items, estimated_price, estimated_
 "Trunk Vacuum",
 "Paint Protection",
 "Windshield Protectant",
-"Interior Wipe-down With Protectants"
+"Interior Wipe-down With Protectants",
 "Hand wax",
 "Leather Cleaning and Protectant",
 "Engine cleaning",
 "Hot Carpet Extraction",
 "Detailed Shampoo Seating + Mats + Carpets",
-"Stain and debris removal in all tight spaces"
+"Stain and debris removal in all tight spaces",
 "Headlight restoration",
 "Compressed air detailing in tight spaces",
 "Multi-layer wax + polish",
@@ -1642,12 +1642,14 @@ INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_
 INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, code, expire_month, expire_year) VALUES
 (1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018');
 
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, estimated_time, estimated_price, status) VALUES
-(1, 1, 1, 1, 100, 99.89, 'RESERVED');
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, estimated_time, estimated_price, start_timestamp, status) VALUES
-(3, 1, 1, 1, 120, 39.89, '2016-04-15 11:20:36', 'IN_PROGRESS');
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, estimated_time, estimated_price, start_timestamp, end_timestamp, status) VALUES
-(2, 1, 1, 1, 110, 59.89, '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
+INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, status) VALUES
+(1, 1, 1, 1, 2, 100, 99.89, 'RESERVED');
+INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, start_timestamp, status) VALUES
+(3, 1, 1, 1, 4, 120, 39.89, '2016-04-15 11:20:36', 'IN_PROGRESS');
+INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, start_timestamp, end_timestamp, status) VALUES
+(2, 1, 1, 1, 3, 110, 59.89, '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
+
+UPDATE opening SET count = count - 1, demand = demand + 1 WHERE id IN (2, 3, 4);
 
 INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (1, 1, 1),

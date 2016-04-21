@@ -39,7 +39,7 @@ CREATE TABLE service (
     description VARCHAR(1024) NOT NULL,
     estimated_price FLOAT NOT NULL,
     estimated_time INT NOT NULL,
-    addons BIT NOT NULL DEFAULT 0,
+    addons INT(1) NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -62,7 +62,19 @@ CREATE TABLE IF NOT EXISTS car_model (
   name VARCHAR(128) NOT NULL,
   title VARCHAR(128) NOT NULL,
   FOREIGN KEY (car_maker_id) REFERENCES car_maker(id)
-); 
+);
+
+-- 8.am - 20.pm
+-- 1=8-9, 2=9-10, 3=10-11, 4=11-12, 5=12-13, 6=13-14
+-- 7=14-15, 8=15-16, 9=16-17, 10=17-18, 11=18-19, 12=19-20
+CREATE TABLE opening (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    day DATE NOT NULL,
+    period INT NOT NULL,
+    count INT NOT NULL DEFAULT 2,
+    demand INT NOT NULL DEFAULT 0,
+    UNIQUE KEY (day, period)
+);
 
 CREATE TABLE user_car (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -107,13 +119,15 @@ CREATE TABLE user_service (
     estimated_price FLOAT NOT NULL,
     note VARCHAR(512) NULL,
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
+    opening_id INT NOT NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (user_car_id) REFERENCES user_car(id),
     FOREIGN KEY (user_payment_id) REFERENCES user_payment(id),
-    FOREIGN KEY (report_id) REFERENCES report(id)
+    FOREIGN KEY (report_id) REFERENCES report(id),
+    FOREIGN KEY (opening_id) REFERENCES opening(id)
 );
 
 CREATE TABLE user_service_list (
@@ -144,18 +158,6 @@ CREATE TABLE user_notification (
     type ENUM('MEMO'),
     FOREIGN KEY (user_id) REFERENCES user(id),
     INDEX(user_id)
-);
-
--- 8.am - 20.pm
--- 1=8-9, 2=9-10, 3=10-11, 4=11-12, 5=12-13, 6=13-14
--- 7=14-15, 8=15-16, 9=16-17, 10=17-18, 11=18-19, 12=19-20
-CREATE TABLE opening (
-    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    day DATE NOT NULL,
-    period INT NOT NULL,
-    count INT NOT NULL DEFAULT 2,
-    demand INT NOT NULL DEFAULT 0,
-    UNIQUE KEY (day, period)
 );
 
 

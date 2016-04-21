@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func encryptAccountNumber(accountType, accountNumber, accountCode string) (enNumber, enCode string, err error) {
+func EncryptAccount(accountType, accountNumber, accountCode string) (enNumber, enCode string, err error) {
 	switch {
 	case accountType == config.CREDIT_CARD:
 		if enNumber, err = secures.EncryptCredit(accountNumber); err != nil {
@@ -39,7 +39,7 @@ func encryptAccountNumber(accountType, accountNumber, accountCode string) (enNum
 	return enNumber, enCode, nil
 }
 
-func decryptAccountNumber(accountType, accountNumber string) (deNumber string, err error) {
+func DecryptAccountNumber(accountType, accountNumber string) (deNumber string, err error) {
 	switch {
 	case accountType == config.CREDIT_CARD:
 		if deNumber, err = secures.DecryptCredit(accountNumber); err != nil {
@@ -56,16 +56,36 @@ func decryptAccountNumber(accountType, accountNumber string) (deNumber string, e
 	return deNumber, nil
 }
 
+func DecryptAccountCode(accountType, code string) (deNumber string, err error) {
+	switch {
+	case accountType == config.CREDIT_CARD:
+		if deNumber, err = secures.DecryptCreditCVV(code); err != nil {
+			return
+		}
+	case accountType == config.DEBIT_CARD:
+		if deNumber, err = secures.DecryptDebitPin(code); err != nil {
+			return
+		}
+	default:
+		return "", errors.New("Unknown payment type - " + accountType)
+	}
+
+	return deNumber, nil
+}
+
+func getPaymentLastFour(accountNumber string) (string) {
+	return accountNumber[len(accountNumber)-4:]
+}
+
 func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, expire_month, expire_year
+				account_type, code, expire_month, expire_year
 		from user_payment
 		where id = ? and user_id = ?
 	`
 	var (
 		stmt     *sql.Stmt
-		deNumber string
 	)
 
 	if stmt, err = config.DB.Prepare(query); err != nil {
@@ -75,28 +95,30 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 
 	if err = stmt.QueryRow(id, userId).Scan(
 		&payment.Id, &payment.UserId, &payment.AccountName, &payment.AccountNumber,
-		&payment.AccountType, &payment.ExpireMonth, &payment.ExpireYear,
+		&payment.AccountType, &payment.Code, &payment.ExpireMonth, &payment.ExpireYear,
 	); err != nil {
 		return
 	}
 
-	if deNumber, err = decryptAccountNumber(
+	if payment.AccountNumber, err = DecryptAccountNumber(
 		payment.AccountType, payment.AccountNumber,
 	); err != nil {
 		return
 	}
 
-	length := len(deNumber)
-	payment.AccountNumber = deNumber[length-4:]
+	if payment.Code, err = DecryptAccountCode(
+		payment.AccountType, payment.Code,
+	); err != nil {
+		return
+	}
 
 	return payment, nil
 }
 
 func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 	query := `
-		select id, user_id, account_name,
-				account_number, account_type,
-				expire_month, expire_year
+		select id, user_id, account_name, account_number,
+				account_type, expire_month, expire_year
 		from user_payment
 		where user_id = ?
 	`
@@ -127,14 +149,13 @@ func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 			return
 		}
 
-		if deNumber, err = decryptAccountNumber(
+		if deNumber, err = DecryptAccountNumber(
 			payment.AccountType, payment.AccountNumber,
 		); err != nil {
 			return
 		}
 
-		length := len(deNumber)
-		payment.AccountNumber = deNumber[length-4:]
+		payment.AccountNumber = getPaymentLastFour(deNumber)
 
 		payments = append(payments, payment)
 	}
@@ -169,6 +190,9 @@ func GetPaymentById(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
+		payment.AccountNumber = getPaymentLastFour(payment.AccountNumber)
+		payment.Code = ""
+
 		c.IndentedJSON(http.StatusOK, payment)
 	}
 }
@@ -231,7 +255,7 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
-	if enNumber, enCode, err = encryptAccountNumber(
+	if enNumber, enCode, err = EncryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -306,7 +330,7 @@ func UpdatePayment(c *gin.Context) {
 	}
 	defer stmt.Close()
 
-	if enNumber, enCode, err = encryptAccountNumber(
+	if enNumber, enCode, err = EncryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
