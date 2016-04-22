@@ -30,7 +30,6 @@ func GetUserService(c *gin.Context) {
 	`
 	request := modules.BaseRequest{}
 	var (
-		stmt         *sql.Stmt
 		rows         *sql.Rows
 		userServices []modules.UserService
 		err          error
@@ -50,13 +49,7 @@ func GetUserService(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-
-	if rows, err = stmt.Query(request.UserId); err != nil {
+	if rows, err = config.DB.Query(query, request.UserId); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return

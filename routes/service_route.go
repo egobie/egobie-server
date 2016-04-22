@@ -6,7 +6,7 @@ import (
 
 func initServiceRoutes() {
 	// Get all services
-	serviceRouter.GET("/", controllers.GetService)
+	serviceRouter.GET("", controllers.GetService)
 
 	serviceRouter.POST("/user", controllers.GetUserService)
 

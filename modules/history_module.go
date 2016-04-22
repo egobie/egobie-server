@@ -18,11 +18,12 @@ type History struct {
 	Maker         string  `json:"maker"`
 	Model         string  `json:"model"`
 	Price         float32 `json:"price"`
+	StartTime     string  `json:"start_time"`
 	EndTime       string  `json:"end_time"`
+	Services      []int32 `json:"services"`
 }
 
 type HistoryRequest struct {
-	BaseRequest
-
-	Page int `json:"page"`
+	UserId int32 `json:"user_id"`
+	Page   int32 `json:"page"`
 }

@@ -5,5 +5,5 @@ import (
 )
 
 func initHistoryRoutes() {
-	historyRouter.POST("/", controllers.GetHistory)
+	historyRouter.POST("", controllers.GetHistory)
 }
