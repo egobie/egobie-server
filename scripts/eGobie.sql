@@ -117,7 +117,7 @@ CREATE TABLE user_service (
     report_id INT NULL,
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
-    note VARCHAR(512) NULL,
+    note TEXT NULL,
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
     opening_id INT NOT NULL,
     start_timestamp TIMESTAMP NULL,
@@ -140,11 +140,11 @@ CREATE TABLE user_service_list (
 
 CREATE TABLE user_history (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    ratting FLOAT NOT NULL,
+    rating FLOAT NOT NULL DEFAULT 0,
     user_id INT NOT NULL,
     user_service_id INT NOT NULL,
     report_id INT NULL,
-    note VARCHAR(512) NULL,
+    note TEXT NULL,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (user_service_id) REFERENCES user_service(id),
@@ -154,7 +154,7 @@ CREATE TABLE user_history (
 CREATE TABLE user_notification (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    content VARCHAR(512) NOT NULL,
+    content TEXT NOT NULL,
     type ENUM('MEMO'),
     FOREIGN KEY (user_id) REFERENCES user(id),
     INDEX(user_id)

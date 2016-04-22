@@ -1649,6 +1649,9 @@ INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id,
 INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, start_timestamp, end_timestamp, status) VALUES
 (2, 1, 1, 1, 3, 110, 59.89, '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
 
+INSERT INTO user_history (id, rating, user_id, user_service_id) VALUES
+(1, 1.0, 1, 2);
+
 UPDATE opening SET count = count - 1, demand = demand + 1 WHERE id IN (2, 3, 4);
 
 INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
