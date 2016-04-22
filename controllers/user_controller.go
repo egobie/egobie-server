@@ -280,3 +280,36 @@ func UpdateWork(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
+
+func Feedback(c *gin.Context) {
+	query := `
+		insert into user_feedback (user_id, title, feedback) values (?, ?, ?)
+	`
+	request := modules.Feedback{}
+	var (
+		err error
+		body []byte
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if _, err = config.DB.Exec(
+		query, request.UserId, request.Title, request.Feedback,
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}

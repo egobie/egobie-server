@@ -160,4 +160,13 @@ CREATE TABLE user_notification (
     INDEX(user_id)
 );
 
+CREATE TABLE user_feedback (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    feedback TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    INDEX(user_id)
+);
+
 

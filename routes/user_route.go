@@ -6,7 +6,7 @@ import (
 
 func initUserRoutes() {
 
-	userRouter.POST("/", controllers.GetUser)
+	userRouter.POST("", controllers.GetUser)
 
 	userRouter.POST("/update/password", controllers.UpdatePassword)
 
@@ -16,4 +16,5 @@ func initUserRoutes() {
 
 	userRouter.POST("/update/work", controllers.UpdateWork)
 
+	userRouter.POST("/feedback", controllers.Feedback)
 }
