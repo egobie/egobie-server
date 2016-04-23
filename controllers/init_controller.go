@@ -4,7 +4,7 @@ import (
 	"strings"
 	"database/sql"
 
-	"github.com/eGobie/egobie-server/config"
+	"github.com/egobie/egobie-server/config"
 
 	"gopkg.in/guregu/null.v3"
 )

@@ -1,7 +1,7 @@
 package main
 
 import (
-    "github.com/eGobie/egobie-server/routes"
+    "github.com/egobie/egobie-server/routes"
 )
 
 func main() {

@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/eGobie/egobie-server/config"
-	"github.com/eGobie/egobie-server/modules"
-	"github.com/eGobie/egobie-server/secures"
+	"github.com/egobie/egobie-server/config"
+	"github.com/egobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/secures"
 
 	"github.com/gin-gonic/gin"
 )

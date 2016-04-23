@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/eGobie/egobie-server/config"
-	"github.com/eGobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/config"
+	"github.com/egobie/egobie-server/modules"
 
 	"github.com/gin-gonic/gin"
 )

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/eGobie/egobie-server/config"
+	"github.com/egobie/egobie-server/config"
 
 	"github.com/gin-gonic/gin"
 )
