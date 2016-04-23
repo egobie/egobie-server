@@ -17,6 +17,7 @@ type Payment struct {
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
+	Code          string `json:"code"`
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
 }

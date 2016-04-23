@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/eGobie/egobie-server/config"
-	"github.com/eGobie/egobie-server/modules"
-	"github.com/eGobie/egobie-server/secures"
+	"github.com/egobie/egobie-server/config"
+	"github.com/egobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/secures"
 
 	"github.com/gin-gonic/gin"
 )
@@ -272,6 +272,39 @@ func UpdateWork(c *gin.Context) {
 
 	if err = updateAddress(
 		body, `work_address_state = ?, work_address_zip = ?, work_address_city = ?, work_address_street = ?`,
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func Feedback(c *gin.Context) {
+	query := `
+		insert into user_feedback (user_id, title, feedback) values (?, ?, ?)
+	`
+	request := modules.Feedback{}
+	var (
+		err error
+		body []byte
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if _, err = config.DB.Exec(
+		query, request.UserId, request.Title, request.Feedback,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()

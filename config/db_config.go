@@ -2,6 +2,7 @@ package config
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -19,4 +20,6 @@ func init() {
 	tmp, _ := sql.Open("mysql", dbConfig)
 
 	DB = db{tmp}
+
+	DB.SetConnMaxLifetime(1 * time.Hour)
 }

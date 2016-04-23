@@ -3,10 +3,11 @@ package routes
 import (
 	"database/sql"
 	"fmt"
+	"time"
 	"net/http"
 	"strconv"
 
-	"github.com/eGobie/egobie-server/config"
+	"github.com/egobie/egobie-server/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,14 +23,14 @@ var (
 
 func init() {
 	// CORS
-	router.Use(cors, request)
+	router.Use(cors, request, sleep)
 
 	// CORS, Authorize User
-	userRouter.Use(cors, request, authorizeUser)
-	carRouter.Use(cors, request, authorizeUser)
-	paymentRouter.Use(cors, request, authorizeUser)
-	serviceRouter.Use(cors, request, authorizeUser)
-	historyRouter.Use(cors, request, authorizeUser)
+	userRouter.Use(cors, request, authorizeUser, sleep)
+	carRouter.Use(cors, request, authorizeUser, sleep)
+	paymentRouter.Use(cors, request, authorizeUser, sleep)
+	serviceRouter.Use(cors, request, authorizeUser, sleep)
+	historyRouter.Use(cors, request, authorizeUser, sleep)
 
 	initSignRoutes()
 	initUserRoutes()
@@ -116,6 +117,12 @@ func request(c *gin.Context) {
 	fmt.Println("New Request - end")
 
 	c.Next()
+}
+
+func sleep(c *gin.Context) {
+	time.Sleep(500 * time.Millisecond)
+
+	c.Next();
 }
 
 func Serve(port string) {
