@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/eGobie/egobie-server/config"
-	"github.com/eGobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/config"
+	"github.com/egobie/egobie-server/modules"
 
 	"github.com/gin-gonic/gin"
 )
@@ -328,28 +328,35 @@ func DeleteCar(c *gin.Context) {
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort();
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort();
 		return
 	}
 
 	if stmt, err = config.DB.Prepare(query); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort();
 		return
 	}
 	defer stmt.Close()
 
 	if result, err = stmt.Exec(request.Id, request.UserId); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort();
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort();
 		return
 	} else if affectedRow <= 0 {
 		c.IndentedJSON(http.StatusBadRequest, "Car not found")
+		c.Abort();
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, "OK")

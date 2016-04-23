@@ -99,3 +99,9 @@ type UpdateAddress struct {
 	City   string `json:"city"`
 	Street string `json:"street"`
 }
+
+type Feedback struct {
+	UserId   int32  `json:"user_id"`
+	Title    string `json:"title"`
+	Feedback string `json:"feedback"`
+}

@@ -1,9 +1,5 @@
 package modules
 
-import (
-	"gopkg.in/guregu/null.v3"
-)
-
 /**
 {
 	"id": 1,
@@ -13,17 +9,21 @@ import (
 }
 **/
 type History struct {
-	Id            int32     `json:"id"`
-	Ratting       float32   `json:"ratting"`
-	UserServiceId int32     `json:"user_service_id"`
-	Price         float32   `json:"price"`
-	StartTime     null.Time `json:"start_time"`
-	EndTime       null.Time `json:"end_time"`
-	Note          string    `json:"note"`
+	Id            int32   `json:"id"`
+	Rating        float32 `json:"rating"`
+	UserServiceId int32   `json:"user_service_id"`
+	UserPaymentId int32   `json:"user_payment_id"`
+	UserCarId     int32   `json:"user_car_id"`
+	Plate         string  `json:"plate"`
+	Maker         string  `json:"maker"`
+	Model         string  `json:"model"`
+	Price         float32 `json:"price"`
+	StartTime     string  `json:"start_time"`
+	EndTime       string  `json:"end_time"`
+	Services      []int32 `json:"services"`
 }
 
 type HistoryRequest struct {
-	BaseRequest
-
-	Page int `json:"page"`
+	UserId int32 `json:"user_id"`
+	Page   int32 `json:"page"`
 }

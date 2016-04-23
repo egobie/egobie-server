@@ -1,11 +1,11 @@
 package routes
 
 import (
-	"github.com/eGobie/egobie-server/controllers"
+	"github.com/egobie/egobie-server/controllers"
 )
 
 func initPaymentRoutes() {
-	paymentRouter.POST("/", controllers.GetPaymentById)
+//	paymentRouter.POST("/", controllers.GetPaymentById)
 
 	paymentRouter.POST("/user", controllers.GetPaymentByUserId)
 

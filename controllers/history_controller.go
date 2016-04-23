@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/eGobie/egobie-server/config"
-	"github.com/eGobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/config"
+	"github.com/egobie/egobie-server/modules"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,41 +15,46 @@ import (
 func GetHistory(c *gin.Context) {
 	size := 6
 	query := `
-		select uh.id, uh.ratting, uh.note,
-				us.estimated_price, us.start_timestamp, us.end_timestamp
+		select uh.id, uh.rating, us.id, us.user_payment_id,
+				us.estimated_price, us.start_timestamp, us.end_timestamp,
+				uc.id, uc.plate, cma.title, cmo.title,
+				GROUP_CONCAT(usl.service_id) as services
 		from user_history uh
-		inner join user_service us on us.id = uh.user_service_id
+		inner join user_service us on us.id = uh.user_service_id and us.status = 'DONE'
+		inner join user_car uc on uc.id = us.user_car_id
+		inner join car_maker cma on cma.id = uc.car_maker_id
+		inner join car_model cmo on cmo.id = uc.car_model_id
+		left join user_service_list usl on usl.user_service_id = us.id
 		where uh.user_id = ?
 		order by uh.create_timestamp DESC
 		limit ?, ?
 	`
 	request := modules.HistoryRequest{}
 	var (
-		stmt      *sql.Stmt
 		rows      *sql.Rows
 		err       error
 		histories []modules.History
 		body      []byte
+		temp string
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	defer stmt.Close()
-
-	if rows, err = stmt.Query(request.UserId, request.Page*size, size); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+	if rows, err = config.DB.Query(query,
+		request.UserId, request.Page*int32(size), size,
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 	defer rows.Close()
@@ -58,10 +63,21 @@ func GetHistory(c *gin.Context) {
 		history := modules.History{}
 
 		if err = rows.Scan(
-			&history.Id, &history.Ratting, &history.Note,
-			&history.Price, &history.StartTime, &history.EndTime,
+			&history.Id, &history.Rating, &history.UserServiceId,
+			&history.UserPaymentId, &history.Price, &history.StartTime,
+			&history.EndTime, &history.UserCarId, &history.Plate,
+			&history.Maker, &history.Model, &temp,
 		); err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		if err = json.Unmarshal(
+			[]byte("[" + temp + "]"), &history.Services,
+		); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
 			return
 		}
 

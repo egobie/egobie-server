@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"github.com/eGobie/egobie-server/controllers"
+	"github.com/egobie/egobie-server/controllers"
 )
 
 func initHistoryRoutes() {
-	historyRouter.POST("/", controllers.GetHistory)
+	historyRouter.POST("", controllers.GetHistory)
 }
