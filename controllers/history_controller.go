@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -25,7 +26,7 @@ func GetHistory(c *gin.Context) {
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		left join user_service_list usl on usl.user_service_id = us.id
-		where uh.user_id = ?
+		where uh.user_id = ? and us.id is not null
 		order by uh.create_timestamp DESC
 		limit ?, ?
 	`
@@ -68,9 +69,13 @@ func GetHistory(c *gin.Context) {
 			&history.EndTime, &history.UserCarId, &history.Plate,
 			&history.Maker, &history.Model, &temp,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-			return
+			if strings.HasPrefix(err.Error(), "sql: Scan error on column index 0") {
+				break
+			} else {
+				c.IndentedJSON(http.StatusBadRequest, err.Error())
+				c.Abort()
+				return
+			}
 		}
 
 		if err = json.Unmarshal(
