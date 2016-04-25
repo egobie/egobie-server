@@ -114,13 +114,45 @@ func GetCarMaker(c *gin.Context) {
 
 func GetCarModel(c *gin.Context) {
 	query := `
+		select id, car_maker_id, title from car_model
+	`
+	var (
+		err error
+		rows *sql.Rows
+		models []modules.CarModel
+	)
+
+	if rows, err = config.DB.Query(query); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	for rows.Next() {
+		model := modules.CarModel{}
+
+		if err = rows.Scan(
+			&model.Id, &model.MakerId, &model.Title,
+		); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		models = append(models, model)
+	}
+
+	c.IndentedJSON(http.StatusOK, models)
+}
+
+func GetCarModelForMaker(c *gin.Context) {
+	query := `
 		select id, title from car_model
 		where car_maker_id = ?
 		order by title
 	`
 	var (
 		err     error
-		stmt    *sql.Stmt
 		rows    *sql.Rows
 		makerId int64
 		models  []modules.CarModel
@@ -131,13 +163,9 @@ func GetCarModel(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	defer stmt.Close()
-
-	if rows, err = stmt.Query(int32(makerId)); err != nil {
+	if rows, err = config.DB.Query(
+		query, int32(makerId),
+	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -319,7 +347,6 @@ func DeleteCar(c *gin.Context) {
 	`
 	request := modules.CarRequst{}
 	var (
-		stmt        *sql.Stmt
 		result      sql.Result
 		affectedRow int64
 		body        []byte
@@ -338,14 +365,9 @@ func DeleteCar(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort();
-		return
-	}
-	defer stmt.Close()
-
-	if result, err = stmt.Exec(request.Id, request.UserId); err != nil {
+	if result, err = config.DB.Exec(
+		query, request.Id, request.UserId,
+	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort();
 		return
