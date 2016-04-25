@@ -40,6 +40,7 @@ CREATE TABLE service (
     estimated_price FLOAT NOT NULL,
     estimated_time INT NOT NULL,
     addons INT(1) NOT NULL DEFAULT 0,
+    demand INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

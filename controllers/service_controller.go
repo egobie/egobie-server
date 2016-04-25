@@ -114,7 +114,10 @@ func OnDemand(c *gin.Context) {
 
 func GetOpening(c *gin.Context) {
 	query := `
-		select id, day, period from opening where count > 0 order by day, period
+		select id, day, period
+		from opening
+		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		order by day, period
 	`
 	var (
 		rows     *sql.Rows
@@ -193,7 +196,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	updateDemand(request.Opening)
+	updateOpeningDemand(request.Opening)
 
 	if rows, err = config.DB.Query(
 		buildServicesQuery(request.Services),
@@ -401,18 +404,18 @@ func buildServicesQuery(ids []int32) string {
 	return queryServices + ") group by type, addons"
 }
 
-func Demand(c *gin.Context) {
+func OpeningDemand(c *gin.Context) {
 	if id, err := strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	} else {
-		updateDemand(int32(id))
+		updateOpeningDemand(int32(id))
 		c.IndentedJSON(http.StatusOK, "OK")
 	}
 }
 
-func updateDemand(id int32) {
+func updateOpeningDemand(id int32) {
 	query := `update opening set demand = demand + 1 where id = ?`
 
 	if _, err := config.DB.Exec(query, id); err != nil {
@@ -462,4 +465,45 @@ func GetService(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, services)
+}
+
+func ServiceDemand(c *gin.Context) {
+	var (
+		body []byte
+		err error
+		request []int32
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	updateServiceDemand(request)
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func updateServiceDemand(ids []int32) {
+	query := `update service set demand = demand + 1 where id in (`
+	last := len(ids) - 1
+
+	for i, id := range ids {
+		query += strconv.Itoa(int(id))
+		if i != last {
+			query += ","
+		}
+	}
+
+	query += ")"
+
+	if _, err := config.DB.Exec(query); err != nil {
+		fmt.Println("Error - ", err.Error())
+	}
 }
