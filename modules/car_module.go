@@ -47,12 +47,14 @@ type CarMaker struct {
 /**
 {
 	"id": 1,
+	"maker_id": 2,
 	"title": "Accord"
 }
 **/
 type CarModel struct {
-	Id    int32  `json:"id"`
-	Title string `json:"title"`
+	Id      int32  `json:"id"`
+	MakerId int32  `json:"maker_id"`
+	Title   string `json:"title"`
 }
 
 /**

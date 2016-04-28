@@ -63,8 +63,6 @@ func init() {
 			dbUser, dbPassword, dbProtocol, dbHost, dbPort, dbName,
 		)
 	} else {
-//		dbConfig = dbUser + "@" + dbProtocol + "(" +
-//			dbHost + dbPort")/" + dbName + "?charset=utf8&timeout=10m"
 		dbConfig = fmt.Sprintf(
 			"%v@%v(%v:%v)/%v?charset=utf8&timeout=10m",
 			dbUser, dbProtocol, dbHost, dbPort, dbName,
