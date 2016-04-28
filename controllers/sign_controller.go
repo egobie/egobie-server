@@ -16,7 +16,7 @@ import (
 
 func updateUserSignIn(userId int32) {
 	query := `
-		update user set sign_in = CURRENT_TIMESTAMP where id = ?
+		update user set sign = sign + 1, sign_in = CURRENT_TIMESTAMP where id = ?
 	`
 
 	if stmt, err := config.DB.Prepare(query); err == nil {
@@ -47,22 +47,26 @@ func SignUp(c *gin.Context) {
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if stmt, err = config.DB.Prepare(query); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 	defer stmt.Close()
 
 	if enPassword, err = secures.EncryptPassword(request.Password); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
@@ -78,21 +82,26 @@ func SignUp(c *gin.Context) {
 		}
 
 		c.IndentedJSON(http.StatusBadRequest, message)
+		c.Abort()
 		return
 	}
 
 	if lastInsertId, err = result.LastInsertId(); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if user, err := getUserById(int32(lastInsertId)); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
+		return
 	} else {
 		user.Password = getUserToken(user.Password);
 		c.IndentedJSON(http.StatusOK, user);
 	}
+
+	updateUserSignIn(int32(lastInsertId));
 }
 
 func SignIn(c *gin.Context) {
@@ -106,11 +115,13 @@ func SignIn(c *gin.Context) {
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
@@ -123,16 +134,19 @@ func SignIn(c *gin.Context) {
 			default:
 				c.IndentedJSON(http.StatusBadRequest, err.Error())
 		}
+		c.Abort()
 		return
 	}
 
 	if dePassword, err = secures.DecryptPassword(user.Password); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
 		return
 	}
 
 	if dePassword != request.Password {
 		c.IndentedJSON(http.StatusBadRequest, "Password not match")
+		c.Abort()
 		return
 	}
 
