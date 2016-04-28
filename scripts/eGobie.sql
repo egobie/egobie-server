@@ -22,6 +22,7 @@ CREATE TABLE user (
     work_address_zip VARCHAR(8) NULL DEFAULT '',
     work_address_city VARCHAR(32) NULL DEFAULT '',
     work_address_street VARCHAR(128) NULL DEFAULT '',
+    sign INT NOT NULL DEFAULT 0,
     sign_up DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sign_in DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -41,6 +42,7 @@ CREATE TABLE service (
     estimated_time INT NOT NULL,
     addons INT(1) NOT NULL DEFAULT 0,
     demand INT NOT NULL DEFAULT 0,
+    reading INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -66,8 +68,6 @@ CREATE TABLE IF NOT EXISTS car_model (
 );
 
 -- 8.am - 20.pm
--- 1=8-9, 2=9-10, 3=10-11, 4=11-12, 5=12-13, 6=13-14
--- 7=14-15, 8=15-16, 9=16-17, 10=17-18, 11=18-19, 12=19-20
 CREATE TABLE opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,

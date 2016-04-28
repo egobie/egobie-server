@@ -16,6 +16,18 @@ CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count INT) BEGI
     INSERT INTO opening (day, period, count) VALUES (opening_date, 10, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 11, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 12, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 13, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 14, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 15, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 16, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 17, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 18, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 19, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 20, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 21, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 22, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 23, opening_count);
+    INSERT INTO opening (day, period, count) VALUES (opening_date, 24, opening_count);
 END $$
 DELIMITER ;
 

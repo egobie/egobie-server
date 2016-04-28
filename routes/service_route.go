@@ -16,5 +16,7 @@ func initServiceRoutes() {
 
 	serviceRouter.GET("/demand/opening/:id", controllers.OpeningDemand)
 
+	serviceRouter.GET("/read/:id", controllers.ServiceReading);
+
 	serviceRouter.POST("/demand", controllers.ServiceDemand)
 }

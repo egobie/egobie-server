@@ -467,6 +467,26 @@ func GetService(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, services)
 }
 
+func ServiceReading(c *gin.Context) {
+	query := `update service set reading = reading + 1 where id = ?`
+	var (
+		err error
+		id int64
+	)
+
+	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
+		c.IndentedJSON(http.StatusOK, err.Error())
+		c.Abort()
+		return
+	}
+
+	if _, err = config.DB.Exec(query, int32(id)); err != nil {
+		fmt.Println("Error - Service Reading - ", err.Error())
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
 func ServiceDemand(c *gin.Context) {
 	var (
 		body []byte
@@ -504,6 +524,6 @@ func updateServiceDemand(ids []int32) {
 	query += ")"
 
 	if _, err := config.DB.Exec(query); err != nil {
-		fmt.Println("Error - ", err.Error())
+		fmt.Println("Error - Service Demand - ", err.Error())
 	}
 }
