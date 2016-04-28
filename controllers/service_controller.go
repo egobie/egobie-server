@@ -119,12 +119,33 @@ func GetOpening(c *gin.Context) {
 		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
 		order by day, period
 	`
+	gap := 0.5
 	var (
 		rows     *sql.Rows
+		body     []byte
+		request  []int32
 		err      error
 		preDay   string
 		openings []modules.Opening
 	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if len(request) == 0 {
+		c.IndentedJSON(http.StatusBadRequest, "Please provide services")
+		c.Abort()
+		return
+	}
 
 	if rows, err = config.DB.Query(query); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -154,13 +175,87 @@ func GetOpening(c *gin.Context) {
 			openings[len(openings)-1].Range = append(
 				openings[len(openings)-1].Range,
 				modules.Period{
-					temp.Id, 8 + (temp.Period - 1), 8 + temp.Period,
+					temp.Id,
+					8.0 + float32(temp.Period-1)*float32(gap),
+					8.0 + float32(temp.Period)*float32(gap),
 				},
 			)
 		}
 	}
 
+	if openings, err = filterOpening(request, openings); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
 	c.IndentedJSON(http.StatusOK, openings)
+}
+
+func filterOpening(services []int32, openings []modules.Opening) (result []modules.Opening, err error) {
+	query := `
+		select sum(estimated_time) from service where id in (
+	`
+	var (
+		time int32
+		p1   int32
+		p2   int32
+		pre  int32
+	)
+
+	for i, id := range services {
+		if i == 0 {
+			query += strconv.Itoa(int(id))
+		} else {
+			query += "," + strconv.Itoa(int(id))
+		}
+	}
+
+	query += ")"
+
+	if err = config.DB.QueryRow(query).Scan(&time); err != nil {
+		return
+	}
+
+	if time%30 != 0 {
+		time = (time / 30) + 2
+	} else {
+		time = (time / 30) + 1
+	}
+
+	for _, opening := range openings {
+		o := modules.Opening{}
+		o.Day = opening.Day;
+
+		p1 = 0
+		p2 = 0
+		pre = opening.Range[p1].Id
+		size := int32(len(opening.Range))
+
+		if p1 < (size - time + 1) {
+			for p2 < size {
+				if opening.Range[p2].Id - pre > 1 {
+					p1 = p2;
+					pre = opening.Range[p1].Id
+				} else {
+					if opening.Range[p2].Id - opening.Range[p1].Id + 1 == time {
+						o.Range = append(o.Range, opening.Range[p1])
+						p1 += 1
+					}
+
+					pre = opening.Range[p2].Id
+				}
+
+				p2 += 1
+			}
+		}
+
+		if len(o.Range) != 0{
+			result = append(result, o)
+		}
+	}
+
+	return result, nil
 }
 
 func PlaceOrder(c *gin.Context) {
@@ -471,7 +566,7 @@ func ServiceReading(c *gin.Context) {
 	query := `update service set reading = reading + 1 where id = ?`
 	var (
 		err error
-		id int64
+		id  int64
 	)
 
 	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
@@ -489,8 +584,8 @@ func ServiceReading(c *gin.Context) {
 
 func ServiceDemand(c *gin.Context) {
 	var (
-		body []byte
-		err error
+		body    []byte
+		err     error
 		request []int32
 	)
 
