@@ -10,7 +10,7 @@ func initServiceRoutes() {
 
 	serviceRouter.POST("/user", controllers.GetUserService)
 
-	serviceRouter.GET("/opening", controllers.GetOpening)
+	serviceRouter.POST("/opening", controllers.GetOpening)
 
 	serviceRouter.POST("/order", controllers.PlaceOrder)
 

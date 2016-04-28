@@ -97,11 +97,11 @@ func SignUp(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		user.Password = getUserToken(user.Password);
-		c.IndentedJSON(http.StatusOK, user);
+		user.Password = getUserToken(user.Password)
+		c.IndentedJSON(http.StatusOK, user)
 	}
 
-	updateUserSignIn(int32(lastInsertId));
+	updateUserSignIn(int32(lastInsertId))
 }
 
 func SignIn(c *gin.Context) {
@@ -129,10 +129,10 @@ func SignIn(c *gin.Context) {
 		"username = ?", request.Username,
 	); err != nil {
 		switch {
-			case err == sql.ErrNoRows:
-				c.IndentedJSON(http.StatusBadRequest, "User not found")
-			default:
-				c.IndentedJSON(http.StatusBadRequest, err.Error())
+		case err == sql.ErrNoRows:
+			c.IndentedJSON(http.StatusBadRequest, "User not found")
+		default:
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
 		}
 		c.Abort()
 		return
