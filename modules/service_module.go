@@ -108,9 +108,9 @@ type UserService struct {
 }
 
 type Period struct {
-	Id    int32 `json:"id"`
-	Start int32 `json:"start"`
-	End   int32 `json:"end"`
+	Id    int32   `json:"id"`
+	Start float32 `json:"start"`
+	End   float32 `json:"end"`
 }
 
 type Opening struct {
