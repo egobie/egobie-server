@@ -80,7 +80,7 @@ func getPaymentLastFour(accountNumber string) (string) {
 func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, code, expire_month, expire_year
+				account_type, account_zip, code, expire_month, expire_year
 		from user_payment
 		where id = ? and user_id = ?
 	`
@@ -94,8 +94,9 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 	defer stmt.Close()
 
 	if err = stmt.QueryRow(id, userId).Scan(
-		&payment.Id, &payment.UserId, &payment.AccountName, &payment.AccountNumber,
-		&payment.AccountType, &payment.Code, &payment.ExpireMonth, &payment.ExpireYear,
+		&payment.Id, &payment.UserId, &payment.AccountName,
+		&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
+		&payment.Code, &payment.ExpireMonth, &payment.ExpireYear,
 	); err != nil {
 		return
 	}
@@ -118,7 +119,7 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, expire_month, expire_year
+				account_type, account_zip, expire_month, expire_year
 		from user_payment
 		where user_id = ?
 	`
@@ -143,7 +144,7 @@ func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 
 		if err = rows.Scan(
 			&payment.Id, &payment.UserId, &payment.AccountName,
-			&payment.AccountNumber, &payment.AccountType,
+			&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
 			&payment.ExpireMonth, &payment.ExpireYear,
 		); err != nil {
 			return
@@ -229,8 +230,8 @@ func GetPaymentByUserId(c *gin.Context) {
 func CreatePayment(c *gin.Context) {
 	query := `
 		insert into user_payment (user_id, account_name, account_number,
-			account_type, code, expire_month, expire_year)
-		values (?, ?, ?, ?, ?, ?, ?)
+			account_type, account_zip, code, expire_month, expire_year)
+		values (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	request := modules.PaymentNew{}
 	var (
@@ -272,7 +273,7 @@ func CreatePayment(c *gin.Context) {
 
 	if result, err = stmt.Exec(
 		request.UserId, request.AccountName, enNumber, request.AccountType,
-		enCode, request.ExpireMonth, request.ExpireYear,
+		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
@@ -297,7 +298,7 @@ func CreatePayment(c *gin.Context) {
 func UpdatePayment(c *gin.Context) {
 	query := `
 		update user_payment set account_name = ?, account_number = ?,
-		account_type = ?, code = ?, expire_month = ?, expire_year = ?
+		account_type = ?, account_zip = ?, code = ?, expire_month = ?, expire_year = ?
 		where id = ? and user_id = ?
 	`
 	request := modules.UpdatePayment{}
@@ -339,9 +340,8 @@ func UpdatePayment(c *gin.Context) {
 	}
 
 	if result, err = stmt.Exec(
-		request.AccountName, enNumber,
-		request.AccountType, enCode, request.ExpireMonth, request.ExpireYear,
-		request.Id, request.UserId,
+		request.AccountName, enNumber, request.AccountType, request.AccountZip,
+		enCode, request.ExpireMonth, request.ExpireYear, request.Id, request.UserId,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return

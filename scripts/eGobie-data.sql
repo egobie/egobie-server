@@ -1651,8 +1651,8 @@ INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id) VALUES
 (1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519);
 
-INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, code, expire_month, expire_year) VALUES
-(1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018');
+INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year) VALUES
+(1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018');
 
 INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, status) VALUES
 (1, 1, 1, 1, 2, 100, 99.89, 'RESERVED');

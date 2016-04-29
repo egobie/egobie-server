@@ -102,6 +102,7 @@ CREATE TABLE user_payment (
     user_id INT NOT NULL,
     account_name VARCHAR(64) NOT NULL,
     account_number VARCHAR(128) NOT NULL UNIQUE KEY,
+    account_zip VARCHAR(8) NOT NULL,
     account_type ENUM('CREDIT', 'DEBIT'),
     code VARCHAR(128) NULL,
     expire_month VARCHAR(2) NOT NULL,
