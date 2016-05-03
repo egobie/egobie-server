@@ -5,7 +5,8 @@ package modules
 	"username": "test_user",
 	"password": "a123456",
 	"email": "test@test.com",
-	"phone_number": "1234567890"
+	"phone_number": "1234567890",
+	"coupon": "A1B2C"
 }
 **/
 type SignUp struct {
@@ -13,6 +14,7 @@ type SignUp struct {
 	Password    string `json:"password"`
 	Email       string `json:"email"`
 	PhoneNumber string `json:"phone_number"`
+	Coupon      string `json:"coupon"`
 }
 
 /**
