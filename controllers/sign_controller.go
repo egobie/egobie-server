@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -19,30 +21,38 @@ func updateUserSignIn(userId int32) {
 		update user set sign = sign + 1, sign_in = CURRENT_TIMESTAMP where id = ?
 	`
 
-	if stmt, err := config.DB.Prepare(query); err == nil {
-		defer stmt.Close()
-
-		if _, err = stmt.Exec(userId); err != nil {
-			fmt.Println("fail to update sign-in - ", err.Error())
-		}
-	} else {
+	if _, err := config.DB.Exec(query, userId); err != nil {
 		fmt.Println("fail to update sign-in - ", err.Error())
+	}
+}
+
+func updateUserCoupon(coupon string) {
+	query := `
+		update user
+		set invitation = invitation + 1, discount = discount + 1
+		where coupon = ?
+	`
+
+	if _, err := config.DB.Exec(query, coupon); err != nil {
+		fmt.Println("fail to update coupon - ", coupon, " error - ", err.Error())
 	}
 }
 
 func SignUp(c *gin.Context) {
 	query := `
-		insert into user (type, username, password, email, phone_number)
-		values ('RESIDENTIAL', ?, ?, ?, ?)
+		insert into user (type, username, password, email, phone_number, referred)
+		values ('RESIDENTIAL', ?, ?, ?, ?, ?)
 	`
 	request := modules.SignUp{}
+	pattern := "^([A-Z0-9]{5})$"
 	var (
-		stmt         *sql.Stmt
 		result       sql.Result
 		enPassword   string
 		lastInsertId int64
 		body         []byte
 		err          error
+		referred     string
+		matched      bool
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -57,26 +67,30 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-	defer stmt.Close()
-
 	if enPassword, err = secures.EncryptPassword(request.Password); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	if result, err = stmt.Exec(
-		request.Username, enPassword, request.Email, request.PhoneNumber,
+	request.Coupon = strings.ToUpper(strings.TrimSpace(request.Coupon))
+
+	if matched, _ = regexp.MatchString(
+		pattern, request.Coupon,
+	); matched {
+		referred = request.Coupon
+	} else {
+		referred = ""
+	}
+
+	if result, err = config.DB.Exec(
+		query, request.Username, enPassword, request.Email,
+		request.PhoneNumber, referred,
 	); err != nil {
 		message := ""
 
 		if isDuplicateEntryError(err) {
-			message = "Username or email already exists!"
+			message = "user already exists!"
 		} else {
 			message = err.Error()
 		}
@@ -102,6 +116,10 @@ func SignUp(c *gin.Context) {
 	}
 
 	updateUserSignIn(int32(lastInsertId))
+
+	if matched {
+		updateUserCoupon(request.Coupon)
+	}
 }
 
 func SignIn(c *gin.Context) {
