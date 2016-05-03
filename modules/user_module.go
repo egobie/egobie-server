@@ -9,6 +9,7 @@ type User struct {
 	Type              string      `json:"type"`
 	Username          string      `json:"username"`
 	Password          string      `json:"password"`
+	Coupon            string      `json:"coupon"`
 	Email             null.String `json:"email"`
 	PhoneNumber       null.String `json:"phone_number"`
 	FirstName         null.String `json:"first_name"`

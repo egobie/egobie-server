@@ -7,6 +7,7 @@ package modules
 	"account_name": "Test Test",
 	"account_number": "1234",
 	"account_type": "CREDIT",
+	"account_zip": "07601"
 	"expire_month": "01",
 	"expire_year": "12"
 }
@@ -17,6 +18,7 @@ type Payment struct {
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
+	AccountZip    string `json:"account_zip"`
 	Code          string `json:"code"`
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
@@ -28,6 +30,7 @@ type Payment struct {
 	"account_name": "Test Test",
 	"account_number": "1234123412341234",
 	"account_type": "CREDIT",
+	"account_zip": "07601",
 	"code": "333",
 	"expire_month": "01",
 	"expire_year": "12"
@@ -38,6 +41,7 @@ type PaymentNew struct {
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
+	AccountZip    string `json:"account_zip"`
 	Code          string `json:"code"`
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
@@ -70,6 +74,7 @@ type PaymentRequestForUser struct {
 	"account_name": "Test Test",
 	"account_number": "1234123412341234",
 	"account_type": "CREDIT",
+	"account_zip": "07601",
 	"code": "333",
 	"expire_month": "01",
 	"expire_year": "12"
@@ -81,6 +86,7 @@ type UpdatePayment struct {
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
+	AccountZip    string `json:"account_zip"`
 	Code          string `json:"code"`
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
