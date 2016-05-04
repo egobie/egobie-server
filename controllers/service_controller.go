@@ -18,6 +18,7 @@ func GetUserService(c *gin.Context) {
 	query := `
 		select us.id, us.user_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
+				us.reserved_start_timestamp,
 				us.start_timestamp, us.end_timestamp,
 				us.note, us.status, us.create_timestamp,
 				s.id, s.name, s.type, s.items, s.description,
@@ -62,7 +63,8 @@ func GetUserService(c *gin.Context) {
 		if err = rows.Scan(
 			&userService.Id, &userService.UserId, &userService.CarId,
 			&userService.CarPlate, &userService.PaymentId, &userService.Time,
-			&userService.Price, &userService.StartTime, &userService.EndTime,
+			&userService.Price, &userService.ReserveStartTime,
+			&userService.StartTime, &userService.EndTime,
 			&userService.Note, &userService.Status, &userService.ReserveTime,
 			&service.Id, &service.Name, &service.Type, &temp, &service.Description,
 			&service.Time, &service.Price, &service.AddOns,
@@ -225,7 +227,7 @@ func filterOpening(services []int32, openings []modules.Opening) (result []modul
 
 	for _, opening := range openings {
 		o := modules.Opening{}
-		o.Day = opening.Day;
+		o.Day = opening.Day
 
 		p1 = 0
 		p2 = 0
@@ -234,11 +236,11 @@ func filterOpening(services []int32, openings []modules.Opening) (result []modul
 
 		if p1 < (size - time + 1) {
 			for p2 < size {
-				if opening.Range[p2].Id - pre > 1 {
-					p1 = p2;
+				if opening.Range[p2].Id-pre > 1 {
+					p1 = p2
 					pre = opening.Range[p1].Id
 				} else {
-					if opening.Range[p2].Id - opening.Range[p1].Id + 1 == time {
+					if opening.Range[p2].Id-opening.Range[p1].Id+1 == time {
 						o.Range = append(o.Range, opening.Range[p1])
 						p1 += 1
 					}
@@ -250,7 +252,7 @@ func filterOpening(services []int32, openings []modules.Opening) (result []modul
 			}
 		}
 
-		if len(o.Range) != 0{
+		if len(o.Range) != 0 {
 			result = append(result, o)
 		}
 	}
@@ -490,6 +492,66 @@ func buildServicesQuery(ids []int32) string {
 	}
 
 	return queryServices + ") group by type, addons"
+}
+
+func CancelOrder(c *gin.Context) {
+	checkQuery := `
+		select user_car_id, user_payment_id
+		from user_service
+		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
+		and id = ? and user_id = ?
+	`
+	query := `
+		update user_service set cancel = 1 where id = ? and user_id = ?
+	`
+	request := modules.CancelRequest{}
+	temp := struct {
+		CarId     int32
+		PaymentId int32
+	}{}
+
+	var (
+		body []byte
+		err  error
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = config.DB.QueryRow(
+		checkQuery, request.Id, request.UserId,
+	).Scan(&temp.CarId, &temp.PaymentId); err != nil {
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusBadRequest, "Cannot cancel order")
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+
+		c.Abort()
+		return
+	}
+
+	if _, err = config.DB.Exec(
+		query, request.Id, request.UserId,
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	unlockCar(temp.CarId)
+	unlockPayment(temp.PaymentId)
+
+	c.IndentedJSON(http.StatusOK, "OK")
 }
 
 func OpeningDemand(c *gin.Context) {

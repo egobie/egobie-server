@@ -131,22 +131,19 @@ CREATE TABLE user_service (
     note TEXT NULL,
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
     opening_id INT NOT NULL,
+    cancel INT NOT NULL DEFAULT 0,
+    reserved_start_timestamp TIMESTAMP NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (user_car_id) REFERENCES user_car(id),
-    FOREIGN KEY (user_payment_id) REFERENCES user_payment(id),
-    FOREIGN KEY (report_id) REFERENCES report(id),
-    FOREIGN KEY (opening_id) REFERENCES opening(id)
+    FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
 CREATE TABLE user_service_list (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     service_id INT NOT NULL,
     user_service_id INT NOT NULL,
-    FOREIGN KEY (service_id) REFERENCES service(id),
-    FOREIGN KEY (user_service_id) REFERENCES user_service(id)
+    FOREIGN KEY (service_id) REFERENCES service(id)
 );
 
 CREATE TABLE user_history (
@@ -158,7 +155,6 @@ CREATE TABLE user_history (
     note TEXT NULL,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (user_service_id) REFERENCES user_service(id),
     INDEX(user_id)
 );
 

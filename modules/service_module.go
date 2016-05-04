@@ -92,19 +92,20 @@ type Service struct {
 }
 **/
 type UserService struct {
-	Id          int32       `json:"id"`
-	UserId      int32       `json:"user_id"`
-	CarId       int32       `json:"car_id"`
-	CarPlate    string      `json:"plate"`
-	PaymentId   int32       `json:"payment_id"`
-	Time        int32       `json:"time"`
-	Price       float32     `json:"price"`
-	Note        null.String `json:"note"`
-	Status      string      `json:"status"`
-	ReserveTime null.String `json:"revserve_time"`
-	StartTime   null.String `json:"start_time"`
-	EndTime     null.String `json:"end_time"`
-	ServiceList []Service   `json:"services"`
+	Id               int32       `json:"id"`
+	UserId           int32       `json:"user_id"`
+	CarId            int32       `json:"car_id"`
+	CarPlate         string      `json:"plate"`
+	PaymentId        int32       `json:"payment_id"`
+	Time             int32       `json:"time"`
+	Price            float32     `json:"price"`
+	Note             null.String `json:"note"`
+	Status           string      `json:"status"`
+	ReserveStartTime string      `json:"reserve_start_time"`
+	ReserveTime      null.String `json:"reserve_time"`
+	StartTime        null.String `json:"start_time"`
+	EndTime          null.String `json:"end_time"`
+	ServiceList      []Service   `json:"services"`
 }
 
 type Period struct {
@@ -143,4 +144,15 @@ type OrderRequest struct {
 	Services  []int32 `json:"services"`
 	Note      string  `json:"note"`
 	Opening   int32   `json:"opening"`
+}
+
+/**
+{
+	"id": 1,
+	"user_id": 1
+}
+**/
+type CancelRequest struct {
+	Id     int32 `json:"id"`
+	UserId int32 `json:"user_id"`
 }
