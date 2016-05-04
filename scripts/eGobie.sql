@@ -4,6 +4,8 @@ CREATE DATABASE egobie;
 
 USE egobie;
 
+SET GLOBAL time_zone = '-04:00';
+
 CREATE TABLE user (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     type ENUM('RESIDENTIAL', 'BUSINESS', 'RUNNER'),
@@ -92,6 +94,7 @@ CREATE TABLE user_car (
     color ENUM('WHITE', 'BLACK', 'SILVER', 'GRAY', 'RED', 'BLUE', 'BROWN', 'YELLOW', 'GOLD', 'GREEN', 'PINK', 'OTHERS') NOT NULL,
     car_maker_id INT NOT NULL,
     car_model_id INT NOT NULL,
+    reserved INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (car_maker_id) REFERENCES car_maker(id),
@@ -112,6 +115,7 @@ CREATE TABLE user_payment (
     code VARCHAR(128) NULL,
     expire_month VARCHAR(2) NOT NULL,
     expire_year VARCHAR(4) NOT NULL,
+    reserved INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id)
 );

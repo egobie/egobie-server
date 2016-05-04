@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"fmt"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -80,23 +81,16 @@ func getPaymentLastFour(accountNumber string) (string) {
 func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, account_zip, code, expire_month, expire_year
+				account_type, account_zip, code,
+				expire_month, expire_year, reserved
 		from user_payment
 		where id = ? and user_id = ?
 	`
-	var (
-		stmt     *sql.Stmt
-	)
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	if err = stmt.QueryRow(id, userId).Scan(
+	if err = config.DB.QueryRow(query, id, userId).Scan(
 		&payment.Id, &payment.UserId, &payment.AccountName,
 		&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
-		&payment.Code, &payment.ExpireMonth, &payment.ExpireYear,
+		&payment.Code, &payment.ExpireMonth, &payment.ExpireYear, &payment.Reserved,
 	); err != nil {
 		return
 	}
@@ -119,22 +113,16 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, account_zip, expire_month, expire_year
+				account_type, account_zip, expire_month, expire_year, reserved
 		from user_payment
 		where user_id = ?
 	`
 	var (
-		stmt     *sql.Stmt
 		rows     *sql.Rows
 		deNumber string
 	)
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	if rows, err = stmt.Query(userId); err != nil {
+	if rows, err = config.DB.Query(query, userId); err != nil {
 		return
 	}
 	defer rows.Close()
@@ -145,7 +133,7 @@ func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 		if err = rows.Scan(
 			&payment.Id, &payment.UserId, &payment.AccountName,
 			&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
-			&payment.ExpireMonth, &payment.ExpireYear,
+			&payment.ExpireMonth, &payment.ExpireYear, &payment.Reserved,
 		); err != nil {
 			return
 		}
@@ -235,7 +223,6 @@ func CreatePayment(c *gin.Context) {
 	`
 	request := modules.PaymentNew{}
 	var (
-		stmt     *sql.Stmt
 		result   sql.Result
 		insertId int64
 		enNumber string
@@ -264,14 +251,7 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-	defer stmt.Close()
-
-	if result, err = stmt.Exec(
+	if result, err = config.DB.Exec(query,
 		request.UserId, request.AccountName, enNumber, request.AccountType,
 		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
 	); err != nil {
@@ -303,7 +283,6 @@ func UpdatePayment(c *gin.Context) {
 	`
 	request := modules.UpdatePayment{}
 	var (
-		stmt        *sql.Stmt
 		result      sql.Result
 		affectedRow int64
 		enNumber    string
@@ -324,13 +303,6 @@ func UpdatePayment(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-	defer stmt.Close()
-
 	if enNumber, enCode, err = EncryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
@@ -339,7 +311,7 @@ func UpdatePayment(c *gin.Context) {
 		return
 	}
 
-	if result, err = stmt.Exec(
+	if result, err = config.DB.Exec(query,
 		request.AccountName, enNumber, request.AccountType, request.AccountZip,
 		enCode, request.ExpireMonth, request.ExpireYear, request.Id, request.UserId,
 	); err != nil {
@@ -370,7 +342,6 @@ func DeletePayment(c *gin.Context) {
 	`
 	request := modules.PaymentRequest{}
 	var (
-		stmt        *sql.Stmt
 		result      sql.Result
 		affectedRow int64
 		body        []byte
@@ -389,14 +360,15 @@ func DeletePayment(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	if checkPaymentStatus(request.Id, request.UserId) {
+		c.IndentedJSON(http.StatusBadRequest, "Payment was reserved")
 		c.Abort()
 		return
 	}
-	defer stmt.Close()
 
-	if result, err = stmt.Exec(request.Id, request.UserId); err != nil {
+	if result, err = config.DB.Exec(
+		query, request.Id, request.UserId,
+	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -410,4 +382,40 @@ func DeletePayment(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func checkPaymentStatus(id, userId int32) bool {
+	query := `
+		select reserved from user_payment where id = ? and user_id = ?
+	`
+	var temp bool
+
+	if err := config.DB.QueryRow(
+		query, id, userId,
+	).Scan(&temp); err != nil {
+		fmt.Println("Check Payment Status - Error - ", err)
+		return false
+	} else {
+		return temp
+	}
+}
+
+func lockPayment(id int32) {
+	query := `
+		update user_payment set reserved = 1 where id = ?
+	`
+
+	if _, err := config.DB.Exec(query, id); err != nil {
+		fmt.Println("Lock Pyment - Error - ", err);
+	}
+}
+
+func unlockPayment(id int32) {
+	query := `
+		update user_payment set reserved = 0 where id = ?
+	`
+
+	if _, err := config.DB.Exec(query, id); err != nil {
+		fmt.Println("Unlock Pyment - Error - ", err);
+	}
 }

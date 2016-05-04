@@ -22,6 +22,7 @@ type Payment struct {
 	Code          string `json:"code"`
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
+	Reserved      bool   `json:"reserved"`
 }
 
 /**

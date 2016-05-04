@@ -267,7 +267,6 @@ func PlaceOrder(c *gin.Context) {
 
 	var (
 		result      sql.Result
-		stmt        *sql.Stmt
 		tx          *sql.Tx
 		rows        *sql.Rows
 		body        []byte
@@ -442,19 +441,10 @@ func PlaceOrder(c *gin.Context) {
 		) values (?, ?)
 	`
 
-	if stmt, err = tx.Prepare(queryUserServiceList); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
-		return
-	}
-
 	for _, id := range request.Services {
-		if _, err = stmt.Exec(id, user_service_id); err != nil {
+		if _, err = config.DB.Exec(
+			queryUserServiceList, id, user_service_id,
+		); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 
@@ -473,6 +463,9 @@ func PlaceOrder(c *gin.Context) {
 
 		return
 	}
+
+	lockCar(request.CarId)
+	lockPayment(request.PaymentId)
 
 	fmt.Println("User - ", user)
 	fmt.Println("Payment - ", payment)
