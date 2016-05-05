@@ -575,7 +575,7 @@ func updateOpeningDemand(id int32) {
 
 func GetService(c *gin.Context) {
 	query := `
-		select id, name, type, items, description,
+		select id, name, type, items, description, note,
 			estimated_price, estimated_time, addons
 		from service
 		order by id
@@ -597,8 +597,8 @@ func GetService(c *gin.Context) {
 	for rows.Next() {
 		service := modules.Service{}
 		if err = rows.Scan(
-			&service.Id, &service.Name, &service.Type, &temp,
-			&service.Description, &service.Price, &service.Time, &service.AddOns,
+			&service.Id, &service.Name, &service.Type, &temp, &service.Description,
+			&service.Note, &service.Price, &service.Time, &service.AddOns,
 		); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			c.Abort()

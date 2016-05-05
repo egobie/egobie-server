@@ -29,6 +29,7 @@ type Service struct {
 	Type        string      `json:"type"`
 	Items       []string    `json:"items"`
 	Description null.String `json:"description"`
+	Note        string      `json:"note"`
 	Price       float64     `json:"price"`
 	Time        int32       `json:"time"`
 	AddOns      bool        `json:"addons"`

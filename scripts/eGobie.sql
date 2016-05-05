@@ -45,6 +45,7 @@ CREATE TABLE service (
     type ENUM('CAR_WASH', 'OIL_CHANGE', 'DETAILING', 'REPAIR'),
     items TEXT NOT NULL,
     description VARCHAR(1024) NOT NULL,
+    note VARCHAR(128) NOT NULL DEFAULT '',
     estimated_price FLOAT NOT NULL,
     estimated_time INT NOT NULL,
     addons INT(1) NOT NULL DEFAULT 0,
