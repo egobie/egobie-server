@@ -16,7 +16,7 @@ import (
 
 func GetUserService(c *gin.Context) {
 	query := `
-		select us.id, us.user_id, us.user_car_id, uc.plate,
+		select us.id, us.reservation_id, us.user_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
 				us.reserved_start_timestamp,
 				us.start_timestamp, us.end_timestamp,
@@ -61,12 +61,12 @@ func GetUserService(c *gin.Context) {
 		service := modules.Service{}
 
 		if err = rows.Scan(
-			&userService.Id, &userService.UserId, &userService.CarId,
-			&userService.CarPlate, &userService.PaymentId, &userService.Time,
-			&userService.Price, &userService.ReserveStartTime,
-			&userService.StartTime, &userService.EndTime,
-			&userService.Note, &userService.Status, &userService.ReserveTime,
-			&service.Id, &service.Name, &service.Type, &temp, &service.Description,
+			&userService.Id, &userService.ReservationId, &userService.UserId,
+			&userService.CarId, &userService.CarPlate, &userService.PaymentId,
+			&userService.Time, &userService.Price, &userService.ReserveStartTime,
+			&userService.StartTime, &userService.EndTime, &userService.Note,
+			&userService.Status, &userService.ReserveTime, &service.Id,
+			&service.Name, &service.Type, &temp, &service.Description,
 			&service.Time, &service.Price, &service.AddOns,
 		); err != nil {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())

@@ -123,6 +123,7 @@ CREATE TABLE user_payment (
 
 CREATE TABLE user_service (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    reservation_id VARCHAR(8) NOT NULL DEFAULT '',
     user_id INT NOT NULL,
     user_car_id INT NOT NULL,
     user_payment_id INT NOT NULL,
