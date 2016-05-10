@@ -14,6 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var OPENING_GAP = 0.5
+var OPENING_BASE = 8.0
+
 func GetUserService(c *gin.Context) {
 	query := `
 		select us.id, us.reservation_id, us.user_id, us.user_car_id, uc.plate,
@@ -121,7 +124,6 @@ func GetOpening(c *gin.Context) {
 		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
 		order by day, period
 	`
-	gap := 0.5
 	var (
 		rows     *sql.Rows
 		body     []byte
@@ -178,8 +180,8 @@ func GetOpening(c *gin.Context) {
 				openings[len(openings)-1].Range,
 				modules.Period{
 					temp.Id,
-					8.0 + float32(temp.Period-1)*float32(gap),
-					8.0 + float32(temp.Period)*float32(gap),
+					OPENING_BASE + float64(temp.Period-1)*OPENING_GAP,
+					OPENING_BASE + float64(temp.Period)*OPENING_GAP,
 				},
 			)
 		}
@@ -278,6 +280,7 @@ func PlaceOrder(c *gin.Context) {
 		count       int32
 		insertedId  int64
 		affectedRow int64
+		reserved    string
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -407,12 +410,41 @@ func PlaceOrder(c *gin.Context) {
 	insertUserService := `
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
+			reserved_start_timestamp,
 			estimated_time, estimated_price, status
-		) values (?, ?, ?, ?, ?, ?, ?)
+		) values (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
+	temp := struct {
+		day    string
+		period int32
+	}{}
+
+	if err = tx.QueryRow(
+		"select day, period from opening where id = ?", request.Opening,
+	).Scan(&temp.day, &temp.period); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+
+		if err = tx.Rollback(); err != nil {
+			fmt.Println("Fail to rollback - ", err.Error())
+		}
+
+		return
+	} else {
+		total := (temp.period - 1) * 30
+		hour := strconv.Itoa(int(OPENING_BASE) + int(total/60))
+		minute := total % 60
+
+		if (minute == 0) {
+			reserved = temp.day + " " + hour + ":00:00"
+		} else {
+			reserved = temp.day + " " + hour + ":30:00"
+		}
+	}
+
 	if result, err = tx.Exec(insertUserService,
-		user.Id, car.Id, payment.Id, request.Opening, time, price, "RESERVED",
+		user.Id, car.Id, payment.Id, request.Opening, reserved, time, price, "RESERVED",
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
