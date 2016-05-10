@@ -38,6 +38,45 @@ func updateUserCoupon(coupon string) {
 	}
 }
 
+func check(c *gin.Context, query, errorMessage string) {
+	request := modules.Check{}
+	var (
+		body []byte
+		err error
+		count int64
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	} else if count >= 1{
+		c.IndentedJSON(http.StatusAccepted, errorMessage + " is already in use")
+	} else {
+		c.IndentedJSON(http.StatusOK, "OK")
+	}
+}
+
+func CheckEmail(c *gin.Context) {
+	check(c, "select count(*) from user where email = ?", "Email address")
+}
+
+func CheckUsername(c *gin.Context) {
+	check(c, "select count(*) from user where username = ?", "Username");
+}
+
 func SignUp(c *gin.Context) {
 	query := `
 		insert into user (type, username, password, email, phone_number, referred)
