@@ -318,7 +318,9 @@ func PlaceOrder(c *gin.Context) {
 		}
 
 		if info.Count > 1 && !info.AddOns {
-			c.IndentedJSON(http.StatusBadRequest, "You can only select one service for each type")
+			c.IndentedJSON(http.StatusBadRequest, `
+				You can only select one service for each type
+			`)
 			c.Abort()
 			return
 		}
@@ -512,10 +514,6 @@ func PlaceOrder(c *gin.Context) {
 	lockCar(request.CarId)
 	lockPayment(request.PaymentId)
 
-	fmt.Println("User - ", user)
-	fmt.Println("Payment - ", payment)
-	fmt.Println("Car - ", car)
-
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
@@ -524,7 +522,6 @@ func buildServicesQuery(ids []int32) string {
 		select type, addons, count(*), sum(estimated_price), sum(estimated_time)
 		from service where id in (
 	`
-	fmt.Println("Ids - ", ids)
 
 	for index, id := range ids {
 		if index == 0 {
@@ -600,6 +597,7 @@ func CancelOrder(c *gin.Context) {
 		unlockCar(temp.CarId)
 		unlockPayment(temp.PaymentId)
 		releaseOpening(temp.Opening, temp.Gap)
+
 	} else {
 		fmt.Println("The Service has been cancelled")
 	}
