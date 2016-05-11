@@ -31,7 +31,7 @@ type Car struct {
 	Model    string   `json:"model"`
 	MakerId  int32    `json:"maker_id"`
 	ModelId  int32    `json:"model_id"`
-	Reserved bool     `json:"reserved"`
+	Reserved int32    `json:"reserved"`
 }
 
 /**

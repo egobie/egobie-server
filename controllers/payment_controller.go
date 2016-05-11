@@ -390,7 +390,7 @@ func checkPaymentStatus(id, userId int32) bool {
 	query := `
 		select reserved from user_payment where id = ? and user_id = ?
 	`
-	var temp bool
+	var temp int32
 
 	if err := config.DB.QueryRow(
 		query, id, userId,
@@ -398,13 +398,13 @@ func checkPaymentStatus(id, userId int32) bool {
 		fmt.Println("Check Payment Status - Error - ", err)
 		return false
 	} else {
-		return temp
+		return temp > 0
 	}
 }
 
 func lockPayment(id int32) {
 	query := `
-		update user_payment set reserved = 1 where id = ?
+		update user_payment set reserved = reserved + 1 where id = ?
 	`
 
 	if _, err := config.DB.Exec(query, id); err != nil {
@@ -414,7 +414,7 @@ func lockPayment(id int32) {
 
 func unlockPayment(id int32) {
 	query := `
-		update user_payment set reserved = 0 where id = ?
+		update user_payment set reserved = reserved - 1 where id = ?
 	`
 
 	if _, err := config.DB.Exec(query, id); err != nil {
