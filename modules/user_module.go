@@ -106,3 +106,24 @@ type Feedback struct {
 	Title    string `json:"title"`
 	Feedback string `json:"feedback"`
 }
+
+const USER_EGOBIE_TOKEN int32 = 4
+const USER_RESIDENTIAL_TOKEN int32 = 6
+const USER_FLEET_TOKEN int32 = 8
+const USER_BUSINESS_TOKEN int32 = 10
+
+func IsResidential(userType string) bool {
+	return userType == "RESIDENTIAL"
+}
+
+func IsBusiness(userType string) bool {
+	return userType == "BUSINESS"
+}
+
+func IsEgobie(userType string) bool {
+	return userType == "EGOBIE"
+}
+
+func IsFleet(userType string) bool {
+	return userType == "FLEET"
+}

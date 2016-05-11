@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"fmt"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -90,4 +91,74 @@ func GetHistory(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, histories)
+}
+
+func Rating(c *gin.Context) {
+	historyQuery := `
+		update user_history set rating = ?, note = ?
+		where user_id = ? and user_service_id = ?
+	`
+	serviceQuery := `
+		update user_service set status = 'DONE'
+		where id = ? and user_id = ?
+	`
+
+	request := modules.RatingRequest{}
+	var (
+		data []byte
+		err error
+		tx *sql.Tx
+	)
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if _, err = tx.Exec(
+		historyQuery, request.Rating, request.Note,
+		request.UserId, request.ServiceId,
+	); err != nil {
+		if err = tx.Rollback(); err != nil {
+			fmt.Println("Error - rollback - rating history - ", err.Error())
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if _, err = tx.Exec(
+		serviceQuery, request.ServiceId, request.UserId,
+	); err != nil {
+		if err = tx.Rollback(); err != nil {
+			fmt.Println("Error - rollback - done service - ", err.Error())
+		}
+
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		fmt.Println("Error - commit - rating - ", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
 }

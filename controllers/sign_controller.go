@@ -150,7 +150,7 @@ func SignUp(c *gin.Context) {
 		c.Abort()
 		return
 	} else {
-		user.Password = getUserToken(user.Password)
+		user.Password = getUserToken("RESIDENTIAL", user.Password)
 		c.IndentedJSON(http.StatusOK, user)
 	}
 
@@ -209,7 +209,7 @@ func SignIn(c *gin.Context) {
 
 	updateUserSignIn(user.Id)
 
-	user.Password = getUserToken(user.Password)
+	user.Password = getUserToken(user.Type, user.Password)
 
 	c.IndentedJSON(http.StatusOK, user)
 }

@@ -24,7 +24,28 @@ type History struct {
 	Services      []int32 `json:"services"`
 }
 
+/**
+{
+	"user_id": 1,
+	"page": 0
+}
+**/
 type HistoryRequest struct {
 	UserId int32 `json:"user_id"`
 	Page   int32 `json:"page"`
+}
+
+/**
+{
+	"user_id": 1,
+	"service_id": 1,
+	"rating": 3.5,
+	"note": "this is awesome"
+}
+**/
+type RatingRequest struct {
+	UserId    int32   `json:"user_id"`
+	ServiceId int32   `json:"service_id"`
+	Rating    float32 `json:"rating"`
+	Note      string  `json:"note"`
 }

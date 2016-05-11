@@ -8,7 +8,7 @@ SET GLOBAL time_zone = '-04:00';
 
 CREATE TABLE user (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    type ENUM('RESIDENTIAL', 'BUSINESS', 'RUNNER'),
+    type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'FLEET'),
     first_name VARCHAR(32) NULL DEFAULT '',
     last_name VARCHAR(32) NULL DEFAULT '',
     middle_name VARCHAR(32) NULL DEFAULT '',
@@ -132,7 +132,7 @@ CREATE TABLE user_service (
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
     note TEXT NULL,
-    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
+    status ENUM('RESERVED', 'IN_PROGRESS', 'FINISH', 'DONE'),
     opening_id INT NOT NULL,
     cancel INT NOT NULL DEFAULT 0,
     reserved_start_timestamp TIMESTAMP NULL,

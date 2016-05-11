@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -24,15 +23,8 @@ func getUser(condition string, args ...interface{}) (user modules.User, err erro
 			work_address_city, work_address_street
 		from user where
 	`
-	var (
-		stmt *sql.Stmt
-	)
 
-	if stmt, err = config.DB.Prepare(query + " " + condition); err != nil {
-		return
-	}
-
-	if err = stmt.QueryRow(args...).Scan(
+	if err = config.DB.QueryRow(query+" "+condition, args...).Scan(
 		&user.Id, &user.Type, &user.Username, &user.Password,
 		&user.Email, &user.PhoneNumber, &user.Coupon,
 		&user.FirstName, &user.LastName, &user.MiddleName,
@@ -55,27 +47,32 @@ func getUserByUsername(username string) (user modules.User, err error) {
 	return getUser("username = ?", username)
 }
 
-func getUserToken(password string) string {
-	return password[:4]
+func getUserToken(userType, password string) string {
+	if modules.IsResidential(userType) {
+		return password[:modules.USER_RESIDENTIAL_TOKEN]
+
+	} else if modules.IsEgobie(userType) {
+		return password[:modules.USER_EGOBIE_TOKEN]
+
+	} else if modules.IsFleet(userType) {
+		return password[:modules.USER_FLEET_TOKEN]
+
+	} else if modules.IsBusiness(userType) {
+		return password[:modules.USER_BUSINESS_TOKEN]
+	}
+
+	return ""
 }
 
 func updateAddress(body []byte, setClause string) (err error) {
 	query := "update user set " + setClause + " where id = ? and password like ?"
 	request := modules.UpdateAddress{}
-	var (
-		stmt *sql.Stmt
-	)
 
 	if err = json.Unmarshal(body, &request); err != nil {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	if _, err = stmt.Exec(
+	if _, err = config.DB.Exec(query,
 		request.State, request.Zip, request.City, request.Street,
 		request.UserId, request.UserToken+"%",
 	); err != nil {
@@ -127,7 +124,6 @@ func UpdateUser(c *gin.Context) {
 	`
 	request := modules.UpdateUser{}
 	var (
-		stmt *sql.Stmt
 		body []byte
 		err  error
 	)
@@ -144,14 +140,7 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-	defer stmt.Close()
-
-	if _, err = stmt.Exec(
+	if _, err = config.DB.Exec(query,
 		request.FirstName, request.LastName, request.MiddleName, request.Email,
 		request.PhoneNumber, request.UserId, request.UserToken+"%",
 	); err != nil {
@@ -164,7 +153,7 @@ func UpdateUser(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 	} else {
-		user.Password = getUserToken(user.Password)
+		user.Password = getUserToken(user.Type, user.Password)
 		c.IndentedJSON(http.StatusOK, user)
 	}
 }
@@ -173,7 +162,6 @@ func UpdatePassword(c *gin.Context) {
 	query := "update user set password = ? where id = ?"
 	request := modules.UpdatePassword{}
 	var (
-		stmt       *sql.Stmt
 		user       modules.User
 		dePassword string
 		enPassword string
@@ -217,14 +205,7 @@ func UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-	defer stmt.Close()
-
-	if _, err = stmt.Exec(
+	if _, err = config.DB.Exec(query,
 		enPassword, request.UserId,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -232,7 +213,9 @@ func UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, modules.UserInfo{request.UserId, getUserToken(enPassword)})
+	c.IndentedJSON(http.StatusOK, modules.UserInfo{
+		request.UserId, getUserToken(user.Type, enPassword),
+	})
 }
 
 func UpdateHome(c *gin.Context) {
@@ -287,7 +270,7 @@ func Feedback(c *gin.Context) {
 	`
 	request := modules.Feedback{}
 	var (
-		err error
+		err  error
 		body []byte
 	)
 
