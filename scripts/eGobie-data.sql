@@ -1677,11 +1677,11 @@ INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 (3, 'RESIDENTIAL', 'test2', '50cef261a53165f08cb20850ac4047b45ca530d5058fc808bd427bca', 'test2@egobie.com', '1234567890'),
 (4, 'RESIDENTIAL', 'bhuang3', '92540fa6e7340a2855d5358eadcf5c71ec84dc8e354bb2a9aff06bd853ba6135', 'bhuang1228@gmail.com', '2019120383');
 
-INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id) VALUES
-(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519);
+INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id, reserved) VALUES
+(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 1);
 
-INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year) VALUES
-(1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018');
+INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year, reserved) VALUES
+(1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 1);
 
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
 (1, 1, 1, 2, 100, 99.89, 7, '2016-04-15 11:30:00', 'RESERVED');

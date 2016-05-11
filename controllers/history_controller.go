@@ -16,7 +16,7 @@ import (
 func GetHistory(c *gin.Context) {
 	size := 6
 	query := `
-		select uh.id, uh.rating, us.id, us.user_payment_id,
+		select uh.id, uh.rating, us.id, us.reservation_id, us.user_payment_id,
 				us.estimated_price, us.start_timestamp, us.end_timestamp,
 				uc.id, uc.plate, cma.title, cmo.title,
 				GROUP_CONCAT(usl.service_id) as services
@@ -65,9 +65,9 @@ func GetHistory(c *gin.Context) {
 
 		if err = rows.Scan(
 			&history.Id, &history.Rating, &history.UserServiceId,
-			&history.UserPaymentId, &history.Price, &history.StartTime,
-			&history.EndTime, &history.UserCarId, &history.Plate,
-			&history.Maker, &history.Model, &temp,
+			&history.ReservationId, &history.UserPaymentId, &history.Price,
+			&history.StartTime, &history.EndTime, &history.UserCarId,
+			&history.Plate, &history.Maker, &history.Model, &temp,
 		); err != nil {
 			if strings.HasPrefix(err.Error(), "sql: Scan error on column index 0") {
 				break
