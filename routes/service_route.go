@@ -14,7 +14,7 @@ func initServiceRoutes() {
 
 	serviceRouter.POST("/order", controllers.PlaceOrder)
 
-	serviceRouter.POST("/cancel", controllers.PlaceOrder)
+	serviceRouter.POST("/cancel", controllers.CancelOrder)
 
 	serviceRouter.GET("/demand/opening/:id", controllers.OpeningDemand)
 
