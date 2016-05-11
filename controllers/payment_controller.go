@@ -361,7 +361,9 @@ func DeletePayment(c *gin.Context) {
 	}
 
 	if checkPaymentStatus(request.Id, request.UserId) {
-		c.IndentedJSON(http.StatusBadRequest, "Payment was reserved")
+		c.IndentedJSON(http.StatusBadRequest, `
+			This payment method cannot be deleted since you have one reservation on it.
+		`)
 		c.Abort()
 		return
 	}

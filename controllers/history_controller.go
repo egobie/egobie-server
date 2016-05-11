@@ -26,7 +26,7 @@ func GetHistory(c *gin.Context) {
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		left join user_service_list usl on usl.user_service_id = us.id
-		where uh.user_id = ? and us.id is not null
+		where uh.user_id = ? and us.id is not null and us.cancel = 0
 		order by uh.create_timestamp DESC
 		limit ?, ?
 	`

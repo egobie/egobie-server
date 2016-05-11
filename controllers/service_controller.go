@@ -30,7 +30,8 @@ func GetUserService(c *gin.Context) {
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join user_service_list usl on usl.user_service_id = us.id
 		inner join service s on s.id = usl.service_id
-		where us.user_id = ? order by us.id
+		where us.user_id = ? and us.cancel = 0
+		order by us.id
 	`
 	request := modules.BaseRequest{}
 	var (
@@ -278,6 +279,7 @@ func PlaceOrder(c *gin.Context) {
 		price       float32
 		time        int32
 		count       int32
+		gap         int32
 		insertedId  int64
 		affectedRow int64
 		reserved    string
@@ -338,6 +340,12 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	gap = time/30 + 1
+
+	if time%30 != 0 {
+		gap += 1
+	}
+
 	if payment, err = getPaymentByIdAndUserId(
 		request.PaymentId, request.UserId,
 	); err != nil {
@@ -373,10 +381,12 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	updateOpening := `
-		update opening set count = count - 1 where id = ? and count > 0
+		update opening set count = count - 1 where id >= ? and id < ? and count > 0
 	`
 
-	if result, err = tx.Exec(updateOpening, request.Opening); err != nil {
+	if result, err = tx.Exec(
+		updateOpening, request.Opening, request.Opening+gap,
+	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 
@@ -396,7 +406,7 @@ func PlaceOrder(c *gin.Context) {
 		}
 
 		return
-	} else if affectedRow != 1 {
+	} else if affectedRow != int64(gap) {
 		c.IndentedJSON(http.StatusBadRequest, "Opening is not available")
 		c.Abort()
 
@@ -406,14 +416,6 @@ func PlaceOrder(c *gin.Context) {
 
 		return
 	}
-
-	insertUserService := `
-		insert into user_service (
-			user_id, user_car_id, user_payment_id, opening_id,
-			reserved_start_timestamp,
-			estimated_time, estimated_price, status
-		) values (?, ?, ?, ?, ?, ?, ?, ?)
-	`
 
 	temp := struct {
 		day    string
@@ -436,15 +438,24 @@ func PlaceOrder(c *gin.Context) {
 		hour := strconv.Itoa(int(OPENING_BASE) + int(total/60))
 		minute := total % 60
 
-		if (minute == 0) {
+		if minute == 0 {
 			reserved = temp.day + " " + hour + ":00:00"
 		} else {
 			reserved = temp.day + " " + hour + ":30:00"
 		}
 	}
 
+	insertUserService := `
+		insert into user_service (
+			user_id, user_car_id, user_payment_id, opening_id,
+			reserved_start_timestamp, gap,
+			estimated_time, estimated_price, status
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
 	if result, err = tx.Exec(insertUserService,
-		user.Id, car.Id, payment.Id, request.Opening, reserved, time, price, "RESERVED",
+		user.Id, car.Id, payment.Id, request.Opening,
+		reserved, gap, time, price, "RESERVED",
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
@@ -528,7 +539,7 @@ func buildServicesQuery(ids []int32) string {
 
 func CancelOrder(c *gin.Context) {
 	checkQuery := `
-		select user_car_id, user_payment_id
+		select user_car_id, user_payment_id, opening_id, gap, cancel
 		from user_service
 		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
 		and id = ? and user_id = ?
@@ -540,6 +551,9 @@ func CancelOrder(c *gin.Context) {
 	temp := struct {
 		CarId     int32
 		PaymentId int32
+		Opening   int32
+		Gap       int32
+		Cancel    bool
 	}{}
 
 	var (
@@ -561,7 +575,9 @@ func CancelOrder(c *gin.Context) {
 
 	if err = config.DB.QueryRow(
 		checkQuery, request.Id, request.UserId,
-	).Scan(&temp.CarId, &temp.PaymentId); err != nil {
+	).Scan(
+		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Cancel,
+	); err != nil {
 		if err == sql.ErrNoRows {
 			c.IndentedJSON(http.StatusBadRequest, "Cannot cancel order")
 		} else {
@@ -572,16 +588,21 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	if _, err = config.DB.Exec(
-		query, request.Id, request.UserId,
-	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
+	if !temp.Cancel {
+		if _, err = config.DB.Exec(
+			query, request.Id, request.UserId,
+		); err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
 
-	unlockCar(temp.CarId)
-	unlockPayment(temp.PaymentId)
+		unlockCar(temp.CarId)
+		unlockPayment(temp.PaymentId)
+		releaseOpening(temp.Opening, temp.Gap)
+	} else {
+		fmt.Println("The Service has been cancelled")
+	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }

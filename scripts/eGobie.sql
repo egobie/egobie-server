@@ -128,6 +128,7 @@ CREATE TABLE user_service (
     user_car_id INT NOT NULL,
     user_payment_id INT NOT NULL,
     report_id INT NULL,
+    gap INT NOT NULL DEFAULT 0,
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
     note TEXT NULL,
