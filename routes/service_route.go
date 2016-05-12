@@ -8,7 +8,9 @@ func initServiceRoutes() {
 	// Get all services
 	serviceRouter.GET("", controllers.GetService)
 
-	serviceRouter.POST("/user", controllers.GetUserService)
+	serviceRouter.POST("/reservation", controllers.GetUserServiceReserved)
+
+	serviceRouter.POST("/done", controllers.GetUserServiceDone)
 
 	serviceRouter.POST("/opening", controllers.GetOpening)
 

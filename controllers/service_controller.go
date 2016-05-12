@@ -17,7 +17,7 @@ import (
 var OPENING_GAP = 0.5
 var OPENING_BASE = 8.0
 
-func GetUserService(c *gin.Context) {
+func getUserService(userId int32, condition string) (userServices []modules.UserService, err error) {
 	query := `
 		select us.id, us.reservation_id, us.user_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
@@ -30,35 +30,18 @@ func GetUserService(c *gin.Context) {
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join user_service_list usl on usl.user_service_id = us.id
 		inner join service s on s.id = usl.service_id
-		where us.user_id = ? and us.cancel = 0
-		order by us.id
-	`
-	request := modules.BaseRequest{}
+		where us.user_id = ? and us.cancel = 0 and (
+	` + condition + ") order by us.id"
+
 	var (
 		rows         *sql.Rows
-		userServices []modules.UserService
-		err          error
-		body         []byte
 		temp         string
 	)
 
-	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
+	if rows, err = config.DB.Query(query, userId); err != nil {
 		return
 	}
-
-	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
-
-	if rows, err = config.DB.Query(query, request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	}
+	defer rows.Close()
 
 	for rows.Next() {
 		userService := modules.UserService{}
@@ -73,14 +56,10 @@ func GetUserService(c *gin.Context) {
 			&service.Name, &service.Type, &temp, &service.Description,
 			&service.Time, &service.Price, &service.AddOns,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
 		if err = json.Unmarshal([]byte(temp), &service.Items); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
@@ -94,7 +73,67 @@ func GetUserService(c *gin.Context) {
 		}
 	}
 
-	c.IndentedJSON(http.StatusOK, userServices)
+	return userServices, nil
+}
+
+func GetUserServiceReserved(c *gin.Context) {
+	request := modules.BaseRequest{}
+	var (
+		err          error
+		body         []byte
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if userServices, err := getUserService(
+		request.UserId, "status = 'RESERVED'",
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	} else {
+		c.IndentedJSON(http.StatusOK, userServices)
+	}
+}
+
+func GetUserServiceDone(c *gin.Context) {
+	request := modules.BaseRequest{}
+	var (
+		err          error
+		body         []byte
+	)
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if userServices, err := getUserService(
+		request.UserId, "status = 'DONE'",
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	} else {
+		c.IndentedJSON(http.StatusOK, userServices)
+	}
 }
 
 func OnDemand(c *gin.Context) {

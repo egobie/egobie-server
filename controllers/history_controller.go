@@ -17,9 +17,9 @@ import (
 func GetHistory(c *gin.Context) {
 	size := 6
 	query := `
-		select uh.id, uh.rating, us.id, us.reservation_id, us.user_payment_id,
-				us.estimated_price, us.start_timestamp, us.end_timestamp,
-				uc.id, uc.plate, cma.title, cmo.title,
+		select uh.id, uh.rating, uh.note, us.id, us.reservation_id,
+				us.user_payment_id, us.estimated_price, us.start_timestamp,
+				us.end_timestamp, uc.id, uc.plate, cma.title, cmo.title,
 				GROUP_CONCAT(usl.service_id) as services
 		from user_history uh
 		inner join user_service us on us.id = uh.user_service_id and us.status = 'DONE'
@@ -65,7 +65,7 @@ func GetHistory(c *gin.Context) {
 		history := modules.History{}
 
 		if err = rows.Scan(
-			&history.Id, &history.Rating, &history.UserServiceId,
+			&history.Id, &history.Rating, &history.Note, &history.UserServiceId,
 			&history.ReservationId, &history.UserPaymentId, &history.Price,
 			&history.StartTime, &history.EndTime, &history.UserCarId,
 			&history.Plate, &history.Maker, &history.Model, &temp,

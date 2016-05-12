@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func MakeServiceDone(c *gin.Context) {
-	if err := changeServiceStatus(c, "DONE"); err != nil {
+func MakeServiceFinish(c *gin.Context) {
+	if err := changeServiceStatus(c, "FINISH"); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return

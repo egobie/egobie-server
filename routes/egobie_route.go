@@ -6,7 +6,7 @@ import (
 
 func initEgobieRoutes() {
 
-	egobieRouter.POST("/service/done", controllers.MakeServiceDone)
+	egobieRouter.POST("/service/finish", controllers.MakeServiceFinish)
 
 	egobieRouter.POST("/service/reserved", controllers.MakeServiceReserved)
 
