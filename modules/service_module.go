@@ -104,6 +104,8 @@ type UserService struct {
 	Note             null.String `json:"note"`
 	Status           string      `json:"status"`
 	ReserveStartTime string      `json:"reserve_start_time"`
+	HowLong          int32       `json:"how_long"`
+	Unit             string      `json:"unit"`
 	ReserveTime      null.String `json:"reserve_time"`
 	StartTime        null.String `json:"start_time"`
 	EndTime          null.String `json:"end_time"`

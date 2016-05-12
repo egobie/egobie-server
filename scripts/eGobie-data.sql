@@ -1684,7 +1684,7 @@ INSERT INTO user_payment (id, user_id, account_name, account_number, account_typ
 (1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 1);
 
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
-(1, 1, 1, 2, 100, 99.89, 7, '2016-04-15 11:30:00', 'RESERVED');
+(1, 1, 1, 2, 100, 99.89, 7, '2016-05-15 11:30:00', 'RESERVED');
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, status) VALUES
 (1, 1, 1, 4, 120, 39.89, 5, '2016-04-15 11:30:00', '2016-04-15 11:20:36', 'IN_PROGRESS');
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, end_timestamp, status) VALUES

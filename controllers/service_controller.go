@@ -22,6 +22,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 		select us.id, us.reservation_id, us.user_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
 				us.reserved_start_timestamp,
+				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP(), us.reserved_start_timestamp) as mins,
 				us.start_timestamp, us.end_timestamp,
 				us.note, us.status, us.create_timestamp,
 				s.id, s.name, s.type, s.items, s.description,
@@ -34,8 +35,9 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 	` + condition + ") order by us.id"
 
 	var (
-		rows         *sql.Rows
-		temp         string
+		rows *sql.Rows
+		temp string
+		mins int32
 	)
 
 	if rows, err = config.DB.Query(query, userId); err != nil {
@@ -51,7 +53,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 			&userService.Id, &userService.ReservationId, &userService.UserId,
 			&userService.CarId, &userService.CarPlate, &userService.PaymentId,
 			&userService.Time, &userService.Price, &userService.ReserveStartTime,
-			&userService.StartTime, &userService.EndTime, &userService.Note,
+			&mins, &userService.StartTime, &userService.EndTime, &userService.Note,
 			&userService.Status, &userService.ReserveTime, &service.Id,
 			&service.Name, &service.Type, &temp, &service.Description,
 			&service.Time, &service.Price, &service.AddOns,
@@ -68,6 +70,17 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 				userServices[len(userServices)-1].ServiceList, service,
 			)
 		} else {
+			if mins >= 1440 {
+				userService.HowLong = int32(mins / 1440)
+				userService.Unit = "DAY"
+			} else if mins >= 60 {
+				userService.HowLong = int32(mins / 60)
+				userService.Unit = "HOUR"
+			} else {
+				userService.HowLong = mins
+				userService.Unit = "MINUTE"
+			}
+
 			userService.ServiceList = append(userService.ServiceList, service)
 			userServices = append(userServices, userService)
 		}
@@ -79,8 +92,8 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 func GetUserServiceReserved(c *gin.Context) {
 	request := modules.BaseRequest{}
 	var (
-		err          error
-		body         []byte
+		err  error
+		body []byte
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -109,8 +122,8 @@ func GetUserServiceReserved(c *gin.Context) {
 func GetUserServiceDone(c *gin.Context) {
 	request := modules.BaseRequest{}
 	var (
-		err          error
-		body         []byte
+		err  error
+		body []byte
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
