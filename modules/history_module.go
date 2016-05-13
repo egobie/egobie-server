@@ -45,6 +45,7 @@ type HistoryRequest struct {
 }
 **/
 type RatingRequest struct {
+	Id        int32   `json:"id"`
 	UserId    int32   `json:"user_id"`
 	ServiceId int32   `json:"service_id"`
 	Rating    float32 `json:"rating"`

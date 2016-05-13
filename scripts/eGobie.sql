@@ -132,15 +132,15 @@ CREATE TABLE user_service (
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
     note VARCHAR(2048) NOT NULL DEFAULT '',
-    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
-    pay INT NOT NULL DEFAULT 0,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    paid INT NOT NULL DEFAULT 0,
     opening_id INT NOT NULL,
-    cancel INT NOT NULL DEFAULT 0,
     reserved_start_timestamp TIMESTAMP NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES user(id)
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    INDEX(status)
 );
 
 CREATE TABLE user_service_list (

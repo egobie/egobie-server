@@ -31,7 +31,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join user_service_list usl on usl.user_service_id = us.id
 		inner join service s on s.id = usl.service_id
-		where us.user_id = ? and us.cancel = 0 and (
+		where us.user_id = ? and (
 	` + condition + ") order by us.id"
 
 	var (
@@ -588,13 +588,13 @@ func buildServicesQuery(ids []int32) string {
 
 func CancelOrder(c *gin.Context) {
 	checkQuery := `
-		select user_car_id, user_payment_id, opening_id, gap, cancel
+		select user_car_id, user_payment_id, opening_id, gap
 		from user_service
 		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
 		and id = ? and user_id = ?
 	`
 	query := `
-		update user_service set cancel = 1 where id = ? and user_id = ?
+		update user_service set status = 'CANCEL' where id = ? and user_id = ?
 	`
 	request := modules.CancelRequest{}
 	temp := struct {
@@ -602,7 +602,6 @@ func CancelOrder(c *gin.Context) {
 		PaymentId int32
 		Opening   int32
 		Gap       int32
-		Cancel    bool
 	}{}
 
 	var (
@@ -625,10 +624,10 @@ func CancelOrder(c *gin.Context) {
 	if err = config.DB.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Cancel,
+		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusBadRequest, "Cannot cancel order")
+			c.IndentedJSON(http.StatusBadRequest, "Order not found")
 		} else {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 		}
@@ -637,22 +636,17 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	if !temp.Cancel {
-		if _, err = config.DB.Exec(
-			query, request.Id, request.UserId,
-		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-			return
-		}
-
-		unlockCar(temp.CarId, request.UserId)
-		unlockPayment(temp.PaymentId, request.UserId)
-		releaseOpening(temp.Opening, temp.Gap)
-
-	} else {
-		fmt.Println("The Service has been cancelled")
+	if _, err = config.DB.Exec(
+		query, request.Id, request.UserId,
+	); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
 	}
+
+	unlockCar(temp.CarId, request.UserId)
+	unlockPayment(temp.PaymentId, request.UserId)
+	releaseOpening(temp.Opening, temp.Gap)
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
@@ -782,13 +776,16 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func makeServicePay(userId, serviceId int32) {
+func makeServicePay(userId, serviceId, paymentId int32) {
 	query := `
-		update user_service set pay = 1
-		where id = ? and user_id = ? and pay = 0
+		update user_service set paid = 1
+		where id = ? and user_id = ? and user_payment_id = ?
+			and status = "DONE" and paid = 0
 	`
 
-	if _, err := config.DB.Exec(query, serviceId, userId); err != nil {
+	if _, err := config.DB.Exec(
+		query, serviceId, userId, paymentId,
+	); err != nil {
 		fmt.Println("Error when making payment paid - ", err.Error())
 	}
 }

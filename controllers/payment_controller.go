@@ -410,7 +410,7 @@ func checkPaymentStatus(id, userId int32) (bool, string) {
 		select count(*)
 		from user_service us
 		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
-		where up.id = ? and up.user_id = ? and us.pay = 0 and us.status = 'DONE'
+		where up.id = ? and up.user_id = ? and us.paid = 0 and us.status = 'DONE'
 	`
 
 	if err := config.DB.QueryRow(
@@ -456,8 +456,8 @@ func ProcessPayment(c *gin.Context) {
 		select up.id, us.estimated_price, up.account_number, up.account_zip,
 				up.code, up.expire_month, up.expire_year, up.account_type
 		from user_service us
-		inner join user_payment up on up.id = us.user_payment_id
-		where us.id = ? and us.user_id = ? and us.status = 'DONE' and us.pay = 0
+		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
+		where us.id = ? and up.id = ? and us.user_id = ? and us.status = 'DONE'
 	`
 	request := modules.ProcessRequest{}
 	process := struct {
@@ -489,7 +489,7 @@ func ProcessPayment(c *gin.Context) {
 	}
 
 	if err = config.DB.QueryRow(
-		query, request.ServiceId, request.UserId,
+		query, request.ServiceId, request.PaymentId, request.UserId,
 	).Scan(
 		&process.PaymentId, &process.Price, &process.AccountNumber,
 		&process.Zip, &process.Code, &process.Month, &process.Year,
@@ -569,7 +569,7 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	makeServicePay(request.UserId, request.ServiceId)
+	makeServicePay(request.UserId, request.ServiceId, request.PaymentId)
 
 	fmt.Println("Transaction Info - ", tx)
 

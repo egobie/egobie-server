@@ -27,7 +27,7 @@ func GetHistory(c *gin.Context) {
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		left join user_service_list usl on usl.user_service_id = us.id
-		where uh.user_id = ? and us.id is not null and us.cancel = 0
+		where uh.user_id = ? and us.id is not null
 		order by uh.create_timestamp DESC
 		limit ?, ?
 	`
@@ -96,7 +96,7 @@ func GetHistory(c *gin.Context) {
 func Rating(c *gin.Context) {
 	historyQuery := `
 		update user_history set rating = ?, note = ?
-		where user_id = ? and user_service_id = ?
+		where id = ? and user_id = ? and user_service_id = ?
 	`
 	serviceQuery := `
 		update user_service set status = 'DONE'
@@ -130,7 +130,7 @@ func Rating(c *gin.Context) {
 
 	if _, err = tx.Exec(
 		historyQuery, request.Rating, request.Note,
-		request.UserId, request.ServiceId,
+		request.Id, request.UserId, request.ServiceId,
 	); err != nil {
 		if err = tx.Rollback(); err != nil {
 			fmt.Println("Error - rollback - rating history - ", err.Error())
