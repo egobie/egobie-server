@@ -113,6 +113,7 @@ CREATE TABLE user_payment (
     account_number VARCHAR(128) NOT NULL UNIQUE KEY,
     account_zip VARCHAR(16) NOT NULL,
     account_type ENUM('CREDIT', 'DEBIT'),
+    card_type VARCHAR(32) NOT NULL DEFAULT 'Visa',
     code VARCHAR(128) NULL,
     expire_month VARCHAR(2) NOT NULL,
     expire_year VARCHAR(4) NOT NULL,

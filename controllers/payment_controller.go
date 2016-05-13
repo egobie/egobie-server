@@ -82,8 +82,8 @@ func getPaymentLastFour(accountNumber string) string {
 func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err error) {
 	query := `
 		select id, user_id, account_name, account_number,
-				account_type, account_zip, code,
-				expire_month, expire_year, reserved
+				account_type, account_zip, code, card_type,
+				expire_month, expire_year, reserved, card_type
 		from user_payment
 		where id = ? and user_id = ?
 	`
@@ -91,7 +91,8 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 	if err = config.DB.QueryRow(query, id, userId).Scan(
 		&payment.Id, &payment.UserId, &payment.AccountName,
 		&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
-		&payment.Code, &payment.ExpireMonth, &payment.ExpireYear, &payment.Reserved,
+		&payment.Code, &payment.CardType, &payment.ExpireMonth,
+		&payment.ExpireYear, &payment.Reserved, &payment.CardType,
 	); err != nil {
 		return
 	}
@@ -113,7 +114,7 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 
 func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 	query := `
-		select id, user_id, account_name, account_number,
+		select id, user_id, account_name, account_number, card_type,
 				account_type, account_zip, expire_month, expire_year, reserved
 		from user_payment
 		where user_id = ?
@@ -133,8 +134,9 @@ func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 
 		if err = rows.Scan(
 			&payment.Id, &payment.UserId, &payment.AccountName,
-			&payment.AccountNumber, &payment.AccountType, &payment.AccountZip,
-			&payment.ExpireMonth, &payment.ExpireYear, &payment.Reserved,
+			&payment.AccountNumber, &payment.CardType, &payment.AccountType,
+			&payment.AccountZip, &payment.ExpireMonth, &payment.ExpireYear,
+			&payment.Reserved,
 		); err != nil {
 			return
 		}
@@ -219,8 +221,8 @@ func GetPaymentByUserId(c *gin.Context) {
 func CreatePayment(c *gin.Context) {
 	query := `
 		insert into user_payment (user_id, account_name, account_number,
-			account_type, account_zip, code, expire_month, expire_year)
-		values (?, ?, ?, ?, ?, ?, ?, ?)
+			account_type, account_zip, code, expire_month, expire_year, card_type)
+		values (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	request := modules.PaymentNew{}
 	var (
@@ -255,6 +257,7 @@ func CreatePayment(c *gin.Context) {
 	if result, err = config.DB.Exec(query,
 		request.UserId, request.AccountName, enNumber, request.AccountType,
 		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
+		request.CardType,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
@@ -278,7 +281,7 @@ func CreatePayment(c *gin.Context) {
 
 func UpdatePayment(c *gin.Context) {
 	query := `
-		update user_payment set account_name = ?, account_number = ?,
+		update user_payment set account_name = ?, account_number = ?, card_type = ?,
 		account_type = ?, account_zip = ?, code = ?, expire_month = ?, expire_year = ?
 		where id = ? and user_id = ?
 	`
@@ -313,8 +316,9 @@ func UpdatePayment(c *gin.Context) {
 	}
 
 	if result, err = config.DB.Exec(query,
-		request.AccountName, enNumber, request.AccountType, request.AccountZip,
-		enCode, request.ExpireMonth, request.ExpireYear, request.Id, request.UserId,
+		request.AccountName, enNumber, request.CardType, request.AccountType,
+		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
+		request.Id, request.UserId,
 	); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
