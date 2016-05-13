@@ -4,15 +4,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"fmt"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 	"github.com/egobie/egobie-server/secures"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lionelbarrow/braintree-go"
 )
 
 func EncryptAccount(accountType, accountNumber, accountCode string) (enNumber, enCode string, err error) {
@@ -74,7 +75,7 @@ func DecryptAccountCode(accountType, code string) (deNumber string, err error) {
 	return deNumber, nil
 }
 
-func getPaymentLastFour(accountNumber string) (string) {
+func getPaymentLastFour(accountNumber string) string {
 	return accountNumber[len(accountNumber)-4:]
 }
 
@@ -360,10 +361,10 @@ func DeletePayment(c *gin.Context) {
 		return
 	}
 
-	if checkPaymentStatus(request.Id, request.UserId) {
-		c.IndentedJSON(http.StatusBadRequest, `
-			This payment method cannot be deleted since you have one reservation on it.
-		`)
+	if status, msg := checkPaymentStatus(
+		request.Id, request.UserId,
+	); status {
+		c.IndentedJSON(http.StatusBadRequest, msg)
 		c.Abort()
 		return
 	}
@@ -386,38 +387,191 @@ func DeletePayment(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
-func checkPaymentStatus(id, userId int32) bool {
-	query := `
-		select reserved from user_payment where id = ? and user_id = ?
-	`
+func checkPaymentStatus(id, userId int32) (bool, string) {
 	var temp int32
+
+	query := `
+		select reserved from user_payment
+		where id = ? and user_id = ?
+	`
 
 	if err := config.DB.QueryRow(
 		query, id, userId,
 	).Scan(&temp); err != nil {
-		fmt.Println("Check Payment Status - Error - ", err)
-		return false
+		fmt.Println("Check Payment Status - Error - ", err.Error())
+		return true, err.Error()
+	} else if temp > 0 {
+		return true, `
+			This payment method cannot be deleted since you have one reservation on it.
+		`
+	}
+
+	query = `
+		select count(*)
+		from user_service us
+		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
+		where up.id = ? and up.user_id = ? and us.pay = 0 and us.status = 'DONE'
+	`
+
+	if err := config.DB.QueryRow(
+		query, id, userId,
+	).Scan(&temp); err != nil {
+		fmt.Println("Check Payment Status - Error - ", err.Error())
+		return true, err.Error()
+	} else if temp > 0 {
+		return true, `
+			This payment method cannot be deleted since you need to process your payment.
+		`
+	}
+
+	return false, ""
+}
+
+func lockPayment(id, userId int32) {
+	query := `
+		update user_payment set reserved = reserved + 1 where id = ? and user_id = ?
+	`
+
+	if _, err := config.DB.Exec(
+		query, id, userId,
+	); err != nil {
+		fmt.Println("Lock Pyment - Error - ", err)
+	}
+}
+
+func unlockPayment(id, userId int32) {
+	query := `
+		update user_payment set reserved = reserved - 1 where id = ? and user_id = ?
+	`
+
+	if _, err := config.DB.Exec(
+		query, id, userId,
+	); err != nil {
+		fmt.Println("Unlock Pyment - Error - ", err)
+	}
+}
+
+func ProcessPayment(c *gin.Context) {
+	query := `
+		select up.id, us.estimated_price, up.account_number, up.account_zip,
+				up.code, up.expire_month, up.expire_year, up.account_type
+		from user_service us
+		inner join user_payment up on up.id = us.user_payment_id
+		where us.id = ? and us.user_id = ? and us.status = 'DONE' and us.pay = 0
+	`
+	request := modules.ProcessRequest{}
+	process := struct {
+		PaymentId     int32
+		Price         float32
+		Code          string
+		Zip           string
+		Year          string
+		Month         string
+		AccountNumber string
+		AccountType   string
+	}{}
+	var (
+		data []byte
+		err  error
+		tx   *braintree.Transaction
+	)
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	if err = config.DB.QueryRow(
+		query, request.ServiceId, request.UserId,
+	).Scan(
+		&process.PaymentId, &process.Price, &process.AccountNumber,
+		&process.Zip, &process.Code, &process.Month, &process.Year,
+		&process.AccountType,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusOK, "UserService (payment) not found")
+			return
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+	}
+
+	if process.AccountType == "CREDIT" {
+		if process.AccountNumber, err = secures.DecryptCredit(
+			process.AccountNumber,
+		); err != nil {
+			fmt.Println("Cannot process credit payment - number - ", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
+			c.Abort()
+			return
+		}
+
+		if process.Code, err = secures.DecryptCreditCVV(
+			process.Code,
+		); err != nil {
+			fmt.Println("Cannot process credit payment - code - ", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
+			c.Abort()
+			return
+		}
 	} else {
-		return temp > 0
+		if process.AccountNumber, err = secures.DecryptDebit(
+			process.AccountNumber,
+		); err != nil {
+			fmt.Println("Cannot process debit payment - number - ", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
+			c.Abort()
+			return
+		}
+
+		if process.Code, err = secures.DecryptDebitPin(
+			process.Code,
+		); err != nil {
+			fmt.Println("Cannot process debit payment - code - ", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
+			c.Abort()
+			return
+		}
 	}
-}
 
-func lockPayment(id int32) {
-	query := `
-		update user_payment set reserved = reserved + 1 where id = ?
-	`
+	fmt.Println("Process Payment ------ Start")
+	fmt.Println("Decimal - ", int64(process.Price*100))
+	fmt.Println("Number - ", process.AccountNumber)
+	fmt.Println("CVV - ", process.Code)
+	fmt.Println("ExpirationMonth - ", process.Month)
+	fmt.Println("ExpirationYear - ", process.Year[2:])
+	fmt.Println("Process Payment ------ End\n")
 
-	if _, err := config.DB.Exec(query, id); err != nil {
-		fmt.Println("Lock Pyment - Error - ", err);
+	if tx, err = config.BT.Transaction().Create(
+		&braintree.Transaction{
+			Type:   "sale",
+			Amount: braintree.NewDecimal(int64(process.Price*100), 2),
+			CreditCard: &braintree.CreditCard{
+				Number:          process.AccountNumber,
+				CVV:             process.Code,
+				ExpirationMonth: process.Month,
+				ExpirationYear:  process.Year[2:],
+			},
+		},
+	); err != nil {
+		fmt.Println("Error when processing payment - ", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
+		c.Abort()
+		return
 	}
-}
 
-func unlockPayment(id int32) {
-	query := `
-		update user_payment set reserved = reserved - 1 where id = ?
-	`
+	makeServicePay(request.UserId, request.ServiceId)
 
-	if _, err := config.DB.Exec(query, id); err != nil {
-		fmt.Println("Unlock Pyment - Error - ", err);
-	}
+	fmt.Println("Transaction Info - ", tx)
+
+	c.IndentedJSON(http.StatusOK, "OK")
 }

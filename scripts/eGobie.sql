@@ -133,6 +133,7 @@ CREATE TABLE user_service (
     estimated_price FLOAT NOT NULL,
     note VARCHAR(2048) NOT NULL DEFAULT '',
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE'),
+    pay INT NOT NULL DEFAULT 0,
     opening_id INT NOT NULL,
     cancel INT NOT NULL DEFAULT 0,
     reserved_start_timestamp TIMESTAMP NULL,

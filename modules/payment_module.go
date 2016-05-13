@@ -92,3 +92,14 @@ type UpdatePayment struct {
 	ExpireMonth   string `json:"expire_month"`
 	ExpireYear    string `json:"expire_year"`
 }
+
+/**
+{
+	"user_id": 1,
+	"service_id": 1
+}
+**/
+type ProcessRequest struct {
+	UserId    int32 `json:"user_id"`
+	ServiceId int32 `json:"service_id"`
+}

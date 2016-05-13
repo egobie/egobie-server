@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func MakeServiceFinish(c *gin.Context) {
-	if err := changeServiceStatus(c, "FINISH"); err != nil {
+func MakeServiceDone(c *gin.Context) {
+	if err := changeServiceStatus(c, "DONE"); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -77,6 +77,11 @@ func changeServiceStatus(c *gin.Context, status string) (error) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return err
+	}
+
+	if (status == "DONE") {
+		unlockCar(request.CarId, request.UserId)
+		unlockPayment(request.PaymentId, request.UserId)
 	}
 
 	return nil

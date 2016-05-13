@@ -563,8 +563,8 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	lockCar(request.CarId)
-	lockPayment(request.PaymentId)
+	lockCar(request.CarId, request.UserId)
+	lockPayment(request.PaymentId, request.UserId)
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
@@ -646,8 +646,8 @@ func CancelOrder(c *gin.Context) {
 			return
 		}
 
-		unlockCar(temp.CarId)
-		unlockPayment(temp.PaymentId)
+		unlockCar(temp.CarId, request.UserId)
+		unlockPayment(temp.PaymentId, request.UserId)
 		releaseOpening(temp.Opening, temp.Gap)
 
 	} else {
@@ -760,6 +760,7 @@ func ServiceDemand(c *gin.Context) {
 	}
 
 	updateServiceDemand(request)
+
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
@@ -778,5 +779,16 @@ func updateServiceDemand(ids []int32) {
 
 	if _, err := config.DB.Exec(query); err != nil {
 		fmt.Println("Error - Service Demand - ", err.Error())
+	}
+}
+
+func makeServicePay(userId, serviceId int32) {
+	query := `
+		update user_service set pay = 1
+		where id = ? and user_id = ? and pay = 0
+	`
+
+	if _, err := config.DB.Exec(query, serviceId, userId); err != nil {
+		fmt.Println("Error when making payment paid - ", err.Error())
 	}
 }

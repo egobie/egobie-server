@@ -384,22 +384,26 @@ func checkCarStatus(id, userId int32) bool {
 	}
 }
 
-func lockCar(id int32) {
+func lockCar(id, userId int32) {
 	query := `
-		update user_car set reserved = reserved + 1 where id = ?
+		update user_car set reserved = reserved + 1 where id = ? and user_id = ?
 	`
 
-	if _, err := config.DB.Exec(query, id); err != nil {
+	if _, err := config.DB.Exec(
+		query, id, userId,
+	); err != nil {
 		fmt.Println("Lock Car - Error - ", err)
 	}
 }
 
-func unlockCar(id int32) {
+func unlockCar(id, userId int32) {
 	query := `
-		update user_car set reserved = reserved - 1 where id = ?
+		update user_car set reserved = reserved - 1 where id = ? and user_id = ?
 	`
 
-	if _, err := config.DB.Exec(query, id); err != nil {
+	if _, err := config.DB.Exec(
+		query, id, userId,
+	); err != nil {
 		fmt.Println("Unlock Car - Error - ", err)
 	}
 }
