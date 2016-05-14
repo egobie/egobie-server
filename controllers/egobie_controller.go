@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"encoding/json"
+	"fmt"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -41,14 +43,14 @@ func MakeServiceInProgress(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
-func changeServiceStatus(c *gin.Context, status string) (error) {
+func changeServiceStatus(c *gin.Context, status string) (err error) {
 	query := `
 		update user_service set status = ?
 	`
 	request := modules.ChangeServiceStatus{}
 	var (
 		data []byte
-		err error
+		tx   *sql.Tx
 	)
 
 	if status == "IN_PROGRESS" {
@@ -62,27 +64,48 @@ func changeServiceStatus(c *gin.Context, status string) (error) {
 	query += " where id = ? and user_id = ?"
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return err
+		return
 	}
 
 	if err = json.Unmarshal(data, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return err
+		return
 	}
 
-	if _, err = config.DB.Exec(
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error());
+			}
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				fmt.Println("Error - Commit - ", err1.Error());
+			}
+		}
+	}()
+
+	if _, err = tx.Exec(
 		query, status, request.ServiceId, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return err
+		return
 	}
 
-	if (status == "DONE") {
-		unlockCar(request.CarId, request.UserId)
-		unlockPayment(request.PaymentId, request.UserId)
+	if status == "DONE" {
+		if err = unlockCar(tx, request.CarId, request.UserId); err != nil {
+			return
+		}
+
+		if err = unlockPayment(tx, request.PaymentId, request.UserId); err != nil {
+			return
+		}
+
+		if err = createHistory(tx, request.UserId, request.ServiceId); err != nil {
+			return
+		}
 	}
 
-	return nil
+	return
 }

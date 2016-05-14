@@ -14,15 +14,19 @@ type History struct {
 	Note          string  `json:"note"`
 	UserServiceId int32   `json:"user_service_id"`
 	ReservationId string  `json:"reservation_id"`
-	UserPaymentId int32   `json:"user_payment_id"`
-	UserCarId     int32   `json:"user_car_id"`
+	AccountName   string  `json:"account_name"`
+	AccountNumber string  `json:"account_number"`
+	AccountType   string  `json:"account_type"`
+	Price         float32 `json:"price"`
 	Plate         string  `json:"plate"`
+	State         string  `json:"state"`
+	Year          int32   `json:"year"`
+	Color         string  `json:"color"`
 	Maker         string  `json:"maker"`
 	Model         string  `json:"model"`
-	Price         float32 `json:"price"`
 	StartTime     string  `json:"start_time"`
 	EndTime       string  `json:"end_time"`
-	Services      []int32 `json:"services"`
+	ServiceIds    []int32 `json:"service_ids"`
 }
 
 /**
@@ -34,7 +38,7 @@ type History struct {
 type HistoryRequest struct {
 	BaseRequest
 
-	Page   int32 `json:"page"`
+	Page int32 `json:"page"`
 }
 
 /**

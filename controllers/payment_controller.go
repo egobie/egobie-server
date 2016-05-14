@@ -16,7 +16,7 @@ import (
 	"github.com/lionelbarrow/braintree-go"
 )
 
-func EncryptAccount(accountType, accountNumber, accountCode string) (enNumber, enCode string, err error) {
+func encryptAccount(accountType, accountNumber, accountCode string) (enNumber, enCode string, err error) {
 	switch {
 	case accountType == config.CREDIT_CARD:
 		if enNumber, err = secures.EncryptCredit(accountNumber); err != nil {
@@ -41,7 +41,32 @@ func EncryptAccount(accountType, accountNumber, accountCode string) (enNumber, e
 	return enNumber, enCode, nil
 }
 
-func DecryptAccountNumber(accountType, accountNumber string) (deNumber string, err error) {
+func decryptAccount(accountType, accountNumber, accountCode string) (deNumber, deCode string, err error) {
+	switch {
+	case accountType == config.CREDIT_CARD:
+		if deNumber, err = secures.DecryptCredit(accountNumber); err != nil {
+			return
+		}
+
+		if deCode, err = secures.DecryptCreditCVV(accountCode); err != nil {
+			return
+		}
+	case accountType == config.DEBIT_CARD:
+		if deNumber, err = secures.DecryptDebit(accountNumber); err != nil {
+			return
+		}
+
+		if deCode, err = secures.DecryptDebitPin(accountCode); err != nil {
+			return
+		}
+	default:
+		return "", "", errors.New("Unknown payment type - " + accountType)
+	}
+
+	return deNumber, deCode, nil
+}
+
+func decryptAccountNumber(accountType, accountNumber string) (deNumber string, err error) {
 	switch {
 	case accountType == config.CREDIT_CARD:
 		if deNumber, err = secures.DecryptCredit(accountNumber); err != nil {
@@ -58,7 +83,7 @@ func DecryptAccountNumber(accountType, accountNumber string) (deNumber string, e
 	return deNumber, nil
 }
 
-func DecryptAccountCode(accountType, code string) (deNumber string, err error) {
+func decryptAccountCode(accountType, code string) (deNumber string, err error) {
 	switch {
 	case accountType == config.CREDIT_CARD:
 		if deNumber, err = secures.DecryptCreditCVV(code); err != nil {
@@ -97,13 +122,13 @@ func getPaymentByIdAndUserId(id, userId int32) (payment modules.Payment, err err
 		return
 	}
 
-	if payment.AccountNumber, err = DecryptAccountNumber(
+	if payment.AccountNumber, err = decryptAccountNumber(
 		payment.AccountType, payment.AccountNumber,
 	); err != nil {
 		return
 	}
 
-	if payment.Code, err = DecryptAccountCode(
+	if payment.Code, err = decryptAccountCode(
 		payment.AccountType, payment.Code,
 	); err != nil {
 		return
@@ -141,7 +166,7 @@ func getPaymentForUser(userId int32) (payments []modules.Payment, err error) {
 			return
 		}
 
-		if deNumber, err = DecryptAccountNumber(
+		if deNumber, err = decryptAccountNumber(
 			payment.AccountType, payment.AccountNumber,
 		); err != nil {
 			return
@@ -163,25 +188,24 @@ func GetPaymentById(c *gin.Context) {
 		err     error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if payment, err = getPaymentByIdAndUserId(
 		request.Id, request.UserId,
-	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else {
+	); err == nil {
 		payment.AccountNumber = getPaymentLastFour(payment.AccountNumber)
 		payment.Code = ""
 
@@ -197,23 +221,22 @@ func GetPaymentByUserId(c *gin.Context) {
 		err      error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	if payments, err = getPaymentForUser(request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else {
+	if payments, err = getPaymentForUser(request.UserId); err == nil {
 		c.IndentedJSON(http.StatusOK, payments)
 	}
 }
@@ -234,23 +257,24 @@ func CreatePayment(c *gin.Context) {
 		err      error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	if enNumber, enCode, err = EncryptAccount(
+	if enNumber, enCode, err = encryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -259,22 +283,16 @@ func CreatePayment(c *gin.Context) {
 		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
 		request.CardType,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if insertId, err = result.LastInsertId(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if payment, err := getPaymentByIdAndUserId(
 		int32(insertId), request.UserId,
-	); err != nil {
-		c.IndentedJSON(http.StatusOK, int32(insertId))
-	} else {
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, payment)
 	}
 }
@@ -295,23 +313,24 @@ func UpdatePayment(c *gin.Context) {
 		err         error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	if enNumber, enCode, err = EncryptAccount(
+	if enNumber, enCode, err = encryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -320,15 +339,11 @@ func UpdatePayment(c *gin.Context) {
 		request.AccountZip, enCode, request.ExpireMonth, request.ExpireYear,
 		request.Id, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	} else if affectedRow <= 0 {
-		c.IndentedJSON(http.StatusBadRequest, "Payment not found")
-		c.Abort()
+		err = errors.New("Payment not found")
 		return
 	}
 
@@ -336,8 +351,6 @@ func UpdatePayment(c *gin.Context) {
 		request.Id, request.UserId,
 	); err == nil {
 		c.IndentedJSON(http.StatusOK, payment)
-	} else {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 }
 
@@ -353,38 +366,36 @@ func DeletePayment(c *gin.Context) {
 		err         error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if status, msg := checkPaymentStatus(
 		request.Id, request.UserId,
 	); status {
-		c.IndentedJSON(http.StatusBadRequest, msg)
-		c.Abort()
+		err = errors.New(msg)
 		return
 	}
 
 	if result, err = config.DB.Exec(
 		query, request.Id, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	} else if affectedRow <= 0 {
-		c.IndentedJSON(http.StatusBadRequest, "Payment not found")
+		err = errors.New("Payment not found")
 		c.Abort()
 	}
 
@@ -431,28 +442,32 @@ func checkPaymentStatus(id, userId int32) (bool, string) {
 	return false, ""
 }
 
-func lockPayment(id, userId int32) {
+func lockPayment(tx *sql.Tx, id, userId int32) (err error) {
 	query := `
 		update user_payment set reserved = reserved + 1 where id = ? and user_id = ?
 	`
 
-	if _, err := config.DB.Exec(
+	if _, err = config.DB.Exec(
 		query, id, userId,
 	); err != nil {
-		fmt.Println("Lock Pyment - Error - ", err)
+		fmt.Println("Lock Pyment - Error - ", err.Error())
 	}
+
+	return
 }
 
-func unlockPayment(id, userId int32) {
+func unlockPayment(tx *sql.Tx, id, userId int32) (err error) {
 	query := `
 		update user_payment set reserved = reserved - 1 where id = ? and user_id = ?
 	`
 
-	if _, err := config.DB.Exec(
+	if _, err = tx.Exec(
 		query, id, userId,
 	); err != nil {
-		fmt.Println("Unlock Pyment - Error - ", err)
+		fmt.Println("Unlock Pyment - Error - ", err.Error())
 	}
+
+	return
 }
 
 func ProcessPayment(c *gin.Context) {
@@ -480,15 +495,18 @@ func ProcessPayment(c *gin.Context) {
 		tx   *braintree.Transaction
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(data, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -500,51 +518,17 @@ func ProcessPayment(c *gin.Context) {
 		&process.AccountType,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusOK, "UserService (payment) not found")
-			return
-		} else {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-			return
+			err = errors.New("UserService (payment) not found")
 		}
+
+		return
 	}
 
-	if process.AccountType == "CREDIT" {
-		if process.AccountNumber, err = secures.DecryptCredit(
-			process.AccountNumber,
-		); err != nil {
-			fmt.Println("Cannot process credit payment - number - ", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
-			c.Abort()
-			return
-		}
-
-		if process.Code, err = secures.DecryptCreditCVV(
-			process.Code,
-		); err != nil {
-			fmt.Println("Cannot process credit payment - code - ", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
-			c.Abort()
-			return
-		}
-	} else {
-		if process.AccountNumber, err = secures.DecryptDebit(
-			process.AccountNumber,
-		); err != nil {
-			fmt.Println("Cannot process debit payment - number - ", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
-			c.Abort()
-			return
-		}
-
-		if process.Code, err = secures.DecryptDebitPin(
-			process.Code,
-		); err != nil {
-			fmt.Println("Cannot process debit payment - code - ", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
-			c.Abort()
-			return
-		}
+	if process.AccountNumber, process.Code, err =  decryptAccount(
+		process.AccountType, process.AccountNumber, process.Code,
+	); err != nil {
+		err = errors.New("Cannot process payment now " + err.Error())
+		return
 	}
 
 	fmt.Println("Process Payment ------ Start")
@@ -567,13 +551,11 @@ func ProcessPayment(c *gin.Context) {
 			},
 		},
 	); err != nil {
-		fmt.Println("Error when processing payment - ", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, "Cannot process payment now")
-		c.Abort()
+		err = errors.New("Cannot process payment now - " + err.Error())
 		return
 	}
 
-	makeServicePay(request.UserId, request.ServiceId, request.PaymentId)
+	makeServicePaid(request.UserId, request.ServiceId, request.PaymentId)
 
 	fmt.Println("Transaction Info - ", tx)
 

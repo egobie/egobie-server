@@ -1678,30 +1678,30 @@ INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 (4, 'RESIDENTIAL', 'bhuang3', '92540fa6e7340a2855d5358eadcf5c71ec84dc8e354bb2a9aff06bd853ba6135', 'bhuang1228@gmail.com', '2019120383');
 
 INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id, reserved) VALUES
-(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 1);
+(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 2);
 
 INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year, reserved) VALUES
-(1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 1);
+(1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 2);
 
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
-(1, 1, 1, 2, 100, 99.89, 7, '2016-05-15 11:30:00', 'RESERVED');
+(1, 1, 1, 2, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED');
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, status) VALUES
 (1, 1, 1, 4, 120, 39.89, 5, '2016-04-15 11:30:00', '2016-04-15 11:20:36', 'IN_PROGRESS');
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, end_timestamp, status) VALUES
 (1, 1, 1, 3, 110, 59.89, 2, '2016-04-15 11:30:00', '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
+(1, 1, 1, 55, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED');
 
-INSERT INTO user_history (id, rating, user_id, user_service_id) VALUES
-(1, 0, 1, 3);
+
+INSERT INTO user_history (id, rating, user_id, user_service_id, car_plate, car_state, car_maker, car_model, car_year, car_color, payment_holder, payment_number, payment_type, payment_price) VALUES
+(1, 0, 1, 3, 'Y96EUV', 'NJ', 'Honda', 'Accord', 2012, 'GRAY', 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', 59.89);
 
 UPDATE opening SET count = count - 1, demand = demand + 1 WHERE id IN (2, 3, 4);
-
-UPDATE user_car set reserved = 1 where id = 1;
-
-UPDATE user_payment set reserved = 1 where id = 1;
 
 INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (1, 1, 1),
 (2, 7, 1),
 (3, 9, 2),
 (4, 2, 2),
-(5, 17, 3);
+(5, 17, 3),
+(6, 17, 4);

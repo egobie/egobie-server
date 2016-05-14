@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"errors"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -46,24 +47,25 @@ func check(c *gin.Context, query, errorMessage string) {
 		count int64
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	} else if count >= 1{
-		c.IndentedJSON(http.StatusAccepted, errorMessage + " is already in use")
+		err = errors.New(errorMessage + " is already in use")
 	} else {
 		c.IndentedJSON(http.StatusOK, "OK")
 	}
@@ -94,21 +96,22 @@ func SignUp(c *gin.Context) {
 		matched      bool
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if enPassword, err = secures.EncryptPassword(request.Password); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -126,28 +129,18 @@ func SignUp(c *gin.Context) {
 		query, request.Username, enPassword, request.Email,
 		request.PhoneNumber, referred,
 	); err != nil {
-		message := ""
-
 		if isDuplicateEntryError(err) {
-			message = "user already exists!"
-		} else {
-			message = err.Error()
+			err = errors.New("user already exists!")
 		}
 
-		c.IndentedJSON(http.StatusBadRequest, message)
-		c.Abort()
 		return
 	}
 
 	if lastInsertId, err = result.LastInsertId(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if user, err := getUserById(int32(lastInsertId)); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	} else {
 		user.Password = getUserToken("RESIDENTIAL", user.Password)
@@ -170,40 +163,37 @@ func SignIn(c *gin.Context) {
 		err        error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if user, err = getUser(
 		"username = ?", request.Username,
 	); err != nil {
-		switch {
-		case err == sql.ErrNoRows:
-			c.IndentedJSON(http.StatusBadRequest, "User not found")
-		default:
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			err = errors.New("User not found")
 		}
-		c.Abort()
+
 		return
 	}
 
 	if dePassword, err = secures.DecryptPassword(user.Password); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if dePassword != request.Password {
-		c.IndentedJSON(http.StatusBadRequest, "Password not match")
-		c.Abort()
+		err = errors.New("Password not match")
 		return
 	}
 

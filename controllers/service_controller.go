@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -96,25 +97,24 @@ func GetUserServiceReserved(c *gin.Context) {
 		body []byte
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if userServices, err := getUserService(
 		request.UserId, "status = 'RESERVED'",
-	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else {
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, userServices)
 	}
 }
@@ -126,25 +126,24 @@ func GetUserServiceDone(c *gin.Context) {
 		body []byte
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if userServices, err := getUserService(
 		request.UserId, "status = 'DONE'",
-	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else {
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, userServices)
 	}
 }
@@ -161,11 +160,18 @@ func OnDemand(c *gin.Context) {
 		time  int32
 	}{}
 
-	if err := config.DB.QueryRow(query).Scan(&temp.count, &temp.time); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else {
+	var err error
+
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if err := config.DB.QueryRow(query).Scan(
+		&temp.count, &temp.time,
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, err.Error())
 	}
 }
@@ -186,27 +192,27 @@ func GetOpening(c *gin.Context) {
 		openings []modules.Opening
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if len(request.Services) == 0 {
-		c.IndentedJSON(http.StatusBadRequest, "Please provide services")
-		c.Abort()
+		err = errors.New("Please provide services")
 		return
 	}
 
 	if rows, err = config.DB.Query(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 	defer rows.Close()
@@ -219,8 +225,6 @@ func GetOpening(c *gin.Context) {
 		}{}
 
 		if err = rows.Scan(&temp.Id, &temp.Day, &temp.Period); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		} else {
 			if preDay != temp.Day {
@@ -240,13 +244,11 @@ func GetOpening(c *gin.Context) {
 		}
 	}
 
-	if openings, err = filterOpening(request.Services, openings); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
+	if openings, err = filterOpening(
+		request.Services, openings,
+	); err == nil {
+		c.IndentedJSON(http.StatusOK, openings)
 	}
-
-	c.IndentedJSON(http.StatusOK, openings)
 }
 
 func filterOpening(services []int32, openings []modules.Opening) (result []modules.Opening, err error) {
@@ -337,15 +339,18 @@ func PlaceOrder(c *gin.Context) {
 		reserved    string
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -354,8 +359,6 @@ func PlaceOrder(c *gin.Context) {
 	if rows, err = config.DB.Query(
 		buildServicesQuery(request.Services),
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 	defer rows.Close()
@@ -364,16 +367,11 @@ func PlaceOrder(c *gin.Context) {
 		if err = rows.Scan(
 			&info.Type, &info.AddOns, &info.Count, &info.Price, &info.Time,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
 		if info.Count > 1 && !info.AddOns {
-			c.IndentedJSON(http.StatusBadRequest, `
-				You can only select one service for each type
-			`)
-			c.Abort()
+			err = errors.New("You can only select one service for each type")
 			return
 		}
 
@@ -383,14 +381,10 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	if user, err = getUserById(request.UserId); err != nil {
-		switch {
-		case err == sql.ErrNoRows:
-			c.IndentedJSON(http.StatusBadRequest, "User not found")
-		default:
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			err = errors.New("User not found")
 		}
 
-		c.Abort()
 		return
 	}
 
@@ -417,22 +411,28 @@ func PlaceOrder(c *gin.Context) {
 	if car, err = getCarByIdAndUserId(
 		request.CarId, request.UserId,
 	); err != nil {
-		switch {
-		case err == sql.ErrNoRows:
-			c.IndentedJSON(http.StatusBadRequest, "Car not found")
-		default:
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			err = errors.New("Car not found")
 		}
 
-		c.Abort()
 		return
 	}
 
 	if tx, err = config.DB.Begin(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error -Rollback - ", err1.Error())
+			}
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				fmt.Println("Error - Commit - ", err1.Error())
+			}
+		}
+	}()
 
 	updateOpening := `
 		update opening set count = count - 1 where id >= ? and id < ? and count > 0
@@ -441,33 +441,13 @@ func PlaceOrder(c *gin.Context) {
 	if result, err = tx.Exec(
 		updateOpening, request.Opening, request.Opening+gap,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
 		return
 	}
 
 	if affectedRow, err = result.RowsAffected(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
 		return
 	} else if affectedRow != int64(gap) {
-		c.IndentedJSON(http.StatusBadRequest, "Opening is not available")
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
+		err = errors.New("Opening is not available")
 		return
 	}
 
@@ -479,13 +459,6 @@ func PlaceOrder(c *gin.Context) {
 	if err = tx.QueryRow(
 		"select day, period from opening where id = ?", request.Opening,
 	).Scan(&temp.day, &temp.period); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
 		return
 	} else {
 		total := (temp.period - 1) * 30
@@ -511,24 +484,10 @@ func PlaceOrder(c *gin.Context) {
 		user.Id, car.Id, payment.Id, request.Opening,
 		reserved, gap, time, price, "RESERVED",
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
 		return
 	}
 
 	if insertedId, err = result.LastInsertId(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
-		if err = tx.Rollback(); err != nil {
-			fmt.Println("Fail to rollback - ", err.Error())
-		}
-
 		return
 	}
 
@@ -544,27 +503,17 @@ func PlaceOrder(c *gin.Context) {
 		if _, err = config.DB.Exec(
 			queryUserServiceList, id, user_service_id,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-
-			if err = tx.Rollback(); err != nil {
-				fmt.Println("Fail to rollback - ", err.Error())
-			}
-
 			return
 		}
 	}
 
-	if err = tx.Commit(); err != nil {
-		fmt.Println("Fail to commit - ", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-
+	if err = lockCar(tx, request.CarId, request.UserId); err != nil {
 		return
 	}
 
-	lockCar(request.CarId, request.UserId)
-	lockPayment(request.PaymentId, request.UserId)
+	if err = lockPayment(tx, request.PaymentId, request.UserId); err != nil {
+		return
+	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
@@ -605,48 +554,71 @@ func CancelOrder(c *gin.Context) {
 	}{}
 
 	var (
+		tx   *sql.Tx
 		body []byte
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	if err = config.DB.QueryRow(
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				fmt.Println("Error - Commit - ", err1.Error())
+			}
+		}
+	}()
+
+	if err = tx.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
 		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusBadRequest, "Order not found")
-		} else {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			err = errors.New("Cannot cancel this order")
 		}
 
-		c.Abort()
 		return
 	}
 
-	if _, err = config.DB.Exec(
+	if _, err = tx.Exec(
 		query, request.Id, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	unlockCar(temp.CarId, request.UserId)
-	unlockPayment(temp.PaymentId, request.UserId)
-	releaseOpening(temp.Opening, temp.Gap)
+	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
+		return
+	}
+
+	if err = unlockPayment(tx, temp.PaymentId, request.UserId); err != nil {
+		return
+	}
+
+	if err = releaseOpening(tx, temp.Opening, temp.Gap); err != nil {
+		return
+	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
@@ -684,9 +656,14 @@ func GetService(c *gin.Context) {
 		temp     string
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if rows, err = config.DB.Query(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 	defer rows.Close()
@@ -697,14 +674,10 @@ func GetService(c *gin.Context) {
 			&service.Id, &service.Name, &service.Type, &temp, &service.Description,
 			&service.Note, &service.Price, &service.Time, &service.AddOns,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
 		if err = json.Unmarshal([]byte(temp), &service.Items); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
@@ -721,41 +694,47 @@ func ServiceReading(c *gin.Context) {
 		id  int64
 	)
 
+	defer func() {
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		c.IndentedJSON(http.StatusOK, "OK")
+	}()
+
 	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
-		c.IndentedJSON(http.StatusOK, err.Error())
-		c.Abort()
 		return
 	}
 
 	if _, err = config.DB.Exec(query, int32(id)); err != nil {
-		fmt.Println("Error - Service Reading - ", err.Error())
+		return
 	}
-
-	c.IndentedJSON(http.StatusOK, "OK")
 }
 
 func ServiceDemand(c *gin.Context) {
 	request := modules.ServiceDemandRequest{}
 	var (
-		body    []byte
-		err     error
+		body []byte
+		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		c.IndentedJSON(http.StatusOK, "OK")
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	updateServiceDemand(request.Services)
-
-	c.IndentedJSON(http.StatusOK, "OK")
 }
 
 func updateServiceDemand(ids []int32) {
@@ -776,16 +755,24 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func makeServicePay(userId, serviceId, paymentId int32) {
-	query := `
+func makeServicePaid(userId, serviceId, paymentId int32) (err error) {
+	_, err = config.DB.Exec(`
 		update user_service set paid = 1
 		where id = ? and user_id = ? and user_payment_id = ?
 			and status = "DONE" and paid = 0
-	`
+	`, serviceId, userId, paymentId)
 
-	if _, err := config.DB.Exec(
-		query, serviceId, userId, paymentId,
-	); err != nil {
-		fmt.Println("Error when making payment paid - ", err.Error())
+	if err != nil {
+		fmt.Println("Error - Make Service Paid - ", err.Error())
 	}
+
+	return
+}
+
+func releaseOpening(tx *sql.Tx, id, gap int32) (err error) {
+	_, err = tx.Exec(`
+		update opening set count = count + 1 where id >= ? and id < ?
+	`, id, id+gap)
+
+	return
 }

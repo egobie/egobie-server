@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"errors"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -90,23 +91,24 @@ func GetUser(c *gin.Context) {
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if user, err = getUser(
 		"id = ? and password like ?", request.UserId, request.UserToken+"%",
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -128,15 +130,18 @@ func UpdateUser(c *gin.Context) {
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -144,15 +149,10 @@ func UpdateUser(c *gin.Context) {
 		request.FirstName, request.LastName, request.MiddleName, request.Email,
 		request.PhoneNumber, request.UserId, request.UserToken+"%",
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
-	if user, err := getUserById(request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-	} else {
+	if user, err := getUserById(request.UserId); err == nil {
 		user.Password = getUserToken(user.Type, user.Password)
 		c.IndentedJSON(http.StatusOK, user)
 	}
@@ -169,47 +169,42 @@ func UpdatePassword(c *gin.Context) {
 		err        error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if user, err = getUserById(request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, "User not found")
-		c.Abort()
+		err = errors.New("User not found")
 		return
 	}
 
 	if dePassword, err = secures.DecryptPassword(user.Password); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if dePassword != request.Password {
-		c.IndentedJSON(http.StatusBadRequest, "Password is not correct!")
-		c.Abort()
+		err = errors.New("Password is not valid")
 		return
 	}
 
 	if enPassword, err = secures.EncryptPassword(request.NewPassword); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if _, err = config.DB.Exec(query,
 		enPassword, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -224,17 +219,20 @@ func UpdateHome(c *gin.Context) {
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = updateAddress(
 		body, `home_address_state = ?, home_address_zip = ?, home_address_city = ?, home_address_street = ?`,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -247,17 +245,20 @@ func UpdateWork(c *gin.Context) {
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = updateAddress(
 		body, `work_address_state = ?, work_address_zip = ?, work_address_city = ?, work_address_street = ?`,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
@@ -274,23 +275,24 @@ func Feedback(c *gin.Context) {
 		body []byte
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
 	if _, err = config.DB.Exec(
 		query, request.UserId, request.Title, request.Feedback,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
 
