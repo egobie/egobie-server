@@ -142,12 +142,19 @@ type ServiceInfo struct {
 }
 **/
 type OrderRequest struct {
-	UserId    int32   `json:"user_id"`
+	BaseRequest
+
 	CarId     int32   `json:"car_id"`
 	PaymentId int32   `json:"payment_id"`
 	Services  []int32 `json:"services"`
 	Note      string  `json:"note"`
 	Opening   int32   `json:"opening"`
+}
+
+type OpeningRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
 }
 
 /**
@@ -157,6 +164,13 @@ type OrderRequest struct {
 }
 **/
 type CancelRequest struct {
+	BaseRequest
+
 	Id     int32 `json:"id"`
-	UserId int32 `json:"user_id"`
+}
+
+type ServiceDemandRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
 }

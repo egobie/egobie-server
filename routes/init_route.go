@@ -1,10 +1,12 @@
 package routes
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
+	"database/sql"
+	"bytes"
+	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -73,7 +75,7 @@ func authorizeResidentialUser(c *gin.Context) {
 		userType string
 	)
 
-	if userId, token, err = parseHeader(c); err != nil {
+	if userId, token, err = parseUser(c); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -84,7 +86,12 @@ func authorizeResidentialUser(c *gin.Context) {
 	}
 
 	if userType, err = readUser(userId, token); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusBadRequest, "Invalid user")
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+
 		c.Abort()
 		return
 	} else if !modules.IsResidential(userType) {
@@ -104,7 +111,7 @@ func authorizeEgobieUser(c *gin.Context) {
 		userType string
 	)
 
-	if userId, token, err = parseHeader(c); err != nil {
+	if userId, token, err = parseUser(c); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -115,7 +122,12 @@ func authorizeEgobieUser(c *gin.Context) {
 	}
 
 	if userType, err = readUser(userId, token); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusBadRequest, "Invalid user")
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+
 		c.Abort()
 		return
 	} else if !modules.IsEgobie(userType) {
@@ -127,25 +139,25 @@ func authorizeEgobieUser(c *gin.Context) {
 	c.Next()
 }
 
-func parseHeader(c *gin.Context) (int32, string, error) {
-	token, ok := c.Request.Header[config.EGOBIE_HEADER_TOKEN]
+func parseUser(c *gin.Context) (int32, string, error) {
+	request := modules.BaseRequest{}
+	var (
+		data   []byte
+		err    error
+	)
 
-	if !ok {
-		return 0, "", errors.New("Invalid request")
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return -1, "", err
 	}
 
-	userIds, ok := c.Request.Header[config.EGOBIE_HEADER_USERID]
-
-	if !ok {
-		return 0, "", errors.New("Invalid request")
+	if err = json.Unmarshal(data, &request); err != nil {
+		return -1, "", err
 	}
 
-	if userId, err := strconv.ParseInt(userIds[0], 10, 32); err != nil {
-		return 0, "", err
-	} else {
-		return int32(userId), token[0], nil
-	}
+	// Put request body back
+	c.Request.Body = ioutil.NopCloser(bytes.NewReader(data))
 
+	return request.UserId, request.UserToken, nil
 }
 
 func readUser(userId int32, token string) (userType string, err error) {

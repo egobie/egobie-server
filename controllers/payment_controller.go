@@ -190,7 +190,7 @@ func GetPaymentById(c *gin.Context) {
 }
 
 func GetPaymentByUserId(c *gin.Context) {
-	request := modules.PaymentRequestForUser{}
+	request := modules.BaseRequest{}
 	var (
 		body     []byte
 		payments []modules.Payment

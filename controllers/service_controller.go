@@ -177,10 +177,10 @@ func GetOpening(c *gin.Context) {
 		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
 		order by day, period
 	`
+	request := modules.OpeningRequest{}
 	var (
 		rows     *sql.Rows
 		body     []byte
-		request  []int32
 		err      error
 		preDay   string
 		openings []modules.Opening
@@ -198,7 +198,7 @@ func GetOpening(c *gin.Context) {
 		return
 	}
 
-	if len(request) == 0 {
+	if len(request.Services) == 0 {
 		c.IndentedJSON(http.StatusBadRequest, "Please provide services")
 		c.Abort()
 		return
@@ -240,7 +240,7 @@ func GetOpening(c *gin.Context) {
 		}
 	}
 
-	if openings, err = filterOpening(request, openings); err != nil {
+	if openings, err = filterOpening(request.Services, openings); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -735,10 +735,10 @@ func ServiceReading(c *gin.Context) {
 }
 
 func ServiceDemand(c *gin.Context) {
+	request := modules.ServiceDemandRequest{}
 	var (
 		body    []byte
 		err     error
-		request []int32
 	)
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -753,7 +753,7 @@ func ServiceDemand(c *gin.Context) {
 		return
 	}
 
-	updateServiceDemand(request)
+	updateServiceDemand(request.Services)
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }

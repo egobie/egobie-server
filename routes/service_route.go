@@ -6,7 +6,7 @@ import (
 
 func initServiceRoutes() {
 	// Get all services
-	serviceRouter.GET("", controllers.GetService)
+	serviceRouter.POST("", controllers.GetService)
 
 	serviceRouter.POST("/reservation", controllers.GetUserServiceReserved)
 
@@ -18,9 +18,9 @@ func initServiceRoutes() {
 
 	serviceRouter.POST("/cancel", controllers.CancelOrder)
 
-	serviceRouter.GET("/demand/opening/:id", controllers.OpeningDemand)
+	serviceRouter.POST("/demand/opening/:id", controllers.OpeningDemand)
 
-	serviceRouter.GET("/read/:id", controllers.ServiceReading)
+	serviceRouter.POST("/read/:id", controllers.ServiceReading)
 
 	serviceRouter.POST("/demand", controllers.ServiceDemand)
 }

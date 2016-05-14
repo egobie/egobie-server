@@ -204,7 +204,7 @@ func GetCarById(c *gin.Context) {
 }
 
 func GetCarForUser(c *gin.Context) {
-	request := modules.CarRequstForUser{}
+	request := modules.BaseRequest{}
 	var (
 		cars []modules.Car
 		body []byte

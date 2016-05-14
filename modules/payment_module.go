@@ -41,7 +41,8 @@ type Payment struct {
 }
 **/
 type PaymentNew struct {
-	UserId        int32  `json:"user_id"`
+	BaseRequest
+
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
@@ -59,17 +60,9 @@ type PaymentNew struct {
 }
 **/
 type PaymentRequest struct {
-	Id     int32 `json:"id"`
-	UserId int32 `json:"user_id"`
-}
+	BaseRequest
 
-/**
-{
-	"user_id": 1
-}
-**/
-type PaymentRequestForUser struct {
-	UserId int32 `json:"user_id"`
+	Id     int32 `json:"id"`
 }
 
 /**
@@ -87,8 +80,9 @@ type PaymentRequestForUser struct {
 }
 **/
 type UpdatePayment struct {
+	BaseRequest
+
 	Id            int32  `json:"id"`
-	UserId        int32  `json:"user_id"`
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
@@ -106,7 +100,8 @@ type UpdatePayment struct {
 }
 **/
 type ProcessRequest struct {
-	UserId    int32 `json:"user_id"`
+	BaseRequest
+
 	PaymentId int32 `json:"payment_id"`
 	ServiceId int32 `json:"service_id"`
 }

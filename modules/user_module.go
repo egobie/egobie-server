@@ -102,7 +102,8 @@ type UpdateAddress struct {
 }
 
 type Feedback struct {
-	UserId   int32  `json:"user_id"`
+	BaseRequest
+
 	Title    string `json:"title"`
 	Feedback string `json:"feedback"`
 }
