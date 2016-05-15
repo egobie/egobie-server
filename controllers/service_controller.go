@@ -704,13 +704,17 @@ func GetService(c *gin.Context) {
 			return
 		}
 
-		if addOn.Price > 0 {
+		if addOn.Price == 0 {
+			services[index[addOn.ServiceId]].Free = append(
+				services[index[addOn.ServiceId]].Free, addOn,
+			)
+		} else if addOn.Time == 0{
 			services[index[addOn.ServiceId]].Charge = append(
 				services[index[addOn.ServiceId]].Charge, addOn,
 			)
 		} else {
-			services[index[addOn.ServiceId]].Free = append(
-				services[index[addOn.ServiceId]].Free, addOn,
+			services[index[addOn.ServiceId]].Addons = append(
+				services[index[addOn.ServiceId]].Addons, addOn,
 			)
 		}
 	}

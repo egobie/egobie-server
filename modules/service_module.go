@@ -30,7 +30,8 @@ import (
 		"max": 30,
 		"unit": "quart"
 	}],
-	"free": []
+	"free": [...],
+	"addons":[...]
 }
 **/
 type Service struct {
@@ -44,6 +45,7 @@ type Service struct {
 	Time        int32       `json:"time"`
 	Free        []AddOn     `json:"free"`
 	Charge      []AddOn     `json:"charge"`
+	Addons      []AddOn     `json:"addons"`
 }
 
 /**
