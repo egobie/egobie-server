@@ -20,7 +20,7 @@ import (
 	"description": "Wash Car",
 	"price": 25,
 	"time": 30,
-	"addons": [{
+	"charge": [{
 		"id": 1,
 		"service_id": 1,
 		"name": "Extra Conventional Oil",
@@ -29,7 +29,8 @@ import (
 		"time": 0,
 		"max": 30,
 		"unit": "quart"
-	}]
+	}],
+	"free": []
 }
 **/
 type Service struct {
@@ -41,7 +42,8 @@ type Service struct {
 	Note        string      `json:"note"`
 	Price       float64     `json:"price"`
 	Time        int32       `json:"time"`
-	AddOns      []AddOn     `json:"addons"`
+	Free        []AddOn     `json:"free"`
+	Charge      []AddOn     `json:"charge"`
 }
 
 /**

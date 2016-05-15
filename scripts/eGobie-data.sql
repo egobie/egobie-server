@@ -269,9 +269,7 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 -- Basic Oil & Filter
 (10, 'Basic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
 "(Basic) Brand Name Conventional Oil",
-"(Basic) Oil Filter",
-"+Check Exterior Lights",
-"+Check Transmission Fluid"
+"(Basic) Oil Filter"
 ]', 45, 30);
 
 INSERT INTO service_addon (service_id, name, price, time) VALUES
@@ -290,10 +288,10 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Fill Tire Pressure", 0),
 (10, "Fill Windshield Wiper Fluid", 0);
 
-INSERT INTO service_addon (service_id, name, price) VALUES
-(10, "Check Cabine Air Filtration", 45),
-(10, "Check Engine Air Filtration", 45),
-(10, "Check Serpentine Belts", 150);
+INSERT INTO service_addon (service_id, name, note, price) VALUES
+(10, "Check Cabine Air Filtration", "Change Cabine Air Filtration if you need", 45),
+(10, "Check Engine Air Filtration",  "Change Engine Air Filtration if you need", 45),
+(10, "Check Serpentine Belts",  "Change Serpentine Belts if you need", 150);
 
 INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
 (10, 'Extra Conventional Oil', 4, 30, 'quart');
@@ -302,9 +300,7 @@ INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
 (11, 'Full Synthetic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
 "(Full) Brand Name Synthetic Oil",
-"(Full) Filter",
-"+Check Exterior Lights",
-"+Check Transmission Fluid"
+"(Full) Filter"
 ]', 75, 30);
 
 INSERT INTO service_addon (service_id, name, price, time) VALUES
@@ -323,10 +319,10 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Fill Tire Pressure", 0),
 (11, "Fill Windshield Wiper Fluid", 0);
 
-INSERT INTO service_addon (service_id, name, price) VALUES
-(11, "Check Cabine Air Filtration", 45),
-(11, "Check Engine Air Filtration", 45),
-(11, "Check Serpentine Belts", 150);
+INSERT INTO service_addon (service_id, name, note, price) VALUES
+(11, "Check Cabine Air Filtration", "Change Cabine Air Filtration if you need", 45),
+(11, "Check Engine Air Filtration", "Change Engine Air Filtration if you need", 45),
+(11, "Check Serpentine Belts", "Change Serpentine Belts if you need", 150);
 
 INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
 (11, 'Extra Synthetic Oil', 8, 30, 'quart');

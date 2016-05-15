@@ -705,9 +705,15 @@ func GetService(c *gin.Context) {
 			return
 		}
 
-		services[index[addOn.ServiceId]].AddOns = append(
-			services[index[addOn.ServiceId]].AddOns, addOn,
-		)
+		if addOn.Price > 0 {
+			services[index[addOn.ServiceId]].Charge = append(
+				services[index[addOn.ServiceId]].Charge, addOn,
+			)
+		} else {
+			services[index[addOn.ServiceId]].Free = append(
+				services[index[addOn.ServiceId]].Free, addOn,
+			)
+		}
 	}
 
 	c.IndentedJSON(http.StatusOK, services)
