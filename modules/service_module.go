@@ -69,6 +69,7 @@ type AddOn struct {
 	Time      int32   `json:"time"`
 	Max       int32   `json:"max"`
 	Unit      string  `json:"unit"`
+	Amount    int32   `json:"amount"`
 }
 
 /**
