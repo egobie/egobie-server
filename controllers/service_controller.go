@@ -645,12 +645,14 @@ func updateOpeningDemand(id int32) {
 func GetService(c *gin.Context) {
 	query := `
 		select id, name, type, items, description, note,
-			estimated_price, estimated_time, addons
+			estimated_price, estimated_time
 		from service
 		order by id
 	`
+	index := make(map[int32]int32)
 	var (
-		rows     *sql.Rows
+		rows1    *sql.Rows
+		rows2    *sql.Rows
 		services []modules.Service
 		err      error
 		temp     string
@@ -663,16 +665,16 @@ func GetService(c *gin.Context) {
 		}
 	}()
 
-	if rows, err = config.DB.Query(query); err != nil {
+	if rows1, err = config.DB.Query(query); err != nil {
 		return
 	}
-	defer rows.Close()
+	defer rows1.Close()
 
-	for rows.Next() {
+	for rows1.Next() {
 		service := modules.Service{}
-		if err = rows.Scan(
-			&service.Id, &service.Name, &service.Type, &temp, &service.Description,
-			&service.Note, &service.Price, &service.Time, &service.AddOns,
+		if err = rows1.Scan(
+			&service.Id, &service.Name, &service.Type, &temp,
+			&service.Description, &service.Note, &service.Price, &service.Time,
 		); err != nil {
 			return
 		}
@@ -681,7 +683,31 @@ func GetService(c *gin.Context) {
 			return
 		}
 
+		index[service.Id] = int32(len(services))
 		services = append(services, service)
+	}
+
+	if rows2, err = config.DB.Query(`
+		select id, service_id, name, note,
+			price, time, max, unit
+		from service_addon
+	`); err != nil {
+		return
+	}
+	defer rows2.Close()
+
+	for rows2.Next() {
+		addOn := modules.AddOn{}
+		if err = rows2.Scan(
+			&addOn.Id, &addOn.ServiceId, &addOn.Name, &addOn.Note,
+			&addOn.Price, &addOn.Time, &addOn.Max, &addOn.Unit,
+		); err != nil {
+			return
+		}
+
+		services[index[addOn.ServiceId]].AddOns = append(
+			services[index[addOn.ServiceId]].AddOns, addOn,
+		)
 	}
 
 	c.IndentedJSON(http.StatusOK, services)

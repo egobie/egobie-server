@@ -20,7 +20,16 @@ import (
 	"description": "Wash Car",
 	"price": 25,
 	"time": 30,
-	"addons": false
+	"addons": [{
+		"id": 1,
+		"service_id": 1,
+		"name": "Extra Conventional Oil",
+		"note": "",
+		"price": 4,
+		"time": 0,
+		"max": 30,
+		"unit": "quart"
+	}]
 }
 **/
 type Service struct {
@@ -32,7 +41,30 @@ type Service struct {
 	Note        string      `json:"note"`
 	Price       float64     `json:"price"`
 	Time        int32       `json:"time"`
-	AddOns      bool        `json:"addons"`
+	AddOns      []AddOn     `json:"addons"`
+}
+
+/**
+{
+	"id": 1,
+	"service_id": 1,
+	"name": "Extra Conventional Oil",
+	"note": "",
+	"price": 4,
+	"time": 0,
+	"max": 30,
+	"unit": "quart"
+}
+**/
+type AddOn struct {
+	Id        int32   `json:"id"`
+	ServiceId int32   `json:"service_id"`
+	Name      string  `json:"name"`
+	Note      string  `json:"note"`
+	Price     float32 `json:"price"`
+	Time      int32   `json:"time"`
+	Max       int32   `json:"max"`
+	Unit      string  `json:"unit"`
 }
 
 /**
@@ -166,7 +198,7 @@ type OpeningRequest struct {
 type CancelRequest struct {
 	BaseRequest
 
-	Id     int32 `json:"id"`
+	Id int32 `json:"id"`
 }
 
 type ServiceDemandRequest struct {

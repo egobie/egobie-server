@@ -83,7 +83,7 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 ]', 25, 30);
 
 INSERT INTO service_addon (service_id, name, price, time) VALUES
-(1, "Detailed Shampoo Seating + Mats + Carpets", 60, 60),
+(1, "Detailed Shampoo Seating & Mats & Carpets", 60, 60),
 (1, "Engine Cleaning", 50, 30),
 (1, "Hand Wax", 35, 60),
 (1, "Headlight Reconditioning", 65, 60),
@@ -130,7 +130,7 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 ]', 75, 90);
 
 INSERT INTO service_addon (service_id, name, price, time) VALUES
-(3, "Detailed Shampoo Seating + Mats + Carpets", 60, 60),
+(3, "Detailed Shampoo Seating & Mats & Carpets", 60, 60),
 (3, "Engine Cleaning", 50, 30),
 (3, "Headlight Reconditioning", 65, 60),
 (3, "Hot Carpet Extraction", 15, 30),
@@ -223,7 +223,7 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "Hot Carpet Extraction",
 "Interior Vacuum",
 "Interior Wipe-down with Protectants",
-"Stain and Debris Removal in All Tight Spaces"
+"Stain and Debris Removal in All Tight Spaces",
 "Tire Shine & Rim Cleaning",
 "Total Interior Wipe-down",
 "Trunk Vacuum",
