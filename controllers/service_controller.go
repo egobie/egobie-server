@@ -27,7 +27,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 				us.start_timestamp, us.end_timestamp,
 				us.note, us.status, us.create_timestamp,
 				s.id, s.name, s.type, s.items, s.description,
-				s.estimated_time, s.estimated_price, s.addons
+				s.estimated_time, s.estimated_price
 		from user_service us
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join user_service_list usl on usl.user_service_id = us.id
@@ -55,9 +55,8 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 			&userService.CarId, &userService.CarPlate, &userService.PaymentId,
 			&userService.Time, &userService.Price, &userService.ReserveStartTime,
 			&mins, &userService.StartTime, &userService.EndTime, &userService.Note,
-			&userService.Status, &userService.ReserveTime, &service.Id,
-			&service.Name, &service.Type, &temp, &service.Description,
-			&service.Time, &service.Price, &service.AddOns,
+			&userService.Status, &userService.ReserveTime, &service.Id, &service.Name,
+			&service.Type, &temp, &service.Description, &service.Time, &service.Price,
 		); err != nil {
 			return
 		}
