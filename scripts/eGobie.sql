@@ -48,10 +48,21 @@ CREATE TABLE service (
     note VARCHAR(128) NOT NULL DEFAULT '',
     estimated_price FLOAT NOT NULL,
     estimated_time INT NOT NULL,
-    addons INT(1) NOT NULL DEFAULT 0,
     demand INT NOT NULL DEFAULT 0,
     reading INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE service_addon (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    note VARCHAR(128) NOT NULL DEFAULT "",
+    price FLOAT NOT NULL,
+    time INT NOT NULL DEFAULT 0,
+    max INT NOT NULL DEFAULT 1,
+    unit VARCHAR(32) NOT NULL DEFAULT '',
+    demand INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE report (
