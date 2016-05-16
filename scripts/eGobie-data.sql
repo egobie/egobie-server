@@ -289,8 +289,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Fill Windshield Wiper Fluid", 0);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
-(10, "Change Cabine Air Filtration", 45),
-(10, "Change Engine Air Filtration",  45),
+(10, "Change Cabine Air Filter", 45),
+(10, "Change Engine Air Filter",  45),
 (10, "Change Serpentine Belts",  150);
 
 INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
@@ -320,8 +320,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Fill Windshield Wiper Fluid", 0);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
-(11, "Change Cabine Air Filtration", 45),
-(11, "Change Engine Air Filtration", 45),
+(11, "Change Cabine Air Filter", 45),
+(11, "Change Engine Air Filter", 45),
 (11, "Change Serpentine Belts", 150);
 
 INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
