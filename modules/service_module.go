@@ -166,7 +166,6 @@ type ServiceInfo struct {
 	Count  int32   `json:"count"`
 	Price  float32 `json:"price"`
 	Time   int32   `json:"time"`
-	AddOns bool    `json:"addons"`
 }
 
 /**

@@ -445,12 +445,12 @@ func PlaceOrder(c *gin.Context) {
 
 	for rows.Next() {
 		if err = rows.Scan(
-			&info.Type, &info.AddOns, &info.Count, &info.Price, &info.Time,
+			&info.Type, &info.Count, &info.Price, &info.Time,
 		); err != nil {
 			return
 		}
 
-		if info.Count > 1 && !info.AddOns {
+		if info.Count > 1 {
 			err = errors.New("You can only select one service for each type")
 			return
 		}
@@ -614,7 +614,7 @@ func PlaceOrder(c *gin.Context) {
 
 func buildServicesQuery(ids []int32) string {
 	queryServices := `
-		select type, addons, count(*), sum(estimated_price), sum(estimated_time)
+		select type, count(*), sum(estimated_price), sum(estimated_time)
 		from service where id in (
 	`
 
@@ -626,7 +626,7 @@ func buildServicesQuery(ids []int32) string {
 		}
 	}
 
-	return queryServices + ") group by type, addons"
+	return queryServices + ") group by type"
 }
 
 func CancelOrder(c *gin.Context) {
