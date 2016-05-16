@@ -198,7 +198,7 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (6, "Hand Wax", 0);
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
-(7, 'Exterior', 'DETAILING', 'Detailing', '', '[
+(7, 'Detailing', 'DETAILING', 'Detailing', '', '[
 "Compressed Air Detailing in Tight Spaces",
 "Engine Cleaning",
 "Full Exterior Hand Wash",
@@ -218,7 +218,7 @@ INSERT INTO service_addon (service_id, name, price, time) VALUES
 (7, "Hot Carpet Extraction", 15, 30);
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
-(8, 'Interior', 'DETAILING', 'Detailing', '', '[
+(8, 'Detailing', 'DETAILING', 'Detailing', '', '[
 "Detailed Shampoo Seating & Mats & Carpets",
 "Hot Carpet Extraction",
 "Interior Vacuum",
@@ -1751,3 +1751,7 @@ INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (4, 2, 2),
 (5, 10, 3),
 (6, 10, 4);
+
+INSERT INTO user_service_addon_list (service_addon_id, user_service_id, amount) VALUES
+(1, 1, 1),
+(2, 1, 1);

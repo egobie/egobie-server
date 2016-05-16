@@ -147,6 +147,7 @@ type UserService struct {
 	StartTime        null.String `json:"start_time"`
 	EndTime          null.String `json:"end_time"`
 	ServiceList      []Service   `json:"services"`
+	AddonList        []AddOn     `json:"addons"`
 }
 
 type Period struct {
@@ -181,17 +182,24 @@ type ServiceInfo struct {
 type OrderRequest struct {
 	BaseRequest
 
-	CarId     int32   `json:"car_id"`
-	PaymentId int32   `json:"payment_id"`
-	Services  []int32 `json:"services"`
-	Note      string  `json:"note"`
-	Opening   int32   `json:"opening"`
+	CarId     int32          `json:"car_id"`
+	PaymentId int32          `json:"payment_id"`
+	Note      string         `json:"note"`
+	Opening   int32          `json:"opening"`
+	Services  []int32        `json:"services"`
+	Addons    []AddonRequest `json:"addons"`
+}
+
+type AddonRequest struct {
+	Id     int32 `json:"id"`
+	Amount int32 `json:"amount"`
 }
 
 type OpeningRequest struct {
 	BaseRequest
 
 	Services []int32 `json:"services"`
+	Addons   []int32 `json:"addons"`
 }
 
 /**
@@ -210,4 +218,10 @@ type ServiceDemandRequest struct {
 	BaseRequest
 
 	Services []int32 `json:"services"`
+}
+
+type AddonDemandRequest struct {
+	BaseRequest
+
+	Addons []int32 `json:"addons"`
 }

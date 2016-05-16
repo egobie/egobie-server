@@ -35,22 +35,26 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 		where us.user_id = ? and (
 	` + condition + ") order by us.id"
 
+	index := make(map[int32]int32)
 	var (
-		rows *sql.Rows
-		temp string
-		mins int32
+		rows1  *sql.Rows
+		rows2  *sql.Rows
+		temp   string
+		tempId int32
+		mins   int32
+		ids    []int32
 	)
 
-	if rows, err = config.DB.Query(query, userId); err != nil {
+	if rows1, err = config.DB.Query(query, userId); err != nil {
 		return
 	}
-	defer rows.Close()
+	defer rows1.Close()
 
-	for rows.Next() {
+	for rows1.Next() {
 		userService := modules.UserService{}
 		service := modules.Service{}
 
-		if err = rows.Scan(
+		if err = rows1.Scan(
 			&userService.Id, &userService.ReservationId, &userService.UserId,
 			&userService.CarId, &userService.CarPlate, &userService.PaymentId,
 			&userService.Time, &userService.Price, &userService.ReserveStartTime,
@@ -83,7 +87,50 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 
 			userService.ServiceList = append(userService.ServiceList, service)
 			userServices = append(userServices, userService)
+
+			ids = append(ids, userService.Id)
+			index[userService.Id] = int32(len(userServices) - 1)
 		}
+	}
+
+	query = `
+		select sa.id, sa.service_id, sa.name, sa.note,
+				sa.price, sa.time, sa.max, sa.unit,
+				usal.amount, usal.user_service_id
+		from service_addon sa
+		inner join user_service_addon_list usal on usal.service_addon_id = sa.id
+		where usal.user_service_id in (
+	`
+
+	for i, id := range ids {
+		if i == 0 {
+			query += strconv.Itoa(int(id))
+		} else {
+			query += (", " + strconv.Itoa(int(id)))
+		}
+	}
+
+	query += ")"
+
+	if rows2, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows2.Close()
+
+	for rows2.Next() {
+		addon := modules.AddOn{}
+
+		if err = rows2.Scan(
+			&addon.Id, &addon.ServiceId, &addon.Name, &addon.Note,
+			&addon.Price, &addon.Time, &addon.Max, &addon.Unit,
+			&addon.Amount, &tempId,
+		); err != nil {
+			return
+		}
+
+		userServices[index[tempId]].AddonList = append(
+			userServices[index[tempId]].AddonList, addon,
+		)
 	}
 
 	return userServices, nil
@@ -244,16 +291,13 @@ func GetOpening(c *gin.Context) {
 	}
 
 	if openings, err = filterOpening(
-		request.Services, openings,
+		request.Services, request.Addons, openings,
 	); err == nil {
 		c.IndentedJSON(http.StatusOK, openings)
 	}
 }
 
-func filterOpening(services []int32, openings []modules.Opening) (result []modules.Opening, err error) {
-	query := `
-		select sum(estimated_time) from service where id in (
-	`
+func filterOpening(services, addons []int32, openings []modules.Opening) (result []modules.Opening, err error) {
 	var (
 		time int32
 		p1   int32
@@ -261,17 +305,7 @@ func filterOpening(services []int32, openings []modules.Opening) (result []modul
 		pre  int32
 	)
 
-	for i, id := range services {
-		if i == 0 {
-			query += strconv.Itoa(int(id))
-		} else {
-			query += "," + strconv.Itoa(int(id))
-		}
-	}
-
-	query += ")"
-
-	if err = config.DB.QueryRow(query).Scan(&time); err != nil {
+	if time, err = getTotalTime(services, addons); err != nil {
 		return
 	}
 
@@ -314,6 +348,53 @@ func filterOpening(services []int32, openings []modules.Opening) (result []modul
 	}
 
 	return result, nil
+}
+
+func getTotalTime(services, addons []int32) (time int32, err error) {
+	query1 := `
+		select sum(estimated_time) from service where id in (
+	`
+	query2 := `
+		select sum(time) from service_addon where id in (
+	`
+	var (
+		time1 int32
+		time2 int32
+	)
+
+	for i, id := range services {
+		if i == 0 {
+			query1 += strconv.Itoa(int(id))
+		} else {
+			query1 += "," + strconv.Itoa(int(id))
+		}
+	}
+
+	query1 += ")"
+
+	if err = config.DB.QueryRow(query1).Scan(&time1); err != nil {
+		return
+	}
+
+	if len(addons) > 0 {
+		for i, id := range addons {
+			if i == 0 {
+				query2 += strconv.Itoa(int(id))
+			} else {
+				query2 += "," + strconv.Itoa(int(id))
+			}
+		}
+
+		query2 += ")"
+
+		if err = config.DB.QueryRow(query2).Scan(&time2); err != nil {
+			return
+		}
+	}
+
+	time = time1 + time2
+
+	return time, nil
 }
 
 func PlaceOrder(c *gin.Context) {
@@ -501,6 +582,20 @@ func PlaceOrder(c *gin.Context) {
 	for _, id := range request.Services {
 		if _, err = config.DB.Exec(
 			queryUserServiceList, id, user_service_id,
+		); err != nil {
+			return
+		}
+	}
+
+	queryUserServiceAddonList := `
+		insert into user_service_addon_list (
+			service_addon_id, user_service_id, amount
+		) values (?, ?, ?)
+	`
+
+	for _, addon := range request.Addons {
+		if _, err = config.DB.Exec(
+			queryUserServiceAddonList, addon.Id, user_service_id, addon.Amount,
 		); err != nil {
 			return
 		}
@@ -704,13 +799,13 @@ func GetService(c *gin.Context) {
 			return
 		}
 
-		addOn.Amount = 1;
+		addOn.Amount = 1
 
 		if addOn.Price == 0 {
 			services[index[addOn.ServiceId]].Free = append(
 				services[index[addOn.ServiceId]].Free, addOn,
 			)
-		} else if addOn.Time == 0{
+		} else if addOn.Time == 0 {
 			services[index[addOn.ServiceId]].Charge = append(
 				services[index[addOn.ServiceId]].Charge, addOn,
 			)
@@ -722,6 +817,50 @@ func GetService(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, services)
+}
+
+func AddonDemand(c *gin.Context) {
+	request := modules.AddonDemandRequest{}
+	var (
+		body []byte
+		err  error
+	)
+
+	defer func() {
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		c.IndentedJSON(http.StatusOK, "OK")
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	updateAddonDemand(request.Addons)
+}
+
+func updateAddonDemand(ids []int32) {
+	query := `update service_addon set demand = demand + 1 where id in (`
+	last := len(ids) - 1
+
+	for i, id := range ids {
+		query += strconv.Itoa(int(id))
+		if i != last {
+			query += ","
+		}
+	}
+
+	query += ")"
+
+	if _, err := config.DB.Exec(query); err != nil {
+		fmt.Println("Error - Addon Demand - ", err.Error())
+	}
 }
 
 func ServiceReading(c *gin.Context) {

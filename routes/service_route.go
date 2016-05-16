@@ -23,4 +23,6 @@ func initServiceRoutes() {
 	serviceRouter.POST("/read/:id", controllers.ServiceReading)
 
 	serviceRouter.POST("/demand", controllers.ServiceDemand)
+
+	serviceRouter.POST("/demand/addon", controllers.AddonDemand)
 }

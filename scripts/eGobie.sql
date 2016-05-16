@@ -162,6 +162,14 @@ CREATE TABLE user_service_list (
     FOREIGN KEY (service_id) REFERENCES service(id)
 );
 
+CREATE TABLE user_service_addon_list (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_addon_id INT NOT NULL,
+    user_service_id INT NOT NULL,
+    amount INT NOT NULL,
+    FOREIGN KEY (service_addon_id) REFERENCES service_addon(id)
+);
+
 CREATE TABLE user_history (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rating FLOAT NOT NULL DEFAULT 0,
