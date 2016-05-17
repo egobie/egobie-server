@@ -224,3 +224,9 @@ type AddonDemandRequest struct {
 
 	Addons []int32 `json:"addons"`
 }
+
+type OnDemandRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
+}

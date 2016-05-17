@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -196,45 +197,24 @@ func GetUserServiceDone(c *gin.Context) {
 
 func OnDemand(c *gin.Context) {
 	query := `
-		select COUNT(*), SUM(estimated_time)
-		from user_service
-		where DATE_FORMAT(create_timestamp, '%Y-%m-%d') = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		and status != 'DONE'
-	`
-	temp := struct {
-		count int32
-		time  int32
-	}{}
-
-	var err error
-
-	defer func() {
-		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if err := config.DB.QueryRow(query).Scan(
-		&temp.count, &temp.time,
-	); err == nil {
-		c.IndentedJSON(http.StatusOK, err.Error())
-	}
-}
-
-func GetOpening(c *gin.Context) {
-	query := `
 		select id, day, period
 		from opening
-		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		order by day, period
+		where period >= ? and count > 0 and day = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		order by period
 	`
-	request := modules.OpeningRequest{}
+	request := modules.OnDemandRequest{}
+	curr := getCurrentPeriod()
+
+	if curr < 0 {
+		c.IndentedJSON(http.StatusBadRequest, "NO")
+		c.Abort()
+		return
+	}
+
 	var (
-		rows     *sql.Rows
 		body     []byte
 		err      error
-		preDay   string
+		addons   []int32
 		openings []modules.Opening
 	)
 
@@ -258,7 +238,130 @@ func GetOpening(c *gin.Context) {
 		return
 	}
 
-	if rows, err = config.DB.Query(query); err != nil {
+	if openings, err = loadOpening(query, curr); err != nil {
+		return
+	}
+
+	if openings, err = filterOpening(
+		request.Services, addons, openings,
+	); err == nil {
+		if len(openings) > 0 {
+			str := ""
+			temp := struct {
+				Id    int32   `json:"id"`
+				Day   string  `json:"day"`
+				Start float64 `json:"start"`
+				End   float64 `json:"end"`
+				Diff  int32   `json:"diff"`
+			}{}
+
+			temp.Id = openings[0].Range[0].Id
+			temp.Day = openings[0].Day
+			temp.Start = openings[0].Range[0].Start
+			temp.End = openings[0].Range[0].End
+
+			fmt.Println("start - ", temp.Start)
+
+			if (int32(temp.Start * 30) % 30 == 0) {
+				str = temp.Day + "T" + strconv.Itoa(int(temp.Start)) + ":00:00.000Z"
+			} else {
+				str = temp.Day + "T" + strconv.Itoa(int(temp.Start - 0.5)) + ":30:00.000Z"
+			}
+
+			fmt.Println("str - ", str)
+
+			temp.Diff = timeDiffInMins(str)
+
+			c.IndentedJSON(http.StatusOK, temp)
+		} else {
+			c.IndentedJSON(http.StatusBadRequest, "NO")
+			c.Abort()
+		}
+	}
+}
+
+func getCurrentPeriod() int32 {
+	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+//	t := time.Now()
+	now := t.Add(30 * time.Minute)
+	hour := now.Hour()
+
+	if hour < int(OPENING_BASE) || hour > 19 {
+		return -1
+	}
+
+	period := int32((float64(hour)-OPENING_BASE)/OPENING_GAP) + 2
+
+	if now.Minute() > 30 {
+		period += 1
+	}
+
+	return period
+}
+
+func timeDiffInMins(str string) int32 {
+	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+//	now := time.Now()
+
+	if t, err := time.Parse("2006-01-02T15:04:05.000Z", str); err != nil {
+		return -1
+	} else {
+		return int32(t.Sub(now).Minutes())
+	}
+}
+
+func GetOpening(c *gin.Context) {
+	query := `
+		select id, day, period
+		from opening
+		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		order by day, period
+	`
+	request := modules.OpeningRequest{}
+	var (
+		body     []byte
+		err      error
+		openings []modules.Opening
+	)
+
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if len(request.Services) == 0 {
+		err = errors.New("Please provide services")
+		return
+	}
+
+	if openings, err = loadOpening(query); err != nil {
+		return
+	}
+
+	if openings, err = filterOpening(
+		request.Services, request.Addons, openings,
+	); err == nil {
+		c.IndentedJSON(http.StatusOK, openings)
+	}
+}
+
+func loadOpening(query string, args ...interface{}) (openings []modules.Opening, err error) {
+	var (
+		rows   *sql.Rows
+		preDay string
+	)
+
+	if rows, err = config.DB.Query(query, args...); err != nil {
 		return
 	}
 	defer rows.Close()
@@ -290,11 +393,7 @@ func GetOpening(c *gin.Context) {
 		}
 	}
 
-	if openings, err = filterOpening(
-		request.Services, request.Addons, openings,
-	); err == nil {
-		c.IndentedJSON(http.StatusOK, openings)
-	}
+	return
 }
 
 func filterOpening(services, addons []int32, openings []modules.Opening) (result []modules.Opening, err error) {
@@ -405,14 +504,13 @@ func PlaceOrder(c *gin.Context) {
 	info := modules.ServiceInfo{}
 
 	var (
+		rows        *sql.Rows
 		result      sql.Result
 		tx          *sql.Tx
-		rows        *sql.Rows
 		body        []byte
 		err         error
 		price       float32
 		time        int32
-		count       int32
 		gap         int32
 		insertedId  int64
 		affectedRow int64
@@ -451,11 +549,13 @@ func PlaceOrder(c *gin.Context) {
 		}
 
 		if info.Count > 1 {
-			err = errors.New("You can only select one service for each type")
+			c.IndentedJSON(http.StatusBadRequest, `
+				You can only select one service for each type`,
+			)
+			c.Abort()
 			return
 		}
 
-		count++
 		time += info.Time
 		price += info.Price
 	}
@@ -464,7 +564,6 @@ func PlaceOrder(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			err = errors.New("User not found")
 		}
-
 		return
 	}
 
@@ -610,6 +709,11 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func getTimeAndPrice(services []int32) (time int32, price float32, msg string) {
+
+	return time, price, ""
 }
 
 func buildServicesQuery(ids []int32) string {
@@ -916,6 +1020,10 @@ func ServiceDemand(c *gin.Context) {
 func updateServiceDemand(ids []int32) {
 	query := `update service set demand = demand + 1 where id in (`
 	last := len(ids) - 1
+
+	if (last < 0) {
+		return
+	}
 
 	for i, id := range ids {
 		query += strconv.Itoa(int(id))

@@ -25,4 +25,6 @@ func initServiceRoutes() {
 	serviceRouter.POST("/demand", controllers.ServiceDemand)
 
 	serviceRouter.POST("/demand/addon", controllers.AddonDemand)
+
+	serviceRouter.POST("/now", controllers.OnDemand);
 }
