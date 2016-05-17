@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -272,6 +273,16 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
+	names := strings.Split(request.AccountName, " ")
+
+	if err = validatePayment(
+		strings.TrimSpace(names[0]), strings.TrimSpace(names[1]),
+		request.AccountNumber, request.Code,
+		request.ExpireMonth, request.ExpireYear[2:],
+	); err != nil {
+		return
+	}
+
 	if enNumber, enCode, err = encryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
@@ -328,6 +339,20 @@ func UpdatePayment(c *gin.Context) {
 		return
 	}
 
+	if strings.Index(request.AccountName, " ") < 0 {
+		err = errors.New("Invalid holder name")
+	}
+
+	names := strings.Split(request.AccountName, " ")
+
+	if err = validatePayment(
+		strings.TrimSpace(names[0]), strings.TrimSpace(names[1]),
+		request.AccountNumber, request.Code,
+		request.ExpireMonth, request.ExpireYear[2:],
+	); err != nil {
+		return
+	}
+
 	if enNumber, enCode, err = encryptAccount(
 		request.AccountType, request.AccountNumber, request.Code,
 	); err != nil {
@@ -352,6 +377,34 @@ func UpdatePayment(c *gin.Context) {
 	); err == nil {
 		c.IndentedJSON(http.StatusOK, payment)
 	}
+}
+
+func validatePayment(firstName, lastName, account, code, month, year string) (err error) {
+	var customer *braintree.Customer
+
+	/*
+	fmt.Println("First -", firstName, "-")
+	fmt.Println("Last -", lastName, "-")
+	fmt.Println("account -", account, "-")
+	fmt.Println("code -", code, "-")
+	fmt.Println("month -", month, "-")
+	fmt.Println("year -", year, "-")
+	*/
+
+	customer, err = config.BT.Customer().Create(&braintree.Customer{
+		FirstName: firstName,
+		LastName:  lastName,
+		CreditCard: &braintree.CreditCard{
+			Number:          account,
+			CVV:             code,
+			ExpirationMonth: month,
+			ExpirationYear:  year,
+		},
+	})
+
+	fmt.Println(customer)
+
+	return
 }
 
 func DeletePayment(c *gin.Context) {
@@ -524,13 +577,14 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	if process.AccountNumber, process.Code, err =  decryptAccount(
+	if process.AccountNumber, process.Code, err = decryptAccount(
 		process.AccountType, process.AccountNumber, process.Code,
 	); err != nil {
 		err = errors.New("Cannot process payment now " + err.Error())
 		return
 	}
 
+	/*
 	fmt.Println("Process Payment ------ Start")
 	fmt.Println("Decimal - ", int64(process.Price*100))
 	fmt.Println("Number - ", process.AccountNumber)
@@ -538,6 +592,7 @@ func ProcessPayment(c *gin.Context) {
 	fmt.Println("ExpirationMonth - ", process.Month)
 	fmt.Println("ExpirationYear - ", process.Year[2:])
 	fmt.Println("Process Payment ------ End\n")
+	*/
 
 	if tx, err = config.BT.Transaction().Create(
 		&braintree.Transaction{
