@@ -65,7 +65,7 @@ func check(c *gin.Context, query, errorMessage string) {
 	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
 		return
 	} else if count >= 1{
-		err = errors.New(errorMessage + " is already in use")
+		c.IndentedJSON(http.StatusAccepted, errorMessage + " is already in use")
 	} else {
 		c.IndentedJSON(http.StatusOK, "OK")
 	}
