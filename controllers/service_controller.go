@@ -260,15 +260,11 @@ func OnDemand(c *gin.Context) {
 			temp.Start = openings[0].Range[0].Start
 			temp.End = openings[0].Range[0].End
 
-			fmt.Println("start - ", temp.Start)
-
 			if (int32(temp.Start * 30) % 30 == 0) {
 				str = temp.Day + "T" + strconv.Itoa(int(temp.Start)) + ":00:00.000Z"
 			} else {
 				str = temp.Day + "T" + strconv.Itoa(int(temp.Start - 0.5)) + ":30:00.000Z"
 			}
-
-			fmt.Println("str - ", str)
 
 			temp.Diff = timeDiffInMins(str)
 
@@ -281,8 +277,8 @@ func OnDemand(c *gin.Context) {
 }
 
 func getCurrentPeriod() int32 {
-	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-//	t := time.Now()
+//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+	t := time.Now()
 	now := t.Add(30 * time.Minute)
 	hour := now.Hour()
 
@@ -300,10 +296,14 @@ func getCurrentPeriod() int32 {
 }
 
 func timeDiffInMins(str string) int32 {
-	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-//	now := time.Now()
+	time.LoadLocation("America/New_York")
 
-	if t, err := time.Parse("2006-01-02T15:04:05.000Z", str); err != nil {
+//	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+	now := time.Now()
+
+	if t, err := time.ParseInLocation(
+		"2006-01-02T15:04:05.000Z", str, now.Location(),
+	); err != nil {
 		return -1
 	} else {
 		return int32(t.Sub(now).Minutes())
