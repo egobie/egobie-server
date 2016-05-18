@@ -1752,7 +1752,7 @@ INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (1, 1, 1),
 (2, 7, 1),
 (3, 9, 2),
-(4, 2, 2),
+(4, 6, 2),
 (5, 10, 3),
 (6, 10, 4);
 

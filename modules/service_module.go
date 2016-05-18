@@ -38,7 +38,6 @@ type Service struct {
 	Id          int32       `json:"id"`
 	Name        string      `json:"name"`
 	Type        string      `json:"type"`
-	Items       []string    `json:"items"`
 	Description null.String `json:"description"`
 	Note        string      `json:"note"`
 	Price       float64     `json:"price"`
@@ -46,6 +45,7 @@ type Service struct {
 	Free        []AddOn     `json:"free"`
 	Charge      []AddOn     `json:"charge"`
 	Addons      []AddOn     `json:"addons"`
+	Items       []string    `json:"items,omitempty"`
 }
 
 /**
@@ -70,6 +70,23 @@ type AddOn struct {
 	Max       int32   `json:"max"`
 	Unit      string  `json:"unit"`
 	Amount    int32   `json:"amount"`
+}
+
+type SimpleService struct {
+	Id            int32  `json:"id"`
+	Name          string `json:"name"`
+	Note          string `json:"note"`
+	Type          string `json:"type"`
+	UserServiceId int32  `json:"user_service_id"`
+}
+
+type SimpleAddon struct {
+	Id            int32  `json:"id"`
+	Name          string `json:"name"`
+	Note          string `json:"note"`
+	Amount        int32  `json:"amount"`
+	Unit          string `json:"unit"`
+	UserServiceId int32  `json:"user_service_id"`
 }
 
 /**

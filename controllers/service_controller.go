@@ -27,7 +27,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP(), us.reserved_start_timestamp) as mins,
 				us.start_timestamp, us.end_timestamp,
 				us.note, us.status, us.create_timestamp,
-				s.id, s.name, s.type, s.items, s.description,
+				s.id, s.name, s.type, s.note, s.description,
 				s.estimated_time, s.estimated_price
 		from user_service us
 		inner join user_car uc on uc.id = us.user_car_id
@@ -40,7 +40,6 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 	var (
 		rows1  *sql.Rows
 		rows2  *sql.Rows
-		temp   string
 		tempId int32
 		mins   int32
 		ids    []int32
@@ -61,12 +60,8 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 			&userService.Time, &userService.Price, &userService.ReserveStartTime,
 			&mins, &userService.StartTime, &userService.EndTime, &userService.Note,
 			&userService.Status, &userService.ReserveTime, &service.Id, &service.Name,
-			&service.Type, &temp, &service.Description, &service.Time, &service.Price,
+			&service.Type, &service.Note, &service.Description, &service.Time, &service.Price,
 		); err != nil {
-			return
-		}
-
-		if err = json.Unmarshal([]byte(temp), &service.Items); err != nil {
 			return
 		}
 
@@ -135,6 +130,35 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 	}
 
 	return userServices, nil
+}
+
+func GetReservation(c *gin.Context) {
+	request := modules.BaseRequest{}
+	var (
+		err  error
+		body []byte
+	)
+
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if userServices, err := getUserService(
+		request.UserId, "status = 'RESERVED' or status = 'IN_PROGRESS'",
+	); err == nil {
+		c.IndentedJSON(http.StatusOK, userServices)
+	}
 }
 
 func GetUserServiceReserved(c *gin.Context) {
@@ -260,10 +284,10 @@ func OnDemand(c *gin.Context) {
 			temp.Start = openings[0].Range[0].Start
 			temp.End = openings[0].Range[0].End
 
-			if (int32(temp.Start * 30) % 30 == 0) {
+			if int32(temp.Start*30)%30 == 0 {
 				str = temp.Day + "T" + strconv.Itoa(int(temp.Start)) + ":00:00.000Z"
 			} else {
-				str = temp.Day + "T" + strconv.Itoa(int(temp.Start - 0.5)) + ":30:00.000Z"
+				str = temp.Day + "T" + strconv.Itoa(int(temp.Start-0.5)) + ":30:00.000Z"
 			}
 
 			temp.Diff = timeDiffInMins(str)
@@ -277,7 +301,7 @@ func OnDemand(c *gin.Context) {
 }
 
 func getCurrentPeriod() int32 {
-//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+	//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
 	t := time.Now()
 	now := t.Add(30 * time.Minute)
 	hour := now.Hour()
@@ -298,7 +322,7 @@ func getCurrentPeriod() int32 {
 func timeDiffInMins(str string) int32 {
 	time.LoadLocation("America/New_York")
 
-//	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
+	//	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
 	now := time.Now()
 
 	if t, err := time.ParseInLocation(
@@ -1021,7 +1045,7 @@ func updateServiceDemand(ids []int32) {
 	query := `update service set demand = demand + 1 where id in (`
 	last := len(ids) - 1
 
-	if (last < 0) {
+	if last < 0 {
 		return
 	}
 
@@ -1057,6 +1081,102 @@ func releaseOpening(tx *sql.Tx, id, gap int32) (err error) {
 	_, err = tx.Exec(`
 		update opening set count = count + 1 where id >= ? and id < ?
 	`, id, id+gap)
+
+	return
+}
+
+func getSimpleService(userServices []int32) (services []modules.SimpleService, err error) {
+	query := `
+		select s.id, s.name, s.note, s.type, usl.user_service_id
+		from service s
+		inner join user_service_list usl on usl.service_id = s.id
+		where usl.user_service_id in (
+	`
+	last := len(userServices) - 1
+
+	if last < 0 {
+		return
+	}
+
+	var (
+		rows *sql.Rows
+	)
+
+	for i, id := range userServices {
+		query += strconv.Itoa(int(id))
+
+		if i != last {
+			query += ", "
+		}
+	}
+
+	query += ") order by usl.user_service_id"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		service := modules.SimpleService{}
+
+		if err = rows.Scan(
+			&service.Id, &service.Name, &service.Note,
+			&service.Type, &service.UserServiceId,
+		); err != nil {
+			return
+		}
+
+		services = append(services, service)
+	}
+
+	return
+}
+
+func getSimpleAddon(userServices []int32) (addons []modules.SimpleAddon, err error) {
+	query := `
+		select sa.id, sa.name, sa.note, usal.amount, sa.unit, usal.user_service_id
+		from user_service_addon_list usal
+		inner join service_addon sa on sa.id = usal.service_addon_id
+		where usal.user_service_id in (
+	`
+	last := len(userServices) - 1
+
+	if last < 0 {
+		return
+	}
+
+	var (
+		rows *sql.Rows
+	)
+
+	for i, id := range userServices {
+		query += strconv.Itoa(int(id))
+
+		if i != last {
+			query += ", "
+		}
+	}
+
+	query += ") order by usal.user_service_id"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		addon := modules.SimpleAddon{}
+
+		if err = rows.Scan(
+			&addon.Id, &addon.Name, &addon.Note, &addon.Amount,
+			&addon.Unit, &addon.UserServiceId,
+		); err != nil {
+			return
+		}
+
+		addons = append(addons, addon)
+	}
 
 	return
 }

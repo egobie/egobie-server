@@ -27,11 +27,15 @@ func GetHistory(c *gin.Context) {
 		limit ?, ?
 	`
 	request := modules.HistoryRequest{}
+	index := make(map[int32]int32)
 	var (
-		rows      *sql.Rows
-		err       error
-		histories []modules.History
-		body      []byte
+		rows            *sql.Rows
+		err             error
+		histories       []modules.History
+		body            []byte
+		userServices    []int32
+		hisotryServices []modules.SimpleService
+		historyAddons   []modules.SimpleAddon
 	)
 
 	defer func() {
@@ -81,15 +85,29 @@ func GetHistory(c *gin.Context) {
 
 		history.AccountNumber = getPaymentLastFour(history.AccountNumber)
 
-		/*
-		if err = json.Unmarshal(
-			[]byte("["+temp+"]"), &history.ServiceIds,
-		); err != nil {
-			return
-		}
-		*/
-
+		index[history.UserServiceId] = int32(len(histories))
+		userServices = append(userServices, history.UserServiceId)
 		histories = append(histories, history)
+	}
+
+	if hisotryServices, err = getSimpleService(userServices); err != nil {
+		return
+	}
+
+	if historyAddons, err = getSimpleAddon(userServices); err != nil {
+		return
+	}
+
+	for _, hisotryService := range hisotryServices {
+		histories[index[hisotryService.UserServiceId]].Services = append(
+			histories[index[hisotryService.UserServiceId]].Services, hisotryService,
+		)
+	}
+
+	for _, hisotryAddon := range historyAddons {
+		histories[index[hisotryAddon.UserServiceId]].Addons = append(
+			histories[index[hisotryAddon.UserServiceId]].Addons, hisotryAddon,
+		)
 	}
 
 	c.IndentedJSON(http.StatusOK, histories)

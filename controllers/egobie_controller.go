@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -41,8 +40,8 @@ func GetTask(c *gin.Context) {
 		err          error
 		userServices []int32
 		tasks        []modules.Task
-		taskServices []modules.TaskService
-		taskAddons   []modules.TaskAddon
+		taskServices []modules.SimpleService
+		taskAddons   []modules.SimpleAddon
 	)
 
 	defer func() {
@@ -81,11 +80,11 @@ func GetTask(c *gin.Context) {
 		userServices = append(userServices, task.Id)
 	}
 
-	if taskServices, err = getTaskService(userServices); err != nil {
+	if taskServices, err = getSimpleService(userServices); err != nil {
 		return
 	}
 
-	if taskAddons, err = getTaskAddon(userServices); err != nil {
+	if taskAddons, err = getSimpleAddon(userServices); err != nil {
 		return
 	}
 
@@ -102,103 +101,6 @@ func GetTask(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, tasks)
-
-}
-
-func getTaskService(userServices []int32) (services []modules.TaskService, err error) {
-	query := `
-		select s.id, s.name, s.note, s.type, usl.user_service_id
-		from service s
-		inner join user_service_list usl on usl.service_id = s.id
-		where usl.user_service_id in (
-	`
-	last := len(userServices) - 1
-
-	if (last < 0) {
-		return
-	}
-
-	var (
-		rows *sql.Rows
-	)
-
-	for i, id := range userServices {
-		query += strconv.Itoa(int(id))
-
-		if i != last {
-			query += ", "
-		}
-	}
-
-	query += ") order by usl.user_service_id"
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		service := modules.TaskService{}
-
-		if err = rows.Scan(
-			&service.Id, &service.Name, &service.Note,
-			&service.Type, &service.UserServiceId,
-		); err != nil {
-			return
-		}
-
-		services = append(services, service)
-	}
-
-	return
-}
-
-func getTaskAddon(userServices []int32) (addons []modules.TaskAddon, err error) {
-	query := `
-		select sa.id, sa.name, sa.note, usal.amount, sa.unit, usal.user_service_id
-		from user_service_addon_list usal
-		inner join service_addon sa on sa.id = usal.service_addon_id
-		where usal.user_service_id in (
-	`
-	last := len(userServices) - 1
-
-	if (last < 0) {
-		return
-	}
-
-	var (
-		rows *sql.Rows
-	)
-
-	for i, id := range userServices {
-		query += strconv.Itoa(int(id))
-
-		if i != last {
-			query += ", "
-		}
-	}
-
-	query += ") order by usal.user_service_id"
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		addon := modules.TaskAddon{}
-
-		if err = rows.Scan(
-			&addon.Id, &addon.Name, &addon.Note, &addon.Amount,
-			&addon.Unit, &addon.UserServiceId,
-		); err != nil {
-			return
-		}
-
-		addons = append(addons, addon)
-	}
-
-	return
 }
 
 func MakeServiceDone(c *gin.Context) {
