@@ -2,6 +2,7 @@ package modules
 
 type Task struct {
 	Id         int32         `json:"id"`
+	Status     string        `json:"status"`
 	Start      string        `json:"start"`
 	FirstName  string        `json:"first"`
 	MiddleName string        `json:"middle"`
@@ -47,4 +48,10 @@ type ChangeServiceStatus struct {
 	CarId     int32 `json:"car_id"`
 	ServiceId int32 `json:"service_id"`
 	PaymentId int32 `json:"payment_id"`
+}
+
+type TaskInfo struct {
+	UserId        int32
+	UserCarId     int32
+	UserPaymentId int32
 }

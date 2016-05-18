@@ -16,7 +16,7 @@ import (
 
 func GetTask(c *gin.Context) {
 	query := `
-		select us.id, us.reserved_start_timestamp, u.first_name, u.middle_name,
+		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
 				u.home_address_city, u.home_address_street, uc.plate, uc.state,
 				uc.color, cma.title, cmo.title
@@ -25,12 +25,14 @@ func GetTask(c *gin.Context) {
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
-		where us.status = "RESERVED" and us.assignee = ? and us.opening_id in (
+		where us.status != "CANCEL" and us.assignee = ? `
+/*
+		and us.opening_id in (
 			select id from opening
 			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and count < 2
 		) order by us.reserved_start_timestamp
 	`
-
+*/
 	request := modules.TaskRequest{}
 	index := make(map[int32]int32)
 	var (
@@ -66,9 +68,10 @@ func GetTask(c *gin.Context) {
 		task := modules.Task{}
 
 		if err = rows1.Scan(
-			&task.Id, &task.Start, &task.FirstName, &task.MiddleName, &task.LastName,
-			&task.Phone, &task.State, &task.Zip, &task.City, &task.Street, &task.Plate,
-			&task.CarState, &task.Color, &task.Maker, &task.Model,
+			&task.Id, &task.Status, &task.Start, &task.FirstName, &task.MiddleName,
+			&task.LastName, &task.Phone, &task.State, &task.Zip, &task.City,
+			&task.Street, &task.Plate, &task.CarState, &task.Color, &task.Maker,
+			&task.Model,
 		); err != nil {
 			return
 		}
@@ -232,21 +235,34 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 	query := `
 		update user_service set status = ?
 	`
+	selectQuery := `
+		select user_id, user_car_id, user_payment_id
+		from user_service
+		where id = ?
+	`
+
 	request := modules.ChangeServiceStatus{}
+	taskInfo := modules.TaskInfo{}
 	var (
 		data []byte
 		tx   *sql.Tx
 	)
 
 	if status == "IN_PROGRESS" {
-		query += ", start_timestamp = CURRENT_TIMESTAMP()"
+		query += `
+			, start_timestamp = CURRENT_TIMESTAMP()
+			where status = "RESERVED"
+		`
 	} else if status == "DONE" {
-		query += ", end_timestamp = CURRENT_TIMESTAMP()"
+		query += `
+			, end_timestamp = CURRENT_TIMESTAMP()
+			where status = "IN_PROGRESS"
+		`
 	} else if status == "RESERVED" {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
 	}
 
-	query += " where id = ? and user_id = ?"
+	query += " and id = ? and user_id = ?"
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		return
@@ -272,22 +288,34 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		}
 	}()
 
+	if err = tx.QueryRow(selectQuery, request.ServiceId).Scan(
+		&taskInfo.UserId, &taskInfo.UserCarId, &taskInfo.UserPaymentId,
+	); err != nil {
+		return
+	}
+
 	if _, err = tx.Exec(
-		query, status, request.ServiceId, request.UserId,
+		query, status, request.ServiceId, taskInfo.UserId,
 	); err != nil {
 		return
 	}
 
 	if status == "DONE" {
-		if err = unlockCar(tx, request.CarId, request.UserId); err != nil {
+		if err = unlockCar(
+			tx, taskInfo.UserCarId, taskInfo.UserId,
+		); err != nil {
 			return
 		}
 
-		if err = unlockPayment(tx, request.PaymentId, request.UserId); err != nil {
+		if err = unlockPayment(
+			tx, taskInfo.UserPaymentId, taskInfo.UserId,
+		); err != nil {
 			return
 		}
 
-		if err = createHistory(tx, request.UserId, request.ServiceId); err != nil {
+		if err = createHistory(
+			tx, taskInfo.UserId, request.ServiceId,
+		); err != nil {
 			return
 		}
 	}

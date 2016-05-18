@@ -19,11 +19,9 @@ func GetHistory(c *gin.Context) {
 		select uh.id, uh.rating, uh.note,
 				uh.car_plate, uh.car_state, uh.car_maker, uh.car_model, uh.car_year, uh.car_color,
 				uh.payment_holder, uh.payment_number, uh.payment_type, uh.payment_price,
-				us.id, us.reservation_id, us.start_timestamp, us.end_timestamp,
-				GROUP_CONCAT(usl.service_id) as services
+				us.id, us.reservation_id, us.start_timestamp, us.end_timestamp
 		from user_history uh
 		inner join user_service us on us.id = uh.user_service_id and us.status = 'DONE'
-		inner join user_service_list usl on usl.user_service_id = us.id
 		where uh.user_id = ?
 		order by uh.create_timestamp DESC
 		limit ?, ?
@@ -34,7 +32,6 @@ func GetHistory(c *gin.Context) {
 		err       error
 		histories []modules.History
 		body      []byte
-		temp      string
 	)
 
 	defer func() {
@@ -67,7 +64,7 @@ func GetHistory(c *gin.Context) {
 			&history.State, &history.Maker, &history.Model, &history.Year,
 			&history.Color, &history.AccountName, &history.AccountNumber,
 			&history.AccountType, &history.Price, &history.UserServiceId,
-			&history.ReservationId, &history.StartTime, &history.EndTime, &temp,
+			&history.ReservationId, &history.StartTime, &history.EndTime,
 		); err != nil {
 			if err == sql.ErrNoRows {
 				err = nil
@@ -84,11 +81,13 @@ func GetHistory(c *gin.Context) {
 
 		history.AccountNumber = getPaymentLastFour(history.AccountNumber)
 
+		/*
 		if err = json.Unmarshal(
 			[]byte("["+temp+"]"), &history.ServiceIds,
 		); err != nil {
 			return
 		}
+		*/
 
 		histories = append(histories, history)
 	}
