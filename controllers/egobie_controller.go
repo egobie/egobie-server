@@ -24,14 +24,12 @@ func GetTask(c *gin.Context) {
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
-		where us.status != "CANCEL" and us.assignee = ? `
-/*
-		and us.opening_id in (
+		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
 			select id from opening
 			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and count < 2
 		) order by us.reserved_start_timestamp
 	`
-*/
+
 	request := modules.TaskRequest{}
 	index := make(map[int32]int32)
 	var (
