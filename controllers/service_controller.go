@@ -1063,16 +1063,12 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func makeServicePaid(userId, serviceId, paymentId int32) (err error) {
-	_, err = config.DB.Exec(`
-		update user_service set paid = 1
+func makeServicePaid(tx *sql.Tx, userId, serviceId, paymentId int32) (err error) {
+	_, err = tx.Exec(`
+		update user_service set paid = paid - 1
 		where id = ? and user_id = ? and user_payment_id = ?
-			and status = "DONE" and paid = 0
+			and status = "DONE" and paid > 0
 	`, serviceId, userId, paymentId)
-
-	if err != nil {
-		fmt.Println("Error - Make Service Paid - ", err.Error())
-	}
 
 	return
 }

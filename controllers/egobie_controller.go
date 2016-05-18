@@ -218,6 +218,12 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		); err != nil {
 			return
 		}
+
+		if err = processPayment(
+			tx, request.ServiceId, taskInfo.UserPaymentId, taskInfo.UserId,
+		); err != nil {
+			return
+		}
 	}
 
 	return

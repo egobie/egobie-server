@@ -15,5 +15,5 @@ func initPaymentRoutes() {
 
 	paymentRouter.POST("/delete", controllers.DeletePayment)
 
-	paymentRouter.POST("/pay", controllers.ProcessPayment);
+	//paymentRouter.POST("/pay", controllers.MakePayment);
 }

@@ -383,12 +383,12 @@ func validatePayment(firstName, lastName, account, code, month, year string) (er
 	var customer *braintree.Customer
 
 	/*
-	fmt.Println("First -", firstName, "-")
-	fmt.Println("Last -", lastName, "-")
-	fmt.Println("account -", account, "-")
-	fmt.Println("code -", code, "-")
-	fmt.Println("month -", month, "-")
-	fmt.Println("year -", year, "-")
+		fmt.Println("First -", firstName, "-")
+		fmt.Println("Last -", lastName, "-")
+		fmt.Println("account -", account, "-")
+		fmt.Println("code -", code, "-")
+		fmt.Println("month -", month, "-")
+		fmt.Println("year -", year, "-")
 	*/
 
 	customer, err = config.BT.Customer().Create(&braintree.Customer{
@@ -470,27 +470,29 @@ func checkPaymentStatus(id, userId int32) (bool, string) {
 		return true, err.Error()
 	} else if temp > 0 {
 		return true, `
-			This payment method cannot be deleted since you have one reservation on it.
+			This payment method cannot be deleted since you have reservations on it.
 		`
 	}
 
-	query = `
-		select count(*)
-		from user_service us
-		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
-		where up.id = ? and up.user_id = ? and us.paid = 0 and us.status = 'DONE'
-	`
-
-	if err := config.DB.QueryRow(
-		query, id, userId,
-	).Scan(&temp); err != nil {
-		fmt.Println("Check Payment Status - Error - ", err.Error())
-		return true, err.Error()
-	} else if temp > 0 {
-		return true, `
-			This payment method cannot be deleted since you need to process your payment.
+	/*
+		query = `
+			select count(*)
+			from user_service us
+			inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
+			where up.id = ? and up.user_id = ? and us.paid > 0 and us.status = 'DONE'
 		`
-	}
+
+		if err := config.DB.QueryRow(
+			query, id, userId,
+		).Scan(&temp); err != nil {
+			fmt.Println("Check Payment Status - Error - ", err.Error())
+			return true, err.Error()
+		} else if temp > 0 {
+			return true, `
+				This payment method cannot be deleted since we need to process your payment.
+			`
+		}
+	*/
 
 	return false, ""
 }
@@ -523,29 +525,12 @@ func unlockPayment(tx *sql.Tx, id, userId int32) (err error) {
 	return
 }
 
-func ProcessPayment(c *gin.Context) {
-	query := `
-		select up.id, us.estimated_price, up.account_number, up.account_zip,
-				up.code, up.expire_month, up.expire_year, up.account_type
-		from user_service us
-		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
-		where us.id = ? and up.id = ? and us.user_id = ? and us.status = 'DONE'
-	`
+func MakePayment(c *gin.Context) {
 	request := modules.ProcessRequest{}
-	process := struct {
-		PaymentId     int32
-		Price         float32
-		Code          string
-		Zip           string
-		Year          string
-		Month         string
-		AccountNumber string
-		AccountType   string
-	}{}
 	var (
 		data []byte
 		err  error
-		tx   *braintree.Transaction
+		tx   *sql.Tx
 	)
 
 	defer func() {
@@ -563,8 +548,52 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	if err = config.DB.QueryRow(
-		query, request.ServiceId, request.PaymentId, request.UserId,
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if (err != nil) {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err2 := tx.Commit(); err2 != nil {
+				fmt.Println("Error - Commit - ", err2.Error())
+			}
+		}
+	}()
+
+	if err = processPayment(
+		tx, request.ServiceId, request.PaymentId, request.UserId,
+	); err != nil {
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err error) {
+	query := `
+		select up.id, us.estimated_price, up.account_number, up.account_zip,
+				up.code, up.expire_month, up.expire_year, up.account_type
+		from user_service us
+		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
+		where us.id = ? and up.id = ? and us.user_id = ? and us.status = 'DONE'
+	`
+	process := struct {
+		PaymentId     int32
+		Price         float32
+		Code          string
+		Zip           string
+		Year          string
+		Month         string
+		AccountNumber string
+		AccountType   string
+	}{}
+
+	if err = tx.QueryRow(
+		query, userServiceId, userPaymentId, userId,
 	).Scan(
 		&process.PaymentId, &process.Price, &process.AccountNumber,
 		&process.Zip, &process.Code, &process.Month, &process.Year,
@@ -585,16 +614,16 @@ func ProcessPayment(c *gin.Context) {
 	}
 
 	/*
-	fmt.Println("Process Payment ------ Start")
-	fmt.Println("Decimal - ", int64(process.Price*100))
-	fmt.Println("Number - ", process.AccountNumber)
-	fmt.Println("CVV - ", process.Code)
-	fmt.Println("ExpirationMonth - ", process.Month)
-	fmt.Println("ExpirationYear - ", process.Year[2:])
-	fmt.Println("Process Payment ------ End\n")
+		fmt.Println("Process Payment ------ Start")
+		fmt.Println("Decimal - ", int64(process.Price*100))
+		fmt.Println("Number - ", process.AccountNumber)
+		fmt.Println("CVV - ", process.Code)
+		fmt.Println("ExpirationMonth - ", process.Month)
+		fmt.Println("ExpirationYear - ", process.Year[2:])
+		fmt.Println("Process Payment ------ End\n")
 	*/
 
-	if tx, err = config.BT.Transaction().Create(
+	if _, err = config.BT.Transaction().Create(
 		&braintree.Transaction{
 			Type:   "sale",
 			Amount: braintree.NewDecimal(int64(process.Price*100), 2),
@@ -610,9 +639,7 @@ func ProcessPayment(c *gin.Context) {
 		return
 	}
 
-	makeServicePaid(request.UserId, request.ServiceId, request.PaymentId)
+	//makeServicePaid(tx, serId, userServiceId, userPaymentId)
 
-	fmt.Println("Transaction Info - ", tx)
-
-	c.IndentedJSON(http.StatusOK, "OK")
+	return
 }
