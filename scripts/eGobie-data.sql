@@ -1719,9 +1719,13 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 
 INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 (1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383'),
-(2, 'RESIDENTIAL', 'test1', '2f20a2d2724752c202ddb0fdca9f20a3e0d4bfbe83938ab9', 'test1@egobie.com', '1234567890'),
-(3, 'RESIDENTIAL', 'test2', '50cef261a53165f08cb20850ac4047b45ca530d5058fc808bd427bca', 'test2@egobie.com', '1234567890'),
-(4, 'RESIDENTIAL', 'bhuang3', '92540fa6e7340a2855d5358eadcf5c71ec84dc8e354bb2a9aff06bd853ba6135', 'bhuang1228@gmail.com', '2019120383');
+(2, 'EGOBIE', 'ego_runner_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'runner1@egobie.com', '2019120383'),
+(3, 'EGOBIE', 'ego_runner_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'runner2@egobie.com', '2019120383'),
+(4, 'EGOBIE', 'a', '5df3bf93b9153cc6ab5ef8f32ad7ce3fd06ae656', 'a@egobie.com', '2019120383');
+
+UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
+home_address_zip = '07601', home_address_city = 'Hackensack', home_address_street = '414 Hackensack Avenue'
+where id = 1;
 
 INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id, reserved) VALUES
 (1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 2);
@@ -1729,14 +1733,14 @@ INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_
 INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year, reserved) VALUES
 (1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 2);
 
-INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
-(1, 1, 1, 2, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED');
-INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, status) VALUES
-(1, 1, 1, 4, 120, 39.89, 5, '2016-04-15 11:30:00', '2016-04-15 11:20:36', 'IN_PROGRESS');
-INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, end_timestamp, status) VALUES
-(1, 1, 1, 3, 110, 59.89, 2, '2016-04-15 11:30:00', '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
-INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status) VALUES
-(1, 1, 1, 55, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED');
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status, assignee) VALUES
+(1, 1, 1, 2, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, status, assignee) VALUES
+(1, 1, 1, 4, 120, 39.89, 5, '2016-04-15 11:30:00', '2016-04-15 11:20:36', 'IN_PROGRESS', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, end_timestamp, status, assignee) VALUES
+(1, 1, 1, 3, 110, 59.89, 2, '2016-04-15 11:30:00', '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status, assignee) VALUES
+(1, 1, 1, 55, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED', 4);
 
 
 INSERT INTO user_history (id, rating, user_id, user_service_id, car_plate, car_state, car_maker, car_model, car_year, car_color, payment_holder, payment_number, payment_type, payment_price) VALUES

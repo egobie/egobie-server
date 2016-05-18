@@ -3,15 +3,200 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"fmt"
+	"strconv"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 
 	"github.com/gin-gonic/gin"
 )
+
+func GetTask(c *gin.Context) {
+	query := `
+		select us.id, us.reserved_start_timestamp, u.first_name, u.middle_name,
+				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
+				u.home_address_city, u.home_address_street, uc.plate, uc.state,
+				uc.color, cma.title, cmo.title
+		from user_service us
+		inner join user u on u.id = us.user_id
+		inner join user_car uc on uc.id = us.user_car_id
+		inner join car_maker cma on cma.id = uc.car_maker_id
+		inner join car_model cmo on cmo.id = uc.car_model_id
+		where us.status = "RESERVED" and us.assignee = ? and us.opening_id in (
+			select id from opening
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and count < 2
+		) order by us.reserved_start_timestamp
+	`
+
+	request := modules.TaskRequest{}
+	index := make(map[int32]int32)
+	var (
+		rows1        *sql.Rows
+		data         []byte
+		err          error
+		userServices []int32
+		tasks        []modules.Task
+		taskServices []modules.TaskService
+		taskAddons   []modules.TaskAddon
+	)
+
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if rows1, err = config.DB.Query(query, request.UserId); err != nil {
+		return
+	}
+
+	for rows1.Next() {
+		task := modules.Task{}
+
+		if err = rows1.Scan(
+			&task.Id, &task.Start, &task.FirstName, &task.MiddleName, &task.LastName,
+			&task.Phone, &task.State, &task.Zip, &task.City, &task.Street, &task.Plate,
+			&task.CarState, &task.Color, &task.Maker, &task.Model,
+		); err != nil {
+			return
+		}
+
+		index[task.Id] = int32(len(tasks))
+		tasks = append(tasks, task)
+		userServices = append(userServices, task.Id)
+	}
+
+	if taskServices, err = getTaskService(userServices); err != nil {
+		return
+	}
+
+	if taskAddons, err = getTaskAddon(userServices); err != nil {
+		return
+	}
+
+	for _, taskService := range taskServices {
+		tasks[index[taskService.UserServiceId]].Services = append(
+			tasks[index[taskService.UserServiceId]].Services, taskService,
+		)
+	}
+
+	for _, taskAddon := range taskAddons {
+		tasks[index[taskAddon.UserServiceId]].Addons = append(
+			tasks[index[taskAddon.UserServiceId]].Addons, taskAddon,
+		)
+	}
+
+	c.IndentedJSON(http.StatusOK, tasks)
+
+}
+
+func getTaskService(userServices []int32) (services []modules.TaskService, err error) {
+	query := `
+		select s.id, s.name, s.note, s.type, usl.user_service_id
+		from service s
+		inner join user_service_list usl on usl.service_id = s.id
+		where usl.user_service_id in (
+	`
+	last := len(userServices) - 1
+
+	if (last < 0) {
+		return
+	}
+
+	var (
+		rows *sql.Rows
+	)
+
+	for i, id := range userServices {
+		query += strconv.Itoa(int(id))
+
+		if i != last {
+			query += ", "
+		}
+	}
+
+	query += ") order by usl.user_service_id"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		service := modules.TaskService{}
+
+		if err = rows.Scan(
+			&service.Id, &service.Name, &service.Note,
+			&service.Type, &service.UserServiceId,
+		); err != nil {
+			return
+		}
+
+		services = append(services, service)
+	}
+
+	return
+}
+
+func getTaskAddon(userServices []int32) (addons []modules.TaskAddon, err error) {
+	query := `
+		select sa.id, sa.name, sa.note, usal.amount, sa.unit, usal.user_service_id
+		from user_service_addon_list usal
+		inner join service_addon sa on sa.id = usal.service_addon_id
+		where usal.user_service_id in (
+	`
+	last := len(userServices) - 1
+
+	if (last < 0) {
+		return
+	}
+
+	var (
+		rows *sql.Rows
+	)
+
+	for i, id := range userServices {
+		query += strconv.Itoa(int(id))
+
+		if i != last {
+			query += ", "
+		}
+	}
+
+	query += ") order by usal.user_service_id"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		addon := modules.TaskAddon{}
+
+		if err = rows.Scan(
+			&addon.Id, &addon.Name, &addon.Note, &addon.Amount,
+			&addon.Unit, &addon.UserServiceId,
+		); err != nil {
+			return
+		}
+
+		addons = append(addons, addon)
+	}
+
+	return
+}
 
 func MakeServiceDone(c *gin.Context) {
 	if err := changeServiceStatus(c, "DONE"); err != nil {
@@ -78,11 +263,11 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 	defer func() {
 		if err != nil {
 			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error - Rollback - ", err1.Error());
+				fmt.Println("Error - Rollback - ", err1.Error())
 			}
 		} else {
 			if err1 := tx.Commit(); err1 != nil {
-				fmt.Println("Error - Commit - ", err1.Error());
+				fmt.Println("Error - Commit - ", err1.Error())
 			}
 		}
 	}()

@@ -80,7 +80,6 @@ func authorizeResidentialUser(c *gin.Context) {
 		c.Abort()
 		return
 	} else if int32(len(token)) != modules.USER_RESIDENTIAL_TOKEN {
-		c.IndentedJSON(http.StatusBadRequest, "Invalid user")
 		c.Abort()
 		return
 	}

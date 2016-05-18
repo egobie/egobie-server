@@ -147,6 +147,7 @@ CREATE TABLE user_service (
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     paid INT NOT NULL DEFAULT 0,
     opening_id INT NOT NULL,
+    assignee INT NOT NULL DEFAULT -1,
     reserved_start_timestamp TIMESTAMP NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
