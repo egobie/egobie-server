@@ -474,26 +474,6 @@ func checkPaymentStatus(id, userId int32) (bool, string) {
 		`
 	}
 
-	/*
-		query = `
-			select count(*)
-			from user_service us
-			inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
-			where up.id = ? and up.user_id = ? and us.paid > 0 and us.status = 'DONE'
-		`
-
-		if err := config.DB.QueryRow(
-			query, id, userId,
-		).Scan(&temp); err != nil {
-			fmt.Println("Check Payment Status - Error - ", err.Error())
-			return true, err.Error()
-		} else if temp > 0 {
-			return true, `
-				This payment method cannot be deleted since we need to process your payment.
-			`
-		}
-	*/
-
 	return false, ""
 }
 
@@ -638,8 +618,6 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err
 		err = errors.New("Cannot process payment now - " + err.Error())
 		return
 	}
-
-	//makeServicePaid(tx, serId, userServiceId, userPaymentId)
 
 	return
 }

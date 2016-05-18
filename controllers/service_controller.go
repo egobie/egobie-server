@@ -1113,16 +1113,6 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func makeServicePaid(tx *sql.Tx, userId, serviceId, paymentId int32) (err error) {
-	_, err = tx.Exec(`
-		update user_service set paid = paid - 1
-		where id = ? and user_id = ? and user_payment_id = ?
-			and status = "DONE" and paid > 0
-	`, serviceId, userId, paymentId)
-
-	return
-}
-
 func holdOpening(tx *sql.Tx, start, end int32) (err error) {
 	updateOpening := `
 		update opening set count = count - 1 where id >= ? and id < ? and count > 0
