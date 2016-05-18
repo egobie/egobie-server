@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"errors"
+	"database/sql"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -298,3 +299,15 @@ func Feedback(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }
+
+func useDiscount(tx *sql.Tx, userId int32) (err error) {
+	query := `
+		update user set discount = discount - 1 where id = ? and discount > 0
+	`
+
+	_, err = tx.Exec(query, userId)
+
+	return;
+}
+
+

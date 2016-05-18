@@ -428,7 +428,7 @@ func filterOpening(services, addons []int32, openings []modules.Opening) (result
 		pre  int32
 	)
 
-	if time, err = getTotalTime(services, addons); err != nil {
+	if time, _, err = getTotalTimeAndPrice(services, addons); err != nil {
 		return
 	}
 
@@ -473,72 +473,22 @@ func filterOpening(services, addons []int32, openings []modules.Opening) (result
 	return result, nil
 }
 
-func getTotalTime(services, addons []int32) (time int32, err error) {
-	query1 := `
-		select sum(estimated_time) from service where id in (
-	`
-	query2 := `
-		select sum(time) from service_addon where id in (
-	`
-	var (
-		time1 int32
-		time2 int32
-	)
-
-	for i, id := range services {
-		if i == 0 {
-			query1 += strconv.Itoa(int(id))
-		} else {
-			query1 += "," + strconv.Itoa(int(id))
-		}
-	}
-
-	query1 += ")"
-
-	if err = config.DB.QueryRow(query1).Scan(&time1); err != nil {
-		return
-	}
-
-	if len(addons) > 0 {
-		for i, id := range addons {
-			if i == 0 {
-				query2 += strconv.Itoa(int(id))
-			} else {
-				query2 += "," + strconv.Itoa(int(id))
-			}
-		}
-
-		query2 += ")"
-
-		if err = config.DB.QueryRow(query2).Scan(&time2); err != nil {
-			return
-		}
-	}
-
-	time = time1 + time2
-
-	return time, nil
-}
-
 func PlaceOrder(c *gin.Context) {
 	request := modules.OrderRequest{}
 	car := modules.Car{}
 	payment := modules.Payment{}
 	user := modules.User{}
-	info := modules.ServiceInfo{}
 
 	var (
-		rows        *sql.Rows
-		result      sql.Result
-		tx          *sql.Tx
-		body        []byte
-		err         error
-		price       float32
-		time        int32
-		gap         int32
-		insertedId  int64
-		affectedRow int64
-		reserved    string
+		result     sql.Result
+		tx         *sql.Tx
+		body       []byte
+		err        error
+		price      float32
+		time       int32
+		gap        int32
+		insertedId int64
+		reserved   string
 	)
 
 	defer func() {
@@ -558,32 +508,6 @@ func PlaceOrder(c *gin.Context) {
 
 	updateOpeningDemand(request.Opening)
 
-	if rows, err = config.DB.Query(
-		buildServicesQuery(request.Services),
-	); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(
-			&info.Type, &info.Count, &info.Price, &info.Time,
-		); err != nil {
-			return
-		}
-
-		if info.Count > 1 {
-			c.IndentedJSON(http.StatusBadRequest, `
-				You can only select one service for each type`,
-			)
-			c.Abort()
-			return
-		}
-
-		time += info.Time
-		price += info.Price
-	}
-
 	if user, err = getUserById(request.UserId); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("User not found")
@@ -591,23 +515,12 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	gap = time/30 + 1
-
-	if time%30 != 0 {
-		gap += 1
-	}
-
 	if payment, err = getPaymentByIdAndUserId(
 		request.PaymentId, request.UserId,
 	); err != nil {
-		switch {
-		case err == sql.ErrNoRows:
-			c.IndentedJSON(http.StatusBadRequest, "Payment not found")
-		default:
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		if err == sql.ErrNoRows {
+			err = errors.New("User not found")
 		}
-
-		c.Abort()
 		return
 	}
 
@@ -617,8 +530,39 @@ func PlaceOrder(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			err = errors.New("Car not found")
 		}
-
 		return
+	}
+
+	if t, p, err := getServicesTimeAndPrice(request.Services); err != nil {
+		return
+	} else {
+		time += t
+		price += p
+	}
+
+	if t, p, err := getAddonsTimeAndPrice(request.Addons); err != nil {
+		return
+	} else {
+		time += t
+		price += p
+	}
+
+	if user.Discount > 0 {
+		price = price * 1.07 * 0.9
+
+		if err = useDiscount(tx, user.Id); err != nil {
+			return
+		}
+	} else {
+		price = price * 1.07
+	}
+
+	price = float32(int(price*100)) / 100
+
+	gap = time/30 + 1
+
+	if time%30 != 0 {
+		gap += 1
 	}
 
 	if tx, err = config.DB.Begin(); err != nil {
@@ -637,20 +581,9 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}()
 
-	updateOpening := `
-		update opening set count = count - 1 where id >= ? and id < ? and count > 0
-	`
-
-	if result, err = tx.Exec(
-		updateOpening, request.Opening, request.Opening+gap,
+	if err = holdOpening(
+		tx, request.Opening, request.Opening+gap,
 	); err != nil {
-		return
-	}
-
-	if affectedRow, err = result.RowsAffected(); err != nil {
-		return
-	} else if affectedRow != int64(gap) {
-		err = errors.New("Opening is not available")
 		return
 	}
 
@@ -735,26 +668,143 @@ func PlaceOrder(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
-func getTimeAndPrice(services []int32) (time int32, price float32, msg string) {
-
-	return time, price, ""
-}
-
-func buildServicesQuery(ids []int32) string {
-	queryServices := `
-		select type, count(*), sum(estimated_price), sum(estimated_time)
+func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error) {
+	query := `
+		select sum(estimated_time), sum(estimated_price), count(*)
 		from service where id in (
 	`
+	var (
+		rows *sql.Rows
+		t    int32
+		c    int32
+		p    float32
+	)
 
 	for index, id := range ids {
 		if index == 0 {
-			queryServices += strconv.Itoa(int(id))
+			query += strconv.Itoa(int(id))
 		} else {
-			queryServices += ("," + strconv.Itoa(int(id)))
+			query += ("," + strconv.Itoa(int(id)))
 		}
 	}
 
-	return queryServices + ") group by type"
+	query += ") group by type"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err = rows.Scan(&t, &p, &c); err != nil {
+			return
+		}
+
+		if c > 1 {
+			err = errors.New("Can only choose one service for each type")
+			return
+		}
+
+		time += t
+		price += p
+	}
+
+	return
+}
+
+func getAddonsTimeAndPrice(addons []modules.AddonRequest) (time int32, price float32, err error) {
+	query := `
+		select id, time, price from service_addon where id in (
+	`
+	amount := make(map[int32]int32)
+	var (
+		rows *sql.Rows
+		i    int32
+		t    int32
+		p    float32
+	)
+
+	for index, addon := range addons {
+		if index == 0 {
+			query += strconv.Itoa(int(addon.Id))
+		} else {
+			query += ("," + strconv.Itoa(int(addon.Id)))
+		}
+
+		amount[addon.Id] = addon.Amount
+	}
+
+	query += ")"
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err = rows.Scan(&i, &t, &p); err != nil {
+			return
+		}
+
+		time += t
+		price += (p * float32(amount[i]))
+	}
+
+	return
+}
+
+func getTotalTimeAndPrice(services, addons []int32) (time int32, price float32, err error) {
+	query1 := `
+		select sum(estimated_time), sum(estimated_price) from service where id in (
+	`
+	query2 := `
+		select sum(time), sum(price) from service_addon where id in (
+	`
+	var (
+		time1  int32
+		time2  int32
+		price1 float32
+		price2 float32
+	)
+
+	for i, id := range services {
+		if i == 0 {
+			query1 += strconv.Itoa(int(id))
+		} else {
+			query1 += "," + strconv.Itoa(int(id))
+		}
+	}
+
+	query1 += ")"
+
+	if err = config.DB.QueryRow(query1).Scan(
+		&time1, &price1,
+	); err != nil {
+		return
+	}
+
+	if len(addons) > 0 {
+		for i, id := range addons {
+			if i == 0 {
+				query2 += strconv.Itoa(int(id))
+			} else {
+				query2 += "," + strconv.Itoa(int(id))
+			}
+		}
+
+		query2 += ")"
+
+		if err = config.DB.QueryRow(query2).Scan(
+			&time2, &price2,
+		); err != nil {
+			return
+		}
+	}
+
+	time = time1 + time2
+	price = price1 + price2
+
+	return time, price, nil
 }
 
 func CancelOrder(c *gin.Context) {
@@ -1069,6 +1119,32 @@ func makeServicePaid(tx *sql.Tx, userId, serviceId, paymentId int32) (err error)
 		where id = ? and user_id = ? and user_payment_id = ?
 			and status = "DONE" and paid > 0
 	`, serviceId, userId, paymentId)
+
+	return
+}
+
+func holdOpening(tx *sql.Tx, start, end int32) (err error) {
+	updateOpening := `
+		update opening set count = count - 1 where id >= ? and id < ? and count > 0
+	`
+	gap := end - start
+	var (
+		result      sql.Result
+		affectedRow int64
+	)
+
+	if result, err = tx.Exec(
+		updateOpening, start, end,
+	); err != nil {
+		return
+	}
+
+	if affectedRow, err = result.RowsAffected(); err != nil {
+		return
+	} else if affectedRow != int64(gap) {
+		err = errors.New("Opening is not available")
+		return
+	}
 
 	return
 }

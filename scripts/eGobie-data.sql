@@ -1719,8 +1719,8 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 
 INSERT INTO user (id, type, username, password, email, phone_number) VALUES
 (1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383'),
-(2, 'EGOBIE', 'ego_runner_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'runner1@egobie.com', '2019120383'),
-(3, 'EGOBIE', 'ego_runner_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'runner2@egobie.com', '2019120383'),
+(2, 'EGOBIE', 'egobie_em_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'em1@egobie.com', '2019120383'),
+(3, 'EGOBIE', 'egobie_em_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'em2@egobie.com', '2019120383'),
 (4, 'EGOBIE', 'a', '5df3bf93b9153cc6ab5ef8f32ad7ce3fd06ae656', 'a@egobie.com', '2019120383');
 
 UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',

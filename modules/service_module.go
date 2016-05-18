@@ -178,13 +178,6 @@ type Opening struct {
 	Range []Period `json:"range"`
 }
 
-type ServiceInfo struct {
-	Type   string  `json:"type"`
-	Count  int32   `json:"count"`
-	Price  float32 `json:"price"`
-	Time   int32   `json:"time"`
-}
-
 /**
 {
 	"user_id": 1,
