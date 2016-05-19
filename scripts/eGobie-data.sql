@@ -28,19 +28,11 @@ CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count INT) BEGI
     INSERT INTO opening (day, period, count) VALUES (opening_date, 22, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 23, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 24, opening_count);
+
+    INSERT INTO user_opening (day, user_id)
+    SELECT opening_date, u.id FROM user u WHERE u.type = 'EGOBIE';
 END $$
 DELIMITER ;
-
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);
 
 DROP TRIGGER IF EXISTS INSERT_USER_COUPON;
 
@@ -1728,10 +1720,12 @@ home_address_zip = '07601', home_address_city = 'Hackensack', home_address_stree
 where id = 1;
 
 INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id, reserved) VALUES
-(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 2);
+(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 0);
 
 INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year, reserved) VALUES
-(1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 2);
+(1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 0);
+
+/*
 
 INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status, assignee) VALUES
 (1, 1, 1, 2, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED', 4);
@@ -1759,3 +1753,16 @@ INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 INSERT INTO user_service_addon_list (service_addon_id, user_service_id, amount) VALUES
 (1, 1, 1),
 (2, 1, 1);
+
+*/
+
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);

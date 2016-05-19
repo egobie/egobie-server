@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"math"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -489,6 +490,7 @@ func PlaceOrder(c *gin.Context) {
 		gap        int32
 		insertedId int64
 		reserved   string
+		assignee   int32
 	)
 
 	defer func() {
@@ -549,10 +551,6 @@ func PlaceOrder(c *gin.Context) {
 
 	if user.Discount > 0 {
 		price = price * 1.07 * 0.9
-
-		if err = useDiscount(tx, user.Id); err != nil {
-			return
-		}
 	} else {
 		price = price * 1.07
 	}
@@ -581,9 +579,17 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}()
 
+	if err = useDiscount(tx, user.Id); err != nil {
+		return
+	}
+
 	if err = holdOpening(
 		tx, request.Opening, request.Opening+gap,
 	); err != nil {
+		return
+	}
+
+	if assignee, err = assignService(tx, request.Opening, gap); err != nil {
 		return
 	}
 
@@ -611,14 +617,14 @@ func PlaceOrder(c *gin.Context) {
 	insertUserService := `
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
-			reserved_start_timestamp, gap,
+			reserved_start_timestamp, gap, assignee,
 			estimated_time, estimated_price, status
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertUserService,
 		user.Id, car.Id, payment.Id, request.Opening,
-		reserved, gap, time, price, "RESERVED",
+		reserved, gap, assignee, time, price, "RESERVED",
 	); err != nil {
 		return
 	}
@@ -809,7 +815,7 @@ func getTotalTimeAndPrice(services, addons []int32) (time int32, price float32, 
 
 func CancelOrder(c *gin.Context) {
 	checkQuery := `
-		select user_car_id, user_payment_id, opening_id, gap
+		select user_car_id, user_payment_id, opening_id, gap, assignee
 		from user_service
 		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
 		and id = ? and user_id = ?
@@ -823,6 +829,7 @@ func CancelOrder(c *gin.Context) {
 		PaymentId int32
 		Opening   int32
 		Gap       int32
+		Assignee  int32
 	}{}
 
 	var (
@@ -865,7 +872,7 @@ func CancelOrder(c *gin.Context) {
 	if err = tx.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap,
+		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Assignee,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("Cannot cancel this order")
@@ -889,6 +896,12 @@ func CancelOrder(c *gin.Context) {
 	}
 
 	if err = releaseOpening(tx, temp.Opening, temp.Gap); err != nil {
+		return
+	}
+
+	if err = revokeService(
+		tx, request.Id, temp.Opening, temp.Gap, temp.Assignee,
+	); err != nil {
 		return
 	}
 
@@ -1111,6 +1124,65 @@ func updateServiceDemand(ids []int32) {
 	if _, err := config.DB.Exec(query); err != nil {
 		fmt.Println("Error - Service Demand - ", err.Error())
 	}
+}
+
+func assignService(tx *sql.Tx, openingId, gap int32) (assignee int32, err error) {
+	var (
+		day      string
+		period   int32
+	)
+
+	if err = tx.QueryRow(`
+		select day, period from opening where id = ?`,
+		openingId,
+	).Scan(&day, &period); err != nil {
+		return
+	}
+
+	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+
+	if err = tx.QueryRow(`
+		select user_id from user_opening where day = ? and user_schedule & ? = ?`,
+		day, mask, mask,
+	).Scan(&assignee); err != nil {
+		return
+	}
+
+	fmt.Println("assignee - ", assignee)
+
+	_, err = tx.Exec(`
+		update user_opening set user_schedule = user_schedule ^ ?
+		where user_id = ? and day = ?
+	`, mask, assignee, day)
+
+	return
+}
+
+func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (err error) {
+	var (
+		day    string
+		period int32
+	)
+
+	if err = tx.QueryRow(`
+		select day, period from opening where id = ?`,
+		openingId,
+	).Scan(&day, &period); err != nil {
+		return
+	}
+
+	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+
+	if _, err = tx.Exec(`
+		update user_opening set user_schedule = user_schedule ^ ? where user_id = ?`,
+		mask, assignee,
+	); err != nil {
+		return
+	}
+
+	_, err = tx.Exec("update user_service set assignee = -1 where id = ?", userServiceId)
+
+	return
 }
 
 func holdOpening(tx *sql.Tx, start, end int32) (err error) {
