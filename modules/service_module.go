@@ -20,18 +20,73 @@ import (
 	"description": "Wash Car",
 	"price": 25,
 	"time": 30,
-	"addons": false
+	"charge": [{
+		"id": 1,
+		"service_id": 1,
+		"name": "Extra Conventional Oil",
+		"note": "",
+		"price": 4,
+		"time": 0,
+		"max": 30,
+		"unit": "quart"
+	}],
+	"free": [...],
+	"addons":[...]
 }
 **/
 type Service struct {
 	Id          int32       `json:"id"`
 	Name        string      `json:"name"`
 	Type        string      `json:"type"`
-	Items       []string    `json:"items"`
 	Description null.String `json:"description"`
+	Note        string      `json:"note"`
 	Price       float64     `json:"price"`
 	Time        int32       `json:"time"`
-	AddOns      bool        `json:"addons"`
+	Free        []AddOn     `json:"free"`
+	Charge      []AddOn     `json:"charge"`
+	Addons      []AddOn     `json:"addons"`
+	Items       []string    `json:"items,omitempty"`
+}
+
+/**
+{
+	"id": 1,
+	"service_id": 1,
+	"name": "Extra Conventional Oil",
+	"note": "",
+	"price": 4,
+	"time": 0,
+	"max": 30,
+	"unit": "quart"
+}
+**/
+type AddOn struct {
+	Id        int32   `json:"id"`
+	ServiceId int32   `json:"service_id"`
+	Name      string  `json:"name"`
+	Note      string  `json:"note"`
+	Price     float32 `json:"price"`
+	Time      int32   `json:"time"`
+	Max       int32   `json:"max"`
+	Unit      string  `json:"unit"`
+	Amount    int32   `json:"amount"`
+}
+
+type SimpleService struct {
+	Id            int32  `json:"id"`
+	Name          string `json:"name"`
+	Note          string `json:"note"`
+	Type          string `json:"type"`
+	UserServiceId int32  `json:"user_service_id"`
+}
+
+type SimpleAddon struct {
+	Id            int32  `json:"id"`
+	Name          string `json:"name"`
+	Note          string `json:"note"`
+	Amount        int32  `json:"amount"`
+	Unit          string `json:"unit"`
+	UserServiceId int32  `json:"user_service_id"`
 }
 
 /**
@@ -92,38 +147,35 @@ type Service struct {
 }
 **/
 type UserService struct {
-	Id          int32       `json:"id"`
-	UserId      int32       `json:"user_id"`
-	CarId       int32       `json:"car_id"`
-	CarPlate    string      `json:"plate"`
-	PaymentId   int32       `json:"payment_id"`
-	Time        int32       `json:"time"`
-	Price       float32     `json:"price"`
-	Note        null.String `json:"note"`
-	Status      string      `json:"status"`
-	ReserveTime null.String `json:"revserve_time"`
-	StartTime   null.String `json:"start_time"`
-	EndTime     null.String `json:"end_time"`
-	ServiceList []Service   `json:"services"`
+	Id               int32       `json:"id"`
+	ReservationId    string      `json:"reservation_id"`
+	UserId           int32       `json:"user_id"`
+	CarId            int32       `json:"car_id"`
+	CarPlate         string      `json:"plate"`
+	PaymentId        int32       `json:"payment_id"`
+	Time             int32       `json:"time"`
+	Price            float32     `json:"price"`
+	Note             null.String `json:"note"`
+	Status           string      `json:"status"`
+	ReserveStartTime string      `json:"reserve_start_time"`
+	HowLong          int32       `json:"how_long"`
+	Unit             string      `json:"unit"`
+	ReserveTime      null.String `json:"reserve_time"`
+	StartTime        null.String `json:"start_time"`
+	EndTime          null.String `json:"end_time"`
+	ServiceList      []Service   `json:"services"`
+	AddonList        []AddOn     `json:"addons"`
 }
 
 type Period struct {
 	Id    int32   `json:"id"`
-	Start float32 `json:"start"`
-	End   float32 `json:"end"`
+	Start float64 `json:"start"`
+	End   float64 `json:"end"`
 }
 
 type Opening struct {
 	Day   string   `json:"day"`
 	Range []Period `json:"range"`
-}
-
-type ServiceInfo struct {
-	Type   string  `json:"type"`
-	Count  int32   `json:"count"`
-	Price  float32 `json:"price"`
-	Time   int32   `json:"time"`
-	AddOns bool    `json:"addons"`
 }
 
 /**
@@ -137,10 +189,54 @@ type ServiceInfo struct {
 }
 **/
 type OrderRequest struct {
-	UserId    int32   `json:"user_id"`
-	CarId     int32   `json:"car_id"`
-	PaymentId int32   `json:"payment_id"`
-	Services  []int32 `json:"services"`
-	Note      string  `json:"note"`
-	Opening   int32   `json:"opening"`
+	BaseRequest
+
+	CarId     int32          `json:"car_id"`
+	PaymentId int32          `json:"payment_id"`
+	Note      string         `json:"note"`
+	Opening   int32          `json:"opening"`
+	Services  []int32        `json:"services"`
+	Addons    []AddonRequest `json:"addons"`
+}
+
+type AddonRequest struct {
+	Id     int32 `json:"id"`
+	Amount int32 `json:"amount"`
+}
+
+type OpeningRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
+	Addons   []int32 `json:"addons"`
+}
+
+/**
+{
+	"id": 1,
+	"user_id": 1
+}
+**/
+type CancelRequest struct {
+	BaseRequest
+
+	Id int32 `json:"id"`
+}
+
+type ServiceDemandRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
+}
+
+type AddonDemandRequest struct {
+	BaseRequest
+
+	Addons []int32 `json:"addons"`
+}
+
+type OnDemandRequest struct {
+	BaseRequest
+
+	Services []int32 `json:"services"`
 }

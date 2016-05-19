@@ -6,4 +6,6 @@ import (
 
 func initHistoryRoutes() {
 	historyRouter.POST("", controllers.GetHistory)
+
+	historyRouter.POST("/rating", controllers.Rating)
 }

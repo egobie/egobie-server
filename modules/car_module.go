@@ -31,6 +31,7 @@ type Car struct {
 	Model    string   `json:"model"`
 	MakerId  int32    `json:"maker_id"`
 	ModelId  int32    `json:"model_id"`
+	Reserved int32    `json:"reserved"`
 }
 
 /**
@@ -64,17 +65,9 @@ type CarModel struct {
 }
 **/
 type CarRequst struct {
-	Id     int32 `json:"id"`
-	UserId int32 `json:"user_id"`
-}
+	BaseRequest
 
-/**
-{
-	"user_id": 1
-}
-**/
-type CarRequstForUser struct {
-	UserId int32 `json:"user_id"`
+	Id     int32 `json:"id"`
 }
 
 /**
@@ -89,7 +82,8 @@ type CarRequstForUser struct {
 }
 **/
 type CarNew struct {
-	UserId int32  `json:"user_id"`
+	BaseRequest
+
 	Plate  string `json:"plate"`
 	State  string `json:"state"`
 	Year   int32  `json:"year"`
@@ -111,8 +105,9 @@ type CarNew struct {
 }
 **/
 type UpdateCar struct {
+	BaseRequest
+
 	Id     int32  `json:"id"`
-	UserId int32  `json:"user_id"`
 	Plate  string `json:"plate"`
 	State  string `json:"state"`
 	Year   int32  `json:"year"`

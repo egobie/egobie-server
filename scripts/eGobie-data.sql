@@ -28,19 +28,11 @@ CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count INT) BEGI
     INSERT INTO opening (day, period, count) VALUES (opening_date, 22, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 23, opening_count);
     INSERT INTO opening (day, period, count) VALUES (opening_date, 24, opening_count);
+
+    INSERT INTO user_opening (day, user_id)
+    SELECT opening_date, u.id FROM user u WHERE u.type = 'EGOBIE';
 END $$
 DELIMITER ;
-
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);
 
 DROP TRIGGER IF EXISTS INSERT_USER_COUPON;
 
@@ -56,215 +48,276 @@ BEGIN
 END $$
 DELIMITER ;
 
---
--- 'CAR_WASH', 'OIL_CHANGE', 'IN_DETAILING', 'EX_DETAILING', 'REPAIR'
---
-INSERT INTO service (name, type, description, items, estimated_price, estimated_time, addons) VALUES
---
--- 'Car Wash'
---
-('Premium (Full)', 'CAR_WASH', 'Wash Car', '[
-"Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"Total Interior Wipe-down",
-"Interior Vacuum",
-"Trunk Vacuum"
-]', 25.00, 30, 0),
 
-('Premium Plus (Full)', 'CAR_WASH', 'Wash Car', '[
+DROP TRIGGER IF EXISTS INSERT_RESERVATIOM_ID;
+
+DELIMITER $$
+CREATE TRIGGER INSERT_RESERVATIOM_ID BEFORE INSERT ON user_service FOR EACH ROW
+BEGIN
+    DECLARE id INT DEFAULT 0;
+
+    SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
+    WHERE TABLE_NAME = 'user_service' and TABLE_SCHEMA = database();
+
+    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 1, 8));
+END $$
+DELIMITER ;
+
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(1, 'Premium', 'CAR_WASH', 'Wash Car', '', '[
 "Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"Total Interior Wipe-down",
 "Interior Vacuum",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
 "Trunk Vacuum",
-"+Paint Protection",
-"+Windshield Protectant",
-"+Interior Wipe-down With Protectants"
-]', 45.00, 45, 0),
+"Undercarriage Rinse"
+]', 25, 30);
 
-('Prestige (Full)', 'CAR_WASH', 'Wash Car', '[
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(1, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(1, "Engine Cleaning", "", 50, 30),
+(1, "Hand Wax", "", 35, 60),
+(1, "Headlight Reconditioning", "", 65, 60),
+(1, "Hot Carpet Extraction", "", 15, 30),
+(1, "Paint Protectant", "Multi-layer", 50, 60),
+(1, "Wax & Polish", "Multi-layer", 75, 60);
+
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(2, 'Premium Plus', 'CAR_WASH', 'Wash Car', '', '[
 "Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"Total Interior Wipe-down",
 "Interior Vacuum",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
 "Trunk Vacuum",
-"+Paint Protection",
-"+Windshield Protectant",
-"+Interior Wipe-down With Protectants",
-"+Hand wax",
-"+Leather Cleaning and Protectant"
-]', 75.00, 60, 0),
+"Undercarriage Rinse"
+]', 45, 60);
 
-('Premium (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(2, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(2, "Engine Cleaning", "", 50, 30),
+(2, "Hand Wax", "", 35, 60),
+(2, "Headlight Reconditioning", "", 65, 60),
+(2, "Hot Carpet Extraction", "", 15, 30),
+(2, "Paint Protectant", "Multi-layer", 50, 60),
+(2, "Wax & Polish", "Multi-layer", 75, 60);
+
+INSERT INTO service_addon (service_id, name, price) VALUES
+(2, "Interior Wipe-down with Protectants", 0),
+(2, "Paint Protection", 0),
+(2, "Windshield Protectant", 0);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(3, 'Prestige', 'CAR_WASH', 'Wash Car', '', '[
+"Full Exterior Hand Wash",
+"Interior Vacuum",
+"Interior Wipe-down with Protectants",
+"Paint Protection",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
+"Trunk Vacuum",
+"Undercarriage Rinse",
+"Windshield Protectant"
+]', 75, 90);
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(3, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(3, "Engine Cleaning", "", 50, 30),
+(3, "Headlight Reconditioning", "", 65, 60),
+(3, "Hot Carpet Extraction", "", 15, 30),
+(3, "Paint Protectant", "Multi-layer", 50, 60),
+(3, "Wax & Polish", "Multi-layer", 75, 60);
+
+INSERT INTO service_addon (service_id, name, price) VALUES
+(3, "Hand Wax", 0),
+(3, "Leather Cleaning and Protectant", 0);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(4, 'Premium', 'CAR_WASH', 'Wash Car', 'Exterior Only', '[
 "Full Exterior Hand Wash",
 "Tire Shine & Rim Cleaning",
 "Undercarriage Rinse"
-]', 22.00, 20, 0),
+]', 22, 30);
 
-('Premium Plus (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(4, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(4, "Engine Cleaning", "", 50, 30),
+(4, "Hand Wax", "", 35, 60),
+(4, "Headlight Reconditioning", "", 65, 60),
+(4, "Hot Carpet Extraction", "", 15, 30),
+(4, "Paint Protectant", "Multi-layer", 50, 60),
+(4, "Wax & Polish", "Multi-layer", 75, 60);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(5, 'Premium Plus', 'CAR_WASH', 'Wash Car', 'Exterior Only', '[
 "Full Exterior Hand Wash",
 "Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"+Paint Protection",
-"+Windshield Protectant"
-]', 40.00, 35, 0),
+"Undercarriage Rinse"
+]', 40, 60);
 
-('Prestige (Exterior Only)', 'CAR_WASH', 'Wash Car', '[
-"Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"+Paint Protection",
-"+Windshield Protectant",
-"+Hand wax"
-]', 65.00, 50, 0),
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(5, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(5, "Engine Cleaning", "Multi-layer", 50, 30),
+(5, "Hand Wax", "", 35, 60),
+(5, "Headlight Reconditioning", "", 65, 60),
+(5, "Hot Carpet Extraction", "", 15, 30),
+(5, "Paint Protectant", "", 50, 60),
+(5, "Wax & Polish", "", 75, 60);
 
-('Exterior', 'DETAILING', 'Detailing', '[
+INSERT INTO service_addon (service_id, name, price) VALUES
+(5, "Paint Protection", 0),
+(5, "Windshield Protectant", 0);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(6, 'Prestige', 'CAR_WASH', 'Wash Car', 'Exterior Only', '[
 "Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
 "Paint Protection",
-"Windshield Protectant",
-"Hand wax",
-"Engine cleaning",
-"Headlight restoration",
-"Compressed air detailing in tight spaces",
-"Multi-layer wax + polish",
-"Multi-layer paint protectant"
-]', 175.00, 90, 0),
-
-('Interior', 'DETAILING', 'Detailing', '[
-"Full Exterior Hand Wash",
 "Tire Shine & Rim Cleaning",
 "Undercarriage Rinse",
-"Total Interior Wipe-down",
-"Interior Vacuum",
-"Trunk Vacuum",
+"Windshield Protectant"
+]', 65, 90);
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(6, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(6, "Engine Cleaning", "", 50, 30),
+(6, "Headlight Reconditioning", "", 65, 60),
+(6, "Hot Carpet Extraction", "", 15, 30),
+(6, "Paint Protectant", "Multi-layer", 50, 60),
+(6, "Wax & Polish", "Multi-layer", 75, 60);
+
+INSERT INTO service_addon (service_id, name, price) VALUES
+(6, "Hand Wax", 0);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(7, 'Detailing', 'DETAILING', 'Detailing', '', '[
+"Compressed Air Detailing in Tight Spaces",
+"Engine Cleaning",
+"Full Exterior Hand Wash",
+"Hand Wax",
+"Headlight Restoration",
+"Multi-layer Paint Protectant",
+"Multi-layer Wax & Polish",
 "Paint Protection",
-"Windshield Protectant",
-"Interior Wipe-down With Protectants",
-"Hand wax",
-"Leather Cleaning and Protectant",
+"Tire Shine & Rim Cleaning",
+"Undercarriage Rinse",
+"Windshield Protectant"
+]', 175, 150);
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(7, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(7, "Headlight Reconditioning", "", 65, 60),
+(7, "Hot Carpet Extraction", "", 15, 30);
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(8, 'Detailing', 'DETAILING', 'Detailing', '', '[
+"Detailed Shampoo Seating & Mats & Carpets",
 "Hot Carpet Extraction",
-"Detailed Shampoo Seating + Mats + Carpets",
-"Stain and debris removal in all tight spaces"
-]', 100.00, 70, 0),
-
-('Full', 'DETAILING', 'Detailing', '[
-"Full Exterior Hand Wash",
-"Tire Shine & Rim Cleaning",
-"Undercarriage Rinse",
-"Total Interior Wipe-down",
 "Interior Vacuum",
+"Interior Wipe-down with Protectants",
+"Stain and Debris Removal in All Tight Spaces",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
 "Trunk Vacuum",
-"Paint Protection",
-"Windshield Protectant",
-"Interior Wipe-down With Protectants",
-"Hand wax",
-"Leather Cleaning and Protectant",
-"Engine cleaning",
+"Undercarriage Rinse",
+"Windshield Protectant"
+]', 100, 90);
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(8, "Engine Cleaning", "", 50, 30),
+(8, "Hand Wax", "", 35, 60),
+(8, "Headlight Reconditioning", "", 65, 60),
+(8, "Paint Protectant", "Multi-layer", 50, 60),
+(8, "Wax & Polish", "Multi-layer", 75, 60);
+
+
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(9, 'Full', 'DETAILING', 'Detailing', '', '[
+"Compressed Air Detailing in Tight Spaces",
+"Detailed Shampoo Seating & Mats & Carpets",
+"Engine Cleaning",
+"Full Exterior Hand Wash",
+"Hand Wax",
+"Headlight Restoration",
 "Hot Carpet Extraction",
-"Detailed Shampoo Seating + Mats + Carpets",
-"Stain and debris removal in all tight spaces",
-"Headlight restoration",
-"Compressed air detailing in tight spaces",
-"Multi-layer wax + polish",
-"Multi-layer paint protectant"
-]', 250.00, 120, 0),
+"Interior Vacuum",
+"Interior Wipe-down with Protectants",
+"Leather Cleaning and Protectant",
+"Multi-layer Paint Protectant",
+"Multi-layer Wax & Polish",
+"Paint Protection",
+"Stain and Debris Removal in All Tight Spaces",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
+"Trunk Vacuum",
+"Undercarriage Rinse",
+"Windshield Protectant"
+]', 250.00, 240);
 
-('Hand Wax', 'DETAILING', 'Detailing', '[
-"Hand Wax"
-]', 35.00, 20, 1),
+INSERT INTO service_addon (service_id, name, price, time) VALUES
+(9, "Headlight Reconditioning", 65, 60);
 
-('Headlight Reconditioning', 'DETAILING', 'Detailing', '[
-"Headlight Reconditioning"
-]', 65.00, 30, 1),
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+-- Basic Oil & Filter
+(10, 'Basic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
+"(Basic) Brand Name Conventional Oil",
+"(Basic) Oil Filter"
+]', 45, 30);
 
-('Engine Cleaning', 'DETAILING', 'Detailing', '[
-"Engine Cleaning"
-]', 50.00, 30, 1),
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(10, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(10, "Engine Cleaning", "", 50, 30),
+(10, "Hand Wax", "", 35, 60),
+(10, "Headlight Reconditioning", "", 65, 60),
+(10, "Hot Carpet Extraction", "", 15, 30),
+(10, "Paint Protectant", "Multi-layer", 50, 60),
+(10, "Wax & Polish", "Multi-layer", 75, 60);
 
-('Multi-layer wax + polish', 'DETAILING', 'Detailing', '[
-"Multi-layer wax + polish"
-]', 75.00, 40, 1),
+INSERT INTO service_addon (service_id, name, price) VALUES
+(10, "Fill Brake Fluid", 0),
+(10, "Fill Coolant", 0),
+(10, "Fill Power Steering Fluid", 0),
+(10, "Fill Tire Pressure", 0),
+(10, "Fill Windshield Wiper Fluid", 0);
 
-('Multi-layer paint protectant', 'DETAILING', 'Detailing', '[
-"Multi-layer paint protectant"
-]', 50.00, 35, 1),
+INSERT INTO service_addon (service_id, name, price) VALUES
+(10, "Change Cabine Air Filter", 45),
+(10, "Change Engine Air Filter",  45),
+(10, "Change Serpentine Belts",  150);
 
-('Detailed Shampoo Seating + Mats + Carpets', 'DETAILING', 'Detailing', '[
-"Detailed Shampoo Seating + Mats + Carpets"
-]', 60.00, 40, 1),
+INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
+(10, 'Extra Conventional Oil', 4, 30, 'quart');
 
-('Hot Carpet Extraction', 'DETAILING', 'Detailing', '[
-"Hot Carpet Extraction"
-]', 60.00, 40, 1),
 
-('Basic Oil & Filter', 'OIL_CHANGE', 'Change Oil', '[
-"Brand Name Conventional Oil (Up to 5 quarts)",
-"Oil Filter",
-"Check Tire Pressure & Fill if Necessary",
-"Check Windshield Wiper Fluid & Fill if Necessary",
-"Check transmission fluid",
-"Check brake fluid",
-"Check power steering fluid",
-"Check exterior lights",
-"Check Coolant",
-"Check Engine and Cabine Air Filtration",
-"Check Serpentine belts"
-]', 45, 20, 0),
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(11, 'Full Synthetic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
+"(Full) Brand Name Synthetic Oil",
+"(Full) Filter"
+]', 75, 30);
 
-('Full Synthetic Oil & Filter', 'OIL_CHANGE', 'Change Oil', '[
-"Full Brand Name Synthetic Oil",
-"Oil Filter",
-"Check Tire Pressure & Fill if Necessary",
-"Check Windshield Wiper Fluid & Fill if Necessary",
-"Check transmission fluid",
-"Check brake fluid",
-"Check power steering fluid",
-"Check exterior lights",
-"Check Coolant",
-"Check Engine and Cabine Air Filtration",
-"Check Serpentine belts"
-]', 75, 30, 0),
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(11, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(11, "Engine Cleaning", "", 50, 30),
+(11, "Hand Wax", "", 35, 60),
+(11, "Headlight Reconditioning", "", 65, 60),
+(11, "Hot Carpet Extraction", "", 15, 30),
+(11, "Paint Protectant", "Multi-layer", 50, 60),
+(11, "Wax & Polish", "Multi-layer", 75, 60);
 
-('Extra Quarts of Conventional Oil', 'OIL_CHANGE', 'Change Oil', '[
-"Extra Quarts of Conventional Oil"
-]', 4, 0, 1),
+INSERT INTO service_addon (service_id, name, price) VALUES
+(11, "Fill Brake Fluid", 0),
+(11, "Fill Coolant", 0),
+(11, "Fill Power Steering Fluid", 0),
+(11, "Fill Tire Pressure", 0),
+(11, "Fill Windshield Wiper Fluid", 0);
 
-('Extra Quarts of Synthetic Oil', 'OIL_CHANGE', 'Change Oil', '[
-"Extra Quarts of Synthetic Oil"
-]', 8, 0, 1),
+INSERT INTO service_addon (service_id, name, price) VALUES
+(11, "Change Cabine Air Filter", 45),
+(11, "Change Engine Air Filter", 45),
+(11, "Change Serpentine Belts", 150);
 
-('Transmission Flush', 'REPAIR', 'Repair & Replace', '[
-"Transmission Flush"
-]', 175, 40, 0),
-
-('Brake fluid', 'REPAIR', 'Repair & Replace', '[
-"Brake fluid"
-]', 85, 20, 0),
-
-('Power steering fluid', 'REPAIR', 'Repair & Replace', '[
-"Power steering fluid"
-]', 15, 10, 0),
-
-('Coolant Refill', 'REPAIR', 'Repair & Replace', '[
-"Coolant Refill"
-]', 10, 5, 0),
-
-('Engine Filter', 'REPAIR', 'Repair & Replace', '[
-"Engine Filter"
-]', 45, 20, 0),
-
-('Cabine Air Filters', 'REPAIR', 'Repair & Replace', '[
-"Cabine Air Filters"
-]', 45, 20, 0),
-
-('Serpentine belts', 'REPAIR', 'Repair & Replace', '[
-"Serpentine belts"
-]', 150, 30, 0);
+INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
+(11, 'Extra Synthetic Oil', 8, 30, 'quart');
 
 
 INSERT INTO car_maker (id, name, title) VALUES
@@ -341,26 +394,26 @@ INSERT INTO car_maker (id, name, title) VALUES
 (71, 'YUGO', 'Yugo');
 
 INSERT INTO car_model (id, car_maker_id, name, title) VALUES
-(1, 1, 'CL_MODELS', 'CL Models (4)'),
-(2, 1, '2.2CL', ' - 2.2CL'),
-(3, 1, '2.3CL', ' - 2.3CL'),
-(4, 1, '3.0CL', ' - 3.0CL'),
-(5, 1, '3.2CL', ' - 3.2CL'),
+-- (1, 1, 'CL_MODELS', 'CL Models (4)'),
+(2, 1, '2.2CL', '2.2CL'),
+(3, 1, '2.3CL', '2.3CL'),
+(4, 1, '3.0CL', '3.0CL'),
+(5, 1, '3.2CL', '3.2CL'),
 (6, 1, 'ILX', 'ILX'),
 (7, 1, 'INTEG', 'Integra'),
 (8, 1, 'LEGEND', 'Legend'),
 (9, 1, 'MDX', 'MDX'),
 (10, 1, 'NSX', 'NSX'),
 (11, 1, 'RDX', 'RDX'),
-(12, 1, 'RL_MODELS', 'RL Models (2)'),
-(13, 1, '3.5RL', ' - 3.5 RL'),
-(14, 1, 'RL', ' - RL'),
+-- (12, 1, 'RL_MODELS', 'RL Models (2)'),
+(13, 1, '3.5RL', '3.5 RL'),
+(14, 1, 'RL', 'RL'),
 (15, 1, 'RSX', 'RSX'),
 (16, 1, 'SLX', 'SLX'),
-(17, 1, 'TL_MODELS', 'TL Models (3)'),
-(18, 1, '2.5TL', ' - 2.5TL'),
-(19, 1, '3.2TL', ' - 3.2TL'),
-(20, 1, 'TL', ' - TL'),
+-- (17, 1, 'TL_MODELS', 'TL Models (3)'),
+(18, 1, '2.5TL', '2.5TL'),
+(19, 1, '3.2TL', '3.2TL'),
+(20, 1, 'TL', 'TL'),
 (21, 1, 'TSX', 'TSX'),
 (22, 1, 'VIGOR', 'Vigor'),
 (23, 1, 'ZDX', 'ZDX'),
@@ -433,111 +486,111 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (90, 7, 'BENMUL', 'Mulsanne'),
 (91, 7, 'BENTURBO', 'Turbo R'),
 (92, 7, 'UNAVAILBEN', 'Other Bentley Models'),
-(93, 8, '1_SERIES', '1 Series (3)'),
-(94, 8, '128I', ' - 128i'),
-(95, 8, '135I', ' - 135i'),
-(96, 8, '135IS', ' - 135is'),
-(97, 8, '3_SERIES', '3 Series (29)'),
-(98, 8, '318I', ' - 318i'),
-(99, 8, '318IC', ' - 318iC'),
-(100, 8, '318IS', ' - 318iS'),
-(101, 8, '318TI', ' - 318ti'),
-(102, 8, '320I', ' - 320i'),
-(103, 8, '323CI', ' - 323ci'),
-(104, 8, '323I', ' - 323i'),
-(105, 8, '323IS', ' - 323is'),
-(106, 8, '323IT', ' - 323iT'),
-(107, 8, '325CI', ' - 325Ci'),
-(108, 8, '325E', ' - 325e'),
-(109, 8, '325ES', ' - 325es'),
-(110, 8, '325I', ' - 325i'),
-(111, 8, '325IS', ' - 325is'),
-(112, 8, '325IX', ' - 325iX'),
-(113, 8, '325XI', ' - 325xi'),
-(114, 8, '328CI', ' - 328Ci'),
-(115, 8, '328I', ' - 328i'),
-(116, 8, '328IS', ' - 328iS'),
-(117, 8, '328XI', ' - 328xi'),
-(118, 8, '330CI', ' - 330Ci'),
-(119, 8, '330I', ' - 330i'),
-(120, 8, '330XI', ' - 330xi'),
-(121, 8, '335D', ' - 335d'),
-(122, 8, '335I', ' - 335i'),
-(123, 8, '335IS', ' - 335is'),
-(124, 8, '335XI', ' - 335xi'),
-(125, 8, 'ACTIVE3', ' - ActiveHybrid 3'),
-(126, 8, 'BMW325', ' - 325'),
-(127, 8, '5_SERIES', '5 Series (19)'),
-(128, 8, '524TD', ' - 524td'),
-(129, 8, '525I', ' - 525i'),
-(130, 8, '525XI', ' - 525xi'),
-(131, 8, '528E', ' - 528e'),
-(132, 8, '528I', ' - 528i'),
-(133, 8, '528IT', ' - 528iT'),
-(134, 8, '528XI', ' - 528xi'),
-(135, 8, '530I', ' - 530i'),
-(136, 8, '530IT', ' - 530iT'),
-(137, 8, '530XI', ' - 530xi'),
-(138, 8, '533I', ' - 533i'),
-(139, 8, '535I', ' - 535i'),
-(140, 8, '535IGT', ' - 535i Gran Turismo'),
-(141, 8, '535XI', ' - 535xi'),
-(142, 8, '540I', ' - 540i'),
-(143, 8, '545I', ' - 545i'),
-(144, 8, '550I', ' - 550i'),
-(145, 8, '550IGT', ' - 550i Gran Turismo'),
-(146, 8, 'ACTIVE5', ' - ActiveHybrid 5'),
-(147, 8, '6_SERIES', '6 Series (8)'),
-(148, 8, '633CSI', ' - 633CSi'),
-(149, 8, '635CSI', ' - 635CSi'),
-(150, 8, '640I', ' - 640i'),
-(151, 8, '640IGC', ' - 640i Gran Coupe'),
-(152, 8, '645CI', ' - 645Ci'),
-(153, 8, '650I', ' - 650i'),
-(154, 8, '650IGC', ' - 650i Gran Coupe'),
-(155, 8, 'L6', ' - L6'),
-(156, 8, '7_SERIES', '7 Series (15)'),
-(157, 8, '733I', ' - 733i'),
-(158, 8, '735I', ' - 735i'),
-(159, 8, '735IL', ' - 735iL'),
-(160, 8, '740I', ' - 740i'),
-(161, 8, '740IL', ' - 740iL'),
-(162, 8, '740LI', ' - 740Li'),
-(163, 8, '745I', ' - 745i'),
-(164, 8, '745LI', ' - 745Li'),
-(165, 8, '750I', ' - 750i'),
-(166, 8, '750IL', ' - 750iL'),
-(167, 8, '750LI', ' - 750Li'),
-(168, 8, '760I', ' - 760i'),
-(169, 8, '760LI', ' - 760Li'),
-(170, 8, 'ACTIVE7', ' - ActiveHybrid 7'),
-(171, 8, 'ALPINAB7', ' - Alpina B7'),
-(172, 8, '8_SERIES', '8 Series (4)'),
-(173, 8, '840CI', ' - 840Ci'),
-(174, 8, '850CI', ' - 850Ci'),
-(175, 8, '850CSI', ' - 850CSi'),
-(176, 8, '850I', ' - 850i'),
-(177, 8, 'L_SERIES', 'L Series (1)'),
-(178, 8, 'L7', ' - L7'),
-(179, 8, 'M_SERIES', 'M Series (8)'),
-(180, 8, '1SERIESM', ' - 1 Series M'),
-(181, 8, 'BMWMCOUPE', ' - M Coupe'),
-(182, 8, 'BMWROAD', ' - M Roadster'),
-(183, 8, 'M3', ' - M3'),
-(184, 8, 'M5', ' - M5'),
-(185, 8, 'M6', ' - M6'),
-(186, 8, 'X5M', ' - X5 M'),
-(187, 8, 'X6M', ' - X6 M'),
-(188, 8, 'X_SERIES', 'X Series (5)'),
-(189, 8, 'ACTIVEX6', ' - ActiveHybrid X6'),
-(190, 8, 'X1', ' - X1'),
-(191, 8, 'X3', ' - X3'),
-(192, 8, 'X5', ' - X5'),
-(193, 8, 'X6', ' - X6'),
-(194, 8, 'Z_SERIES', 'Z Series (3)'),
-(195, 8, 'Z3', ' - Z3'),
-(196, 8, 'Z4', ' - Z4'),
-(197, 8, 'Z8', ' - Z8'),
+-- (93, 8, '1_SERIES', '1 Series (3)'),
+(94, 8, '128I', '128i'),
+(95, 8, '135I', '135i'),
+(96, 8, '135IS', '135is'),
+-- (97, 8, '3_SERIES', '3 Series (29)'),
+(98, 8, '318I', '318i'),
+(99, 8, '318IC', '318iC'),
+(100, 8, '318IS', '318iS'),
+(101, 8, '318TI', '318ti'),
+(102, 8, '320I', '320i'),
+(103, 8, '323CI', '323ci'),
+(104, 8, '323I', '323i'),
+(105, 8, '323IS', '323is'),
+(106, 8, '323IT', '323iT'),
+(107, 8, '325CI', '325Ci'),
+(108, 8, '325E', '325e'),
+(109, 8, '325ES', '325es'),
+(110, 8, '325I', '325i'),
+(111, 8, '325IS', '325is'),
+(112, 8, '325IX', '325iX'),
+(113, 8, '325XI', '325xi'),
+(114, 8, '328CI', '328Ci'),
+(115, 8, '328I', '328i'),
+(116, 8, '328IS', '328iS'),
+(117, 8, '328XI', '328xi'),
+(118, 8, '330CI', '330Ci'),
+(119, 8, '330I', '330i'),
+(120, 8, '330XI', '330xi'),
+(121, 8, '335D', '335d'),
+(122, 8, '335I', '335i'),
+(123, 8, '335IS', '335is'),
+(124, 8, '335XI', '335xi'),
+(125, 8, 'ACTIVE3', 'ActiveHybrid 3'),
+(126, 8, 'BMW325', '325'),
+-- (127, 8, '5_SERIES', '5 Series (19)'),
+(128, 8, '524TD', '524td'),
+(129, 8, '525I', '525i'),
+(130, 8, '525XI', '525xi'),
+(131, 8, '528E', '528e'),
+(132, 8, '528I', '528i'),
+(133, 8, '528IT', '528iT'),
+(134, 8, '528XI', '528xi'),
+(135, 8, '530I', '530i'),
+(136, 8, '530IT', '530iT'),
+(137, 8, '530XI', '530xi'),
+(138, 8, '533I', '533i'),
+(139, 8, '535I', '535i'),
+(140, 8, '535IGT', '535i Gran Turismo'),
+(141, 8, '535XI', '535xi'),
+(142, 8, '540I', '540i'),
+(143, 8, '545I', '545i'),
+(144, 8, '550I', '550i'),
+(145, 8, '550IGT', '550i Gran Turismo'),
+(146, 8, 'ACTIVE5', 'ActiveHybrid 5'),
+-- (147, 8, '6_SERIES', '6 Series (8)'),
+(148, 8, '633CSI', '633CSi'),
+(149, 8, '635CSI', '635CSi'),
+(150, 8, '640I', '640i'),
+(151, 8, '640IGC', '640i Gran Coupe'),
+(152, 8, '645CI', '645Ci'),
+(153, 8, '650I', '650i'),
+(154, 8, '650IGC', '650i Gran Coupe'),
+(155, 8, 'L6', 'L6'),
+-- (156, 8, '7_SERIES', '7 Series (15)'),
+(157, 8, '733I', '733i'),
+(158, 8, '735I', '735i'),
+(159, 8, '735IL', '735iL'),
+(160, 8, '740I', '740i'),
+(161, 8, '740IL', '740iL'),
+(162, 8, '740LI', '740Li'),
+(163, 8, '745I', '745i'),
+(164, 8, '745LI', '745Li'),
+(165, 8, '750I', '750i'),
+(166, 8, '750IL', '750iL'),
+(167, 8, '750LI', '750Li'),
+(168, 8, '760I', '760i'),
+(169, 8, '760LI', '760Li'),
+(170, 8, 'ACTIVE7', 'ActiveHybrid 7'),
+(171, 8, 'ALPINAB7', 'Alpina B7'),
+-- (172, 8, '8_SERIES', '8 Series (4)'),
+(173, 8, '840CI', '840Ci'),
+(174, 8, '850CI', '850Ci'),
+(175, 8, '850CSI', '850CSi'),
+(176, 8, '850I', '850i'),
+-- (177, 8, 'L_SERIES', 'L Series (1)'),
+(178, 8, 'L7', 'L7'),
+-- (179, 8, 'M_SERIES', 'M Series (8)'),
+(180, 8, '1SERIESM', '1 Series M'),
+(181, 8, 'BMWMCOUPE', 'M Coupe'),
+(182, 8, 'BMWROAD', 'M Roadster'),
+(183, 8, 'M3', 'M3'),
+(184, 8, 'M5', 'M5'),
+(185, 8, 'M6', 'M6'),
+(186, 8, 'X5M', 'X5 M'),
+(187, 8, 'X6M', 'X6 M'),
+-- (188, 8, 'X_SERIES', 'X Series (5)'),
+(189, 8, 'ACTIVEX6', 'ActiveHybrid X6'),
+(190, 8, 'X1', 'X1'),
+(191, 8, 'X3', 'X3'),
+(192, 8, 'X5', 'X5'),
+(193, 8, 'X6', 'X6'),
+-- (194, 8, 'Z_SERIES', 'Z Series (3)'),
+(195, 8, 'Z3', 'Z3'),
+(196, 8, 'Z4', 'Z4'),
+(197, 8, 'Z8', 'Z8'),
 (198, 8, 'BMWOTH', 'Other BMW Models'),
 (199, 9, 'CENT', 'Century'),
 (200, 9, 'ELEC', 'Electra'),
@@ -864,9 +917,9 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (521, 26, 'CRV', 'CR-V'),
 (522, 26, 'CRZ', 'CR-Z'),
 (523, 26, 'CRX', 'CRX'),
-(524, 26, 'CROSSTOUR_MODELS', 'Crosstour and Accord Crosstour Models (2)'),
-(525, 26, 'CROSSTOUR', ' - Accord Crosstour'),
-(526, 26, 'HONCROSS', ' - Crosstour'),
+-- (524, 26, 'CROSSTOUR_MODELS', 'Crosstour and Accord Crosstour Models (2)'),
+(525, 26, 'CROSSTOUR', 'Accord Crosstour'),
+(526, 26, 'HONCROSS', 'Crosstour'),
 (527, 26, 'HONDELSOL', 'Del Sol'),
 (528, 26, 'ELEMENT', 'Element'),
 (529, 26, 'FIT', 'Fit'),
@@ -903,38 +956,38 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (560, 28, 'XG300', 'XG300'),
 (561, 28, 'XG350', 'XG350'),
 (562, 28, 'HYUOTH', 'Other Hyundai Models'),
-(563, 29, 'EX_MODELS', 'EX Models (2)'),
-(564, 29, 'EX35', ' - EX35'),
-(565, 29, 'EX37', ' - EX37'),
-(566, 29, 'FX_MODELS', 'FX Models (4)'),
-(567, 29, 'FX35', ' - FX35'),
-(568, 29, 'FX37', ' - FX37'),
-(569, 29, 'FX45', ' - FX45'),
-(570, 29, 'FX50', ' - FX50'),
-(571, 29, 'G_MODELS', 'G Models (4)'),
-(572, 29, 'G20', ' - G20'),
-(573, 29, 'G25', ' - G25'),
-(574, 29, 'G35', ' - G35'),
-(575, 29, 'G37', ' - G37'),
-(576, 29, 'I_MODELS', 'I Models (2)'),
-(577, 29, 'I30', ' - I30'),
-(578, 29, 'I35', ' - I35'),
-(579, 29, 'J_MODELS', 'J Models (1)'),
-(580, 29, 'J30', ' - J30'),
-(581, 29, 'JX_MODELS', 'JX Models (1)'),
-(582, 29, 'JX35', ' - JX35'),
-(583, 29, 'M_MODELS', 'M Models (6)'),
-(584, 29, 'M30', ' - M30'),
-(585, 29, 'M35', ' - M35'),
-(586, 29, 'M35HYBRID', ' - M35h'),
-(587, 29, 'M37', ' - M37'),
-(588, 29, 'M45', ' - M45'),
-(589, 29, 'M56', ' - M56'),
-(590, 29, 'Q_MODELS', 'Q Models (1)'),
-(591, 29, 'Q45', ' - Q45'),
-(592, 29, 'QX_MODELS', 'QX Models (2)'),
-(593, 29, 'QX4', ' - QX4'),
-(594, 29, 'QX56', ' - QX56'),
+-- (563, 29, 'EX_MODELS', 'EX Models (2)'),
+(564, 29, 'EX35', 'EX35'),
+(565, 29, 'EX37', 'EX37'),
+-- (566, 29, 'FX_MODELS', 'FX Models (4)'),
+(567, 29, 'FX35', 'FX35'),
+(568, 29, 'FX37', 'FX37'),
+(569, 29, 'FX45', 'FX45'),
+(570, 29, 'FX50', 'FX50'),
+-- (571, 29, 'G_MODELS', 'G Models (4)'),
+(572, 29, 'G20', 'G20'),
+(573, 29, 'G25', 'G25'),
+(574, 29, 'G35', 'G35'),
+(575, 29, 'G37', 'G37'),
+-- (576, 29, 'I_MODELS', 'I Models (2)'),
+(577, 29, 'I30', 'I30'),
+(578, 29, 'I35', 'I35'),
+-- (579, 29, 'J_MODELS', 'J Models (1)'),
+(580, 29, 'J30', 'J30'),
+-- (581, 29, 'JX_MODELS', 'JX Models (1)'),
+(582, 29, 'JX35', 'JX35'),
+-- (583, 29, 'M_MODELS', 'M Models (6)'),
+(584, 29, 'M30', 'M30'),
+(585, 29, 'M35', 'M35'),
+(586, 29, 'M35HYBRID', 'M35h'),
+(587, 29, 'M37', 'M37'),
+(588, 29, 'M45', 'M45'),
+(589, 29, 'M56', 'M56'),
+-- (590, 29, 'Q_MODELS', 'Q Models (1)'),
+(591, 29, 'Q45', 'Q45'),
+-- (592, 29, 'QX_MODELS', 'QX Models (2)'),
+(593, 29, 'QX4', 'QX4'),
+(594, 29, 'QX56', 'QX56'),
 (595, 29, 'INFOTH', 'Other Infiniti Models'),
 (596, 30, 'AMIGO', 'Amigo'),
 (597, 30, 'ASCENDER', 'Ascender'),
@@ -957,21 +1010,21 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (614, 31, 'STYPE', 'S-Type'),
 (615, 31, 'XTYPE', 'X-Type'),
 (616, 31, 'XF', 'XF'),
-(617, 31, 'XJ_SERIES', 'XJ Series (10)'),
-(618, 31, 'JAGXJ12', ' - XJ12'),
-(619, 31, 'JAGXJ6', ' - XJ6'),
-(620, 31, 'JAGXJR', ' - XJR'),
-(621, 31, 'JAGXJRS', ' - XJR-S'),
-(622, 31, 'JAGXJS', ' - XJS'),
-(623, 31, 'VANDEN', ' - XJ Vanden Plas'),
-(624, 31, 'XJ', ' - XJ'),
-(625, 31, 'XJ8', ' - XJ8'),
-(626, 31, 'XJ8L', ' - XJ8 L'),
-(627, 31, 'XJSPORT', ' - XJ Sport'),
-(628, 31, 'XK_SERIES', 'XK Series (3)'),
-(629, 31, 'JAGXK8', ' - XK8'),
-(630, 31, 'XK', ' - XK'),
-(631, 31, 'XKR', ' - XKR'),
+-- (617, 31, 'XJ_SERIES', 'XJ Series (10)'),
+(618, 31, 'JAGXJ12', 'XJ12'),
+(619, 31, 'JAGXJ6', 'XJ6'),
+(620, 31, 'JAGXJR', 'XJR'),
+(621, 31, 'JAGXJRS', 'XJR-S'),
+(622, 31, 'JAGXJS', 'XJS'),
+(623, 31, 'VANDEN', 'XJ Vanden Plas'),
+(624, 31, 'XJ', 'XJ'),
+(625, 31, 'XJ8', 'XJ8'),
+(626, 31, 'XJ8L', 'XJ8 L'),
+(627, 31, 'XJSPORT', 'XJ Sport'),
+-- (628, 31, 'XK_SERIES', 'XK Series (3)'),
+(629, 31, 'JAGXK8', 'XK8'),
+(630, 31, 'XK', 'XK'),
+(631, 31, 'XKR', 'XKR'),
 (632, 31, 'JAGOTH', 'Other Jaguar Models'),
 (633, 32, 'CHER', 'Cherokee'),
 (634, 32, 'JEEPCJ', 'CJ'),
@@ -1024,53 +1077,53 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (681, 36, 'EVOQUE', 'Range Rover Evoque'),
 (682, 36, 'RANGESPORT', 'Range Rover Sport'),
 (683, 36, 'ROVOTH', 'Other Land Rover Models'),
-(684, 37, 'CT_MODELS', 'CT Models (1)'),
-(685, 37, 'CT200H', ' - CT 200h'),
-(686, 37, 'ES_MODELS', 'ES Models (5)'),
-(687, 37, 'ES250', ' - ES 250'),
-(688, 37, 'ES300', ' - ES 300'),
-(689, 37, 'ES300H', ' - ES 300h'),
-(690, 37, 'ES330', ' - ES 330'),
-(691, 37, 'ES350', ' - ES 350'),
-(692, 37, 'GS_MODELS', 'GS Models (6)'),
-(693, 37, 'GS300', ' - GS 300'),
-(694, 37, 'GS350', ' - GS 350'),
-(695, 37, 'GS400', ' - GS 400'),
-(696, 37, 'GS430', ' - GS 430'),
-(697, 37, 'GS450H', ' - GS 450h'),
-(698, 37, 'GS460', ' - GS 460'),
-(699, 37, 'GX_MODELS', 'GX Models (2)'),
-(700, 37, 'GX460', ' - GX 460'),
-(701, 37, 'GX470', ' - GX 470'),
-(702, 37, 'HS_MODELS', 'HS Models (1)'),
-(703, 37, 'HS250H', ' - HS 250h'),
-(704, 37, 'IS_MODELS', 'IS Models (6)'),
-(705, 37, 'IS250', ' - IS 250'),
-(706, 37, 'IS250C', ' - IS 250C'),
-(707, 37, 'IS300', ' - IS 300'),
-(708, 37, 'IS350', ' - IS 350'),
-(709, 37, 'IS350C', ' - IS 350C'),
-(710, 37, 'ISF', ' - IS F'),
+-- (684, 37, 'CT_MODELS', 'CT Models (1)'),
+(685, 37, 'CT200H', 'CT 200h'),
+-- (686, 37, 'ES_MODELS', 'ES Models (5)'),
+(687, 37, 'ES250', 'ES 250'),
+(688, 37, 'ES300', 'ES 300'),
+(689, 37, 'ES300H', 'ES 300h'),
+(690, 37, 'ES330', 'ES 330'),
+(691, 37, 'ES350', 'ES 350'),
+-- (692, 37, 'GS_MODELS', 'GS Models (6)'),
+(693, 37, 'GS300', 'GS 300'),
+(694, 37, 'GS350', 'GS 350'),
+(695, 37, 'GS400', 'GS 400'),
+(696, 37, 'GS430', 'GS 430'),
+(697, 37, 'GS450H', 'GS 450h'),
+(698, 37, 'GS460', 'GS 460'),
+-- (699, 37, 'GX_MODELS', 'GX Models (2)'),
+(700, 37, 'GX460', 'GX 460'),
+(701, 37, 'GX470', 'GX 470'),
+-- (702, 37, 'HS_MODELS', 'HS Models (1)'),
+(703, 37, 'HS250H', 'HS 250h'),
+-- (704, 37, 'IS_MODELS', 'IS Models (6)'),
+(705, 37, 'IS250', 'IS 250'),
+(706, 37, 'IS250C', 'IS 250C'),
+(707, 37, 'IS300', 'IS 300'),
+(708, 37, 'IS350', 'IS 350'),
+(709, 37, 'IS350C', 'IS 350C'),
+(710, 37, 'ISF', 'IS F'),
 (711, 37, 'LEXLFA', 'LFA'),
-(712, 37, 'LS_MODELS', 'LS Models (4)'),
-(713, 37, 'LS400', ' - LS 400'),
-(714, 37, 'LS430', ' - LS 430'),
-(715, 37, 'LS460', ' - LS 460'),
-(716, 37, 'LS600H', ' - LS 600h'),
-(717, 37, 'LX_MODELS', 'LX Models (3)'),
-(718, 37, 'LX450', ' - LX 450'),
-(719, 37, 'LX470', ' - LX 470'),
-(720, 37, 'LX570', ' - LX 570'),
-(721, 37, 'RX_MODELS', 'RX Models (5)'),
-(722, 37, 'RX300', ' - RX 300'),
-(723, 37, 'RX330', ' - RX 330'),
-(724, 37, 'RX350', ' - RX 350'),
-(725, 37, 'RX400H', ' - RX 400h'),
-(726, 37, 'RX450H', ' - RX 450h'),
-(727, 37, 'SC_MODELS', 'SC Models (3)'),
-(728, 37, 'SC300', ' - SC 300'),
-(729, 37, 'SC400', ' - SC 400'),
-(730, 37, 'SC430', ' - SC 430'),
+-- (712, 37, 'LS_MODELS', 'LS Models (4)'),
+(713, 37, 'LS400', 'LS 400'),
+(714, 37, 'LS430', 'LS 430'),
+(715, 37, 'LS460', 'LS 460'),
+(716, 37, 'LS600H', 'LS 600h'),
+-- (717, 37, 'LX_MODELS', 'LX Models (3)'),
+(718, 37, 'LX450', 'LX 450'),
+(719, 37, 'LX470', 'LX 470'),
+(720, 37, 'LX570', 'LX 570'),
+-- (721, 37, 'RX_MODELS', 'RX Models (5)'),
+(722, 37, 'RX300', 'RX 300'),
+(723, 37, 'RX330', 'RX 330'),
+(724, 37, 'RX350', 'RX 350'),
+(725, 37, 'RX400H', 'RX 400h'),
+(726, 37, 'RX450H', 'RX 450h'),
+-- (727, 37, 'SC_MODELS', 'SC Models (3)'),
+(728, 37, 'SC300', 'SC 300'),
+(729, 37, 'SC400', 'SC 400'),
+(730, 37, 'SC430', 'SC 430'),
 (731, 37, 'LEXOTH', 'Other Lexus Models'),
 (732, 38, 'AVIATOR', 'Aviator'),
 (733, 38, 'BLKWOOD', 'Blackwood'),
@@ -1133,163 +1186,163 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (790, 42, 'TRIBUTE', 'Tribute'),
 (791, 42, 'MAZOTH', 'Other Mazda Models'),
 (792, 43, 'MP4', 'MP4-12C'),
-(793, 44, '190_CLASS', '190 Class (2)'),
-(794, 44, '190D', ' - 190D'),
-(795, 44, '190E', ' - 190E'),
-(796, 44, '240_CLASS', '240 Class (1)'),
-(797, 44, '240D', ' - 240D'),
-(798, 44, '300_CLASS_E_CLASS', '300 Class / E Class (6)'),
-(799, 44, '300CD', ' - 300CD'),
-(800, 44, '300CE', ' - 300CE'),
-(801, 44, '300D', ' - 300D'),
-(802, 44, '300E', ' - 300E'),
-(803, 44, '300TD', ' - 300TD'),
-(804, 44, '300TE', ' - 300TE'),
-(805, 44, 'C_CLASS', 'C Class (13)'),
-(806, 44, 'C220', ' - C220'),
-(807, 44, 'C230', ' - C230'),
-(808, 44, 'C240', ' - C240'),
-(809, 44, 'C250', ' - C250'),
-(810, 44, 'C280', ' - C280'),
-(811, 44, 'C300', ' - C300'),
-(812, 44, 'C320', ' - C320'),
-(813, 44, 'C32AMG', ' - C32 AMG'),
-(814, 44, 'C350', ' - C350'),
-(815, 44, 'C36AMG', ' - C36 AMG'),
-(816, 44, 'C43AMG', ' - C43 AMG'),
-(817, 44, 'C55AMG', ' - C55 AMG'),
-(818, 44, 'C63AMG', ' - C63 AMG'),
-(819, 44, 'CL_CLASS', 'CL Class (6)'),
-(820, 44, 'CL500', ' - CL500'),
-(821, 44, 'CL550', ' - CL550'),
-(822, 44, 'CL55AMG', ' - CL55 AMG'),
-(823, 44, 'CL600', ' - CL600'),
-(824, 44, 'CL63AMG', ' - CL63 AMG'),
-(825, 44, 'CL65AMG', ' - CL65 AMG'),
-(826, 44, 'CLK_CLASS', 'CLK Class (7)'),
-(827, 44, 'CLK320', ' - CLK320'),
-(828, 44, 'CLK350', ' - CLK350'),
-(829, 44, 'CLK430', ' - CLK430'),
-(830, 44, 'CLK500', ' - CLK500'),
-(831, 44, 'CLK550', ' - CLK550'),
-(832, 44, 'CLK55AMG', ' - CLK55 AMG'),
-(833, 44, 'CLK63AMG', ' - CLK63 AMG'),
-(834, 44, 'CLS_CLASS', 'CLS Class (4)'),
-(835, 44, 'CLS500', ' - CLS500'),
-(836, 44, 'CLS550', ' - CLS550'),
-(837, 44, 'CLS55AMG', ' - CLS55 AMG'),
-(838, 44, 'CLS63AMG', ' - CLS63 AMG'),
-(839, 44, 'E_CLASS', 'E Class (18)'),
-(840, 44, '260E', ' - 260E'),
-(841, 44, '280CE', ' - 280CE'),
-(842, 44, '280E', ' - 280E'),
-(843, 44, '400E', ' - 400E'),
-(844, 44, '500E', ' - 500E'),
-(845, 44, 'E300', ' - E300'),
-(846, 44, 'E320', ' - E320'),
-(847, 44, 'E320BLUE', ' - E320 Bluetec'),
-(848, 44, 'E320CDI', ' - E320 CDI'),
-(849, 44, 'E350', ' - E350'),
-(850, 44, 'E350BLUE', ' - E350 Bluetec'),
-(851, 44, 'E400', ' - E400 Hybrid'),
-(852, 44, 'E420', ' - E420'),
-(853, 44, 'E430', ' - E430'),
-(854, 44, 'E500', ' - E500'),
-(855, 44, 'E550', ' - E550'),
-(856, 44, 'E55AMG', ' - E55 AMG'),
-(857, 44, 'E63AMG', ' - E63 AMG'),
-(858, 44, 'G_CLASS', 'G Class (4)'),
-(859, 44, 'G500', ' - G500'),
-(860, 44, 'G550', ' - G550'),
-(861, 44, 'G55AMG', ' - G55 AMG'),
-(862, 44, 'G63AMG', ' - G63 AMG'),
-(863, 44, 'GL_CLASS', 'GL Class (5)'),
-(864, 44, 'GL320BLUE', ' - GL320 Bluetec'),
-(865, 44, 'GL320CDI', ' - GL320 CDI'),
-(866, 44, 'GL350BLUE', ' - GL350 Bluetec'),
-(867, 44, 'GL450', ' - GL450'),
-(868, 44, 'GL550', ' - GL550'),
-(869, 44, 'GLK_CLASS', 'GLK Class (1)'),
-(870, 44, 'GLK350', ' - GLK350'),
-(871, 44, 'M_CLASS', 'M Class (11)'),
-(872, 44, 'ML320', ' - ML320'),
-(873, 44, 'ML320BLUE', ' - ML320 Bluetec'),
-(874, 44, 'ML320CDI', ' - ML320 CDI'),
-(875, 44, 'ML350', ' - ML350'),
-(876, 44, 'ML350BLUE', ' - ML350 Bluetec'),
-(877, 44, 'ML430', ' - ML430'),
-(878, 44, 'ML450HY', ' - ML450 Hybrid'),
-(879, 44, 'ML500', ' - ML500'),
-(880, 44, 'ML550', ' - ML550'),
-(881, 44, 'ML55AMG', ' - ML55 AMG'),
-(882, 44, 'ML63AMG', ' - ML63 AMG'),
-(883, 44, 'R_CLASS', 'R Class (6)'),
-(884, 44, 'R320BLUE', ' - R320 Bluetec'),
-(885, 44, 'R320CDI', ' - R320 CDI'),
-(886, 44, 'R350', ' - R350'),
-(887, 44, 'R350BLUE', ' - R350 Bluetec'),
-(888, 44, 'R500', ' - R500'),
-(889, 44, 'R63AMG', ' - R63 AMG'),
-(890, 44, 'S_CLASS', 'S Class (30)'),
-(891, 44, '300SD', ' - 300SD'),
-(892, 44, '300SDL', ' - 300SDL'),
-(893, 44, '300SE', ' - 300SE'),
-(894, 44, '300SEL', ' - 300SEL'),
-(895, 44, '350SD', ' - 350SD'),
-(896, 44, '350SDL', ' - 350SDL'),
-(897, 44, '380SE', ' - 380SE'),
-(898, 44, '380SEC', ' - 380SEC'),
-(899, 44, '380SEL', ' - 380SEL'),
-(900, 44, '400SE', ' - 400SE'),
-(901, 44, '400SEL', ' - 400SEL'),
-(902, 44, '420SEL', ' - 420SEL'),
-(903, 44, '500SEC', ' - 500SEC'),
-(904, 44, '500SEL', ' - 500SEL'),
-(905, 44, '560SEC', ' - 560SEC'),
-(906, 44, '560SEL', ' - 560SEL'),
-(907, 44, '600SEC', ' - 600SEC'),
-(908, 44, '600SEL', ' - 600SEL'),
-(909, 44, 'S320', ' - S320'),
-(910, 44, 'S350', ' - S350'),
-(911, 44, 'S350BLUE', ' - S350 Bluetec'),
-(912, 44, 'S400HY', ' - S400 Hybrid'),
-(913, 44, 'S420', ' - S420'),
-(914, 44, 'S430', ' - S430'),
-(915, 44, 'S500', ' - S500'),
-(916, 44, 'S550', ' - S550'),
-(917, 44, 'S55AMG', ' - S55 AMG'),
-(918, 44, 'S600', ' - S600'),
-(919, 44, 'S63AMG', ' - S63 AMG'),
-(920, 44, 'S65AMG', ' - S65 AMG'),
-(921, 44, 'SL_CLASS', 'SL Class (13)'),
-(922, 44, '300SL', ' - 300SL'),
-(923, 44, '380SL', ' - 380SL'),
-(924, 44, '380SLC', ' - 380SLC'),
-(925, 44, '500SL', ' - 500SL'),
-(926, 44, '560SL', ' - 560SL'),
-(927, 44, '600SL', ' - 600SL'),
-(928, 44, 'SL320', ' - SL320'),
-(929, 44, 'SL500', ' - SL500'),
-(930, 44, 'SL550', ' - SL550'),
-(931, 44, 'SL55AMG', ' - SL55 AMG'),
-(932, 44, 'SL600', ' - SL600'),
-(933, 44, 'SL63AMG', ' - SL63 AMG'),
-(934, 44, 'SL65AMG', ' - SL65 AMG'),
-(935, 44, 'SLK_CLASS', 'SLK Class (8)'),
-(936, 44, 'SLK230', ' - SLK230'),
-(937, 44, 'SLK250', ' - SLK250'),
-(938, 44, 'SLK280', ' - SLK280'),
-(939, 44, 'SLK300', ' - SLK300'),
-(940, 44, 'SLK320', ' - SLK320'),
-(941, 44, 'SLK32AMG', ' - SLK32 AMG'),
-(942, 44, 'SLK350', ' - SLK350'),
-(943, 44, 'SLK55AMG', ' - SLK55 AMG'),
-(944, 44, 'SLR_CLASS', 'SLR Class (1)'),
-(945, 44, 'SLR', ' - SLR'),
-(946, 44, 'SLS_CLASS', 'SLS Class (1)'),
-(947, 44, 'SLSAMG', ' - SLS AMG'),
-(948, 44, 'SPRINTER_CLASS', 'Sprinter Class (1)'),
-(949, 44, 'MBSPRINTER', ' - Sprinter'),
+-- (793, 44, '190_CLASS', '190 Class (2)'),
+(794, 44, '190D', '190D'),
+(795, 44, '190E', '190E'),
+-- (796, 44, '240_CLASS', '240 Class (1)'),
+(797, 44, '240D', '240D'),
+-- (798, 44, '300_CLASS_E_CLASS', '300 Class / E Class (6)'),
+(799, 44, '300CD', '300CD'),
+(800, 44, '300CE', '300CE'),
+(801, 44, '300D', '300D'),
+(802, 44, '300E', '300E'),
+(803, 44, '300TD', '300TD'),
+(804, 44, '300TE', '300TE'),
+-- (805, 44, 'C_CLASS', 'C Class (13)'),
+(806, 44, 'C220', 'C220'),
+(807, 44, 'C230', 'C230'),
+(808, 44, 'C240', 'C240'),
+(809, 44, 'C250', 'C250'),
+(810, 44, 'C280', 'C280'),
+(811, 44, 'C300', 'C300'),
+(812, 44, 'C320', 'C320'),
+(813, 44, 'C32AMG', 'C32 AMG'),
+(814, 44, 'C350', 'C350'),
+(815, 44, 'C36AMG', 'C36 AMG'),
+(816, 44, 'C43AMG', 'C43 AMG'),
+(817, 44, 'C55AMG', 'C55 AMG'),
+(818, 44, 'C63AMG', 'C63 AMG'),
+-- (819, 44, 'CL_CLASS', 'CL Class (6)'),
+(820, 44, 'CL500', 'CL500'),
+(821, 44, 'CL550', 'CL550'),
+(822, 44, 'CL55AMG', 'CL55 AMG'),
+(823, 44, 'CL600', 'CL600'),
+(824, 44, 'CL63AMG', 'CL63 AMG'),
+(825, 44, 'CL65AMG', 'CL65 AMG'),
+-- (826, 44, 'CLK_CLASS', 'CLK Class (7)'),
+(827, 44, 'CLK320', 'CLK320'),
+(828, 44, 'CLK350', 'CLK350'),
+(829, 44, 'CLK430', 'CLK430'),
+(830, 44, 'CLK500', 'CLK500'),
+(831, 44, 'CLK550', 'CLK550'),
+(832, 44, 'CLK55AMG', 'CLK55 AMG'),
+(833, 44, 'CLK63AMG', 'CLK63 AMG'),
+-- (834, 44, 'CLS_CLASS', 'CLS Class (4)'),
+(835, 44, 'CLS500', 'CLS500'),
+(836, 44, 'CLS550', 'CLS550'),
+(837, 44, 'CLS55AMG', 'CLS55 AMG'),
+(838, 44, 'CLS63AMG', 'CLS63 AMG'),
+-- (839, 44, 'E_CLASS', 'E Class (18)'),
+(840, 44, '260E', '260E'),
+(841, 44, '280CE', '280CE'),
+(842, 44, '280E', '280E'),
+(843, 44, '400E', '400E'),
+(844, 44, '500E', '500E'),
+(845, 44, 'E300', 'E300'),
+(846, 44, 'E320', 'E320'),
+(847, 44, 'E320BLUE', 'E320 Bluetec'),
+(848, 44, 'E320CDI', 'E320 CDI'),
+(849, 44, 'E350', 'E350'),
+(850, 44, 'E350BLUE', 'E350 Bluetec'),
+(851, 44, 'E400', 'E400 Hybrid'),
+(852, 44, 'E420', 'E420'),
+(853, 44, 'E430', 'E430'),
+(854, 44, 'E500', 'E500'),
+(855, 44, 'E550', 'E550'),
+(856, 44, 'E55AMG', 'E55 AMG'),
+(857, 44, 'E63AMG', 'E63 AMG'),
+-- (858, 44, 'G_CLASS', 'G Class (4)'),
+(859, 44, 'G500', 'G500'),
+(860, 44, 'G550', 'G550'),
+(861, 44, 'G55AMG', 'G55 AMG'),
+(862, 44, 'G63AMG', 'G63 AMG'),
+-- (863, 44, 'GL_CLASS', 'GL Class (5)'),
+(864, 44, 'GL320BLUE', 'GL320 Bluetec'),
+(865, 44, 'GL320CDI', 'GL320 CDI'),
+(866, 44, 'GL350BLUE', 'GL350 Bluetec'),
+(867, 44, 'GL450', 'GL450'),
+(868, 44, 'GL550', 'GL550'),
+-- (869, 44, 'GLK_CLASS', 'GLK Class (1)'),
+(870, 44, 'GLK350', 'GLK350'),
+-- (871, 44, 'M_CLASS', 'M Class (11)'),
+(872, 44, 'ML320', 'ML320'),
+(873, 44, 'ML320BLUE', 'ML320 Bluetec'),
+(874, 44, 'ML320CDI', 'ML320 CDI'),
+(875, 44, 'ML350', 'ML350'),
+(876, 44, 'ML350BLUE', 'ML350 Bluetec'),
+(877, 44, 'ML430', 'ML430'),
+(878, 44, 'ML450HY', 'ML450 Hybrid'),
+(879, 44, 'ML500', 'ML500'),
+(880, 44, 'ML550', 'ML550'),
+(881, 44, 'ML55AMG', 'ML55 AMG'),
+(882, 44, 'ML63AMG', 'ML63 AMG'),
+-- (883, 44, 'R_CLASS', 'R Class (6)'),
+(884, 44, 'R320BLUE', 'R320 Bluetec'),
+(885, 44, 'R320CDI', 'R320 CDI'),
+(886, 44, 'R350', 'R350'),
+(887, 44, 'R350BLUE', 'R350 Bluetec'),
+(888, 44, 'R500', 'R500'),
+(889, 44, 'R63AMG', 'R63 AMG'),
+-- (890, 44, 'S_CLASS', 'S Class (30)'),
+(891, 44, '300SD', '300SD'),
+(892, 44, '300SDL', '300SDL'),
+(893, 44, '300SE', '300SE'),
+(894, 44, '300SEL', '300SEL'),
+(895, 44, '350SD', '350SD'),
+(896, 44, '350SDL', '350SDL'),
+(897, 44, '380SE', '380SE'),
+(898, 44, '380SEC', '380SEC'),
+(899, 44, '380SEL', '380SEL'),
+(900, 44, '400SE', '400SE'),
+(901, 44, '400SEL', '400SEL'),
+(902, 44, '420SEL', '420SEL'),
+(903, 44, '500SEC', '500SEC'),
+(904, 44, '500SEL', '500SEL'),
+(905, 44, '560SEC', '560SEC'),
+(906, 44, '560SEL', '560SEL'),
+(907, 44, '600SEC', '600SEC'),
+(908, 44, '600SEL', '600SEL'),
+(909, 44, 'S320', 'S320'),
+(910, 44, 'S350', 'S350'),
+(911, 44, 'S350BLUE', 'S350 Bluetec'),
+(912, 44, 'S400HY', 'S400 Hybrid'),
+(913, 44, 'S420', 'S420'),
+(914, 44, 'S430', 'S430'),
+(915, 44, 'S500', 'S500'),
+(916, 44, 'S550', 'S550'),
+(917, 44, 'S55AMG', 'S55 AMG'),
+(918, 44, 'S600', 'S600'),
+(919, 44, 'S63AMG', 'S63 AMG'),
+(920, 44, 'S65AMG', 'S65 AMG'),
+-- (921, 44, 'SL_CLASS', 'SL Class (13)'),
+(922, 44, '300SL', '300SL'),
+(923, 44, '380SL', '380SL'),
+(924, 44, '380SLC', '380SLC'),
+(925, 44, '500SL', '500SL'),
+(926, 44, '560SL', '560SL'),
+(927, 44, '600SL', '600SL'),
+(928, 44, 'SL320', 'SL320'),
+(929, 44, 'SL500', 'SL500'),
+(930, 44, 'SL550', 'SL550'),
+(931, 44, 'SL55AMG', 'SL55 AMG'),
+(932, 44, 'SL600', 'SL600'),
+(933, 44, 'SL63AMG', 'SL63 AMG'),
+(934, 44, 'SL65AMG', 'SL65 AMG'),
+-- (935, 44, 'SLK_CLASS', 'SLK Class (8)'),
+(936, 44, 'SLK230', 'SLK230'),
+(937, 44, 'SLK250', 'SLK250'),
+(938, 44, 'SLK280', 'SLK280'),
+(939, 44, 'SLK300', 'SLK300'),
+(940, 44, 'SLK320', 'SLK320'),
+(941, 44, 'SLK32AMG', 'SLK32 AMG'),
+(942, 44, 'SLK350', 'SLK350'),
+(943, 44, 'SLK55AMG', 'SLK55 AMG'),
+-- (944, 44, 'SLR_CLASS', 'SLR Class (1)'),
+(945, 44, 'SLR', 'SLR'),
+-- (946, 44, 'SLS_CLASS', 'SLS Class (1)'),
+(947, 44, 'SLSAMG', 'SLS AMG'),
+-- (948, 44, 'SPRINTER_CLASS', 'Sprinter Class (1)'),
+(949, 44, 'MBSPRINTER', 'Sprinter'),
 (950, 44, 'MBOTH', 'Other Mercedes-Benz Models'),
 (951, 45, 'CAPRI', 'Capri'),
 (952, 45, 'COUGAR', 'Cougar'),
@@ -1312,21 +1365,21 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (969, 46, 'SCORP', 'Scorpio'),
 (970, 46, 'XR4TI', 'XR4Ti'),
 (971, 46, 'MEROTH', 'Other Merkur Models'),
-(972, 47, 'COOPRCLUB_MODELS', 'Cooper Clubman Models (2)'),
-(973, 47, 'COOPERCLUB', ' - Cooper Clubman'),
-(974, 47, 'COOPRCLUBS', ' - Cooper S Clubman'),
-(975, 47, 'COOPCOUNTRY_MODELS', 'Cooper Countryman Models (2)'),
-(976, 47, 'COUNTRYMAN', ' - Cooper Countryman'),
-(977, 47, 'COUNTRYMNS', ' - Cooper S Countryman'),
-(978, 47, 'COOPCOUP_MODELS', 'Cooper Coupe Models (2)'),
-(979, 47, 'MINICOUPE', ' - Cooper Coupe'),
-(980, 47, 'MINISCOUPE', ' - Cooper S Coupe'),
-(981, 47, 'COOPER_MODELS', 'Cooper Models (2)'),
-(982, 47, 'COOPER', ' - Cooper'),
-(983, 47, 'COOPERS', ' - Cooper S'),
-(984, 47, 'COOPRROAD_MODELS', 'Cooper Roadster Models (2)'),
-(985, 47, 'COOPERROAD', ' - Cooper Roadster'),
-(986, 47, 'COOPERSRD', ' - Cooper S Roadster'),
+-- (972, 47, 'COOPRCLUB_MODELS', 'Cooper Clubman Models (2)'),
+(973, 47, 'COOPERCLUB', 'Cooper Clubman'),
+(974, 47, 'COOPRCLUBS', 'Cooper S Clubman'),
+-- (975, 47, 'COOPCOUNTRY_MODELS', 'Cooper Countryman Models (2)'),
+(976, 47, 'COUNTRYMAN', 'Cooper Countryman'),
+(977, 47, 'COUNTRYMNS', 'Cooper S Countryman'),
+-- (978, 47, 'COOPCOUP_MODELS', 'Cooper Coupe Models (2)'),
+(979, 47, 'MINICOUPE', 'Cooper Coupe'),
+(980, 47, 'MINISCOUPE', 'Cooper S Coupe'),
+-- (981, 47, 'COOPER_MODELS', 'Cooper Models (2)'),
+(982, 47, 'COOPER', 'Cooper'),
+(983, 47, 'COOPERS', 'Cooper S'),
+-- (984, 47, 'COOPRROAD_MODELS', 'Cooper Roadster Models (2)'),
+(985, 47, 'COOPERROAD', 'Cooper Roadster'),
+(986, 47, 'COOPERSRD', 'Cooper S Roadster'),
 (987, 48, '3000GT', '3000GT'),
 (988, 48, 'CORD', 'Cordia'),
 (989, 48, 'DIAMAN', 'Diamante'),
@@ -1492,29 +1545,29 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (1149, 59, 'ASTRA', 'Astra'),
 (1150, 59, 'AURA', 'Aura'),
 (1151, 59, 'ION', 'ION'),
-(1152, 59, 'L_SERIES', 'L Series (3)'),
-(1153, 59, 'L100', ' - L100'),
-(1154, 59, 'L200', ' - L200'),
-(1155, 59, 'L300', ' - L300'),
+-- (1152, 59, 'L_SERIES', 'L Series (3)'),
+(1153, 59, 'L100', 'L100'),
+(1154, 59, 'L200', 'L200'),
+(1155, 59, 'L300', 'L300'),
 (1156, 59, 'LSSATURN', 'LS'),
-(1157, 59, 'LW_SERIES', 'LW Series (4)'),
-(1158, 59, 'LW', ' - LW1'),
-(1159, 59, 'LW2', ' - LW2'),
-(1160, 59, 'LW200', ' - LW200'),
-(1161, 59, 'LW300', ' - LW300'),
+-- (1157, 59, 'LW_SERIES', 'LW Series (4)'),
+(1158, 59, 'LW', 'LW1'),
+(1159, 59, 'LW2', 'LW2'),
+(1160, 59, 'LW200', 'LW200'),
+(1161, 59, 'LW300', 'LW300'),
 (1162, 59, 'OUTLOOK', 'Outlook'),
 (1163, 59, 'RELAY', 'Relay'),
-(1164, 59, 'SC_SERIES', 'SC Series (2)'),
-(1165, 59, 'SC1', ' - SC1'),
-(1166, 59, 'SC2', ' - SC2'),
+-- (1164, 59, 'SC_SERIES', 'SC Series (2)'),
+(1165, 59, 'SC1', 'SC1'),
+(1166, 59, 'SC2', 'SC2'),
 (1167, 59, 'SKY', 'Sky'),
-(1168, 59, 'SL_SERIES', 'SL Series (3)'),
-(1169, 59, 'SL', ' - SL'),
-(1170, 59, 'SL1', ' - SL1'),
-(1171, 59, 'SL2', ' - SL2'),
-(1172, 59, 'SW_SERIES', 'SW Series (2)'),
-(1173, 59, 'SW1', ' - SW1'),
-(1174, 59, 'SW2', ' - SW2'),
+-- (1168, 59, 'SL_SERIES', 'SL Series (3)'),
+(1169, 59, 'SL', 'SL'),
+(1170, 59, 'SL1', 'SL1'),
+(1171, 59, 'SL2', 'SL2'),
+-- (1172, 59, 'SW_SERIES', 'SW Series (2)'),
+(1173, 59, 'SW1', 'SW1'),
+(1174, 59, 'SW2', 'SW2'),
 (1175, 59, 'VUE', 'Vue'),
 (1176, 59, 'SATOTH', 'Other Saturn Models'),
 (1177, 60, 'SCIFRS', 'FR-S'),
@@ -1611,9 +1664,9 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (1268, 69, 'GLI', 'GLI'),
 (1269, 69, 'GOLFR', 'Golf R'),
 (1270, 69, 'GTI', 'GTI'),
-(1271, 69, 'GOLFANDRABBITMODELS', 'Golf and Rabbit Models (2)'),
-(1272, 69, 'GOLF', ' - Golf'),
-(1273, 69, 'RABBIT', ' - Rabbit'),
+-- (1271, 69, 'GOLFANDRABBITMODELS', 'Golf and Rabbit Models (2)'),
+(1272, 69, 'GOLF', 'Golf'),
+(1273, 69, 'RABBIT', 'Rabbit'),
 (1274, 69, 'JET', 'Jetta'),
 (1275, 69, 'PASS', 'Passat'),
 (1276, 69, 'PHAETON', 'Phaeton'),
@@ -1656,27 +1709,36 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (1313, 71, 'GVX', 'GVX'),
 (1314, 71, 'YUOTH', 'Other Yugo Models');
 
-INSERT INTO user (id, type, username, password, email, phone_number) VALUES
-(1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383'),
-(2, 'RESIDENTIAL', 'test1', '2f20a2d2724752c202ddb0fdca9f20a3e0d4bfbe83938ab9', 'test1@egobie.com', '1234567890'),
-(3, 'RESIDENTIAL', 'test2', '50cef261a53165f08cb20850ac4047b45ca530d5058fc808bd427bca', 'test2@egobie.com', '1234567890'),
-(4, 'RESIDENTIAL', 'bhuang3', '92540fa6e7340a2855d5358eadcf5c71ec84dc8e354bb2a9aff06bd853ba6135', 'bhuang1228@gmail.com', '2019120383');
+INSERT INTO user (id, type, username, password, email, phone_number, discount) VALUES
+(1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
+(2, 'EGOBIE', 'egobie_em_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'em1@egobie.com', '2019120383', 0),
+(3, 'EGOBIE', 'egobie_em_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'em2@egobie.com', '2019120383', 0),
+(4, 'EGOBIE', 'a', '5df3bf93b9153cc6ab5ef8f32ad7ce3fd06ae656', 'a@egobie.com', '2019120383', 0);
 
-INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id) VALUES
-(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519);
+UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
+home_address_zip = '07601', home_address_city = 'Hackensack', home_address_street = '414 Hackensack Avenue'
+where id = 1;
 
-INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year) VALUES
-(1, 1, 'BO HUANG', 'a4f225a318c8ff92ad6910b966a723275977b571aeb8111f7d169391', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018');
+INSERT INTO user_car (id, user_id, plate, state, year, color, car_maker_id, car_model_id, reserved) VALUES
+(1, 1, 'Y96EUV', 'NJ', 2012, 'GRAY', 26, 519, 0);
 
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, status) VALUES
-(1, 1, 1, 1, 2, 100, 99.89, 'RESERVED');
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, start_timestamp, status) VALUES
-(3, 1, 1, 1, 4, 120, 39.89, '2016-04-15 11:20:36', 'IN_PROGRESS');
-INSERT INTO user_service (id, user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, start_timestamp, end_timestamp, status) VALUES
-(2, 1, 1, 1, 3, 110, 59.89, '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE');
+INSERT INTO user_payment (id, user_id, account_name, account_number, account_type, account_zip, code, expire_month, expire_year, reserved) VALUES
+(1, 1, 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', '07601', '868ab720595a9d56c3970eda7fcbfa0f8f91e447', '07', '2018', 0);
 
-INSERT INTO user_history (id, rating, user_id, user_service_id) VALUES
-(1, 1.0, 1, 2);
+/*
+
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status, assignee) VALUES
+(1, 1, 1, 2, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, status, assignee) VALUES
+(1, 1, 1, 4, 120, 39.89, 5, '2016-04-15 11:30:00', '2016-04-15 11:20:36', 'IN_PROGRESS', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, start_timestamp, end_timestamp, status, assignee) VALUES
+(1, 1, 1, 3, 110, 59.89, 2, '2016-04-15 11:30:00', '2016-04-15 11:20:36', '2016-04-15 12:30:36', 'DONE', 4);
+INSERT INTO user_service (user_id, user_car_id, user_payment_id, opening_id, estimated_time, estimated_price, gap, reserved_start_timestamp, status, assignee) VALUES
+(1, 1, 1, 55, 100, 99.89, 7, '2016-06-15 11:30:00', 'RESERVED', 4);
+
+
+INSERT INTO user_history (id, rating, user_id, user_service_id, car_plate, car_state, car_maker, car_model, car_year, car_color, payment_holder, payment_number, payment_type, payment_price) VALUES
+(1, 0, 1, 3, 'Y96EUV', 'NJ', 'Honda', 'Accord', 2012, 'GRAY', 'BO HUANG', '812a2620bfafc0e93970d2d10d7670f6b502236e79187c6b37a1d068df3bcfc2b68b054a4821b3b0', 'CREDIT', 59.89);
 
 UPDATE opening SET count = count - 1, demand = demand + 1 WHERE id IN (2, 3, 4);
 
@@ -1684,5 +1746,23 @@ INSERT INTO user_service_list (id, service_id, user_service_id) VALUES
 (1, 1, 1),
 (2, 7, 1),
 (3, 9, 2),
-(4, 2, 2),
-(5, 17, 3);
+(4, 6, 2),
+(5, 10, 3),
+(6, 10, 4);
+
+INSERT INTO user_service_addon_list (service_addon_id, user_service_id, amount) VALUES
+(1, 1, 1),
+(2, 1, 1);
+
+*/
+
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);

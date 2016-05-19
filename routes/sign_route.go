@@ -5,6 +5,10 @@ import (
 )
 
 func initSignRoutes() {
+	router.POST("/check/email", controllers.CheckEmail)
+
+	router.POST("/check/name", controllers.CheckUsername)
+
 	router.POST("/signup", controllers.SignUp)
 
 	router.POST("/signin", controllers.SignIn)

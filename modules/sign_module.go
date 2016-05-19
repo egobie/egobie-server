@@ -27,3 +27,12 @@ type SignIn struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+/**
+{
+	"value": "email_address"
+}
+**/
+type Check struct {
+	Value string `json:"value"`
+}
