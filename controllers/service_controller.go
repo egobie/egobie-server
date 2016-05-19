@@ -1174,8 +1174,9 @@ func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (e
 	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
 
 	if _, err = tx.Exec(`
-		update user_opening set user_schedule = user_schedule ^ ? where user_id = ?`,
-		mask, assignee,
+		update user_opening set user_schedule = user_schedule ^ ?
+		where user_id = ? and day = ?`,
+		mask, assignee, day,
 	); err != nil {
 		return
 	}
