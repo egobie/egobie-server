@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -14,27 +15,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getCarByIdAndUserId(carId, userId int32) (car modules.Car, err error){
+func getCarByIdAndUserId(carId, userId int32) (car modules.Car, err error) {
 	query := `
 		select uc.id, uc.user_id, uc.report_id, uc.plate, uc.state, uc.year, uc.color,
-				cma.title, cmo.title, uc.car_maker_id, uc.car_model_id
+				cma.title, cmo.title, uc.car_maker_id, uc.car_model_id, uc.reserved
 		from user_car uc
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		where uc.id = ? and uc.user_id = ?
 	`
-	var (
-		stmt *sql.Stmt
-	)
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	if err = stmt.QueryRow(carId, userId).Scan(
-		&car.Id, &car.UserId, &car.ReportId, &car.Plate, &car.State, &car.Year,
-		&car.Color, &car.Maker, &car.Model, &car.MakerId,&car.ModelId,
+	if err = config.DB.QueryRow(query, carId, userId).Scan(
+		&car.Id, &car.UserId, &car.ReportId, &car.Plate,
+		&car.State, &car.Year, &car.Color, &car.Maker,
+		&car.Model, &car.MakerId, &car.ModelId, &car.Reserved,
 	); err != nil {
 		return
 	}
@@ -42,26 +36,20 @@ func getCarByIdAndUserId(carId, userId int32) (car modules.Car, err error){
 	return car, nil
 }
 
-func getCarByUserId(userId int32) (cars []modules.Car, err error){
+func getCarByUserId(userId int32) (cars []modules.Car, err error) {
 	query := `
 		select uc.id, uc.user_id, uc.report_id, uc.plate, uc.state, uc.year, uc.color,
-				cma.title, cmo.title, uc.car_maker_id, uc.car_model_id
+				cma.title, cmo.title, uc.car_maker_id, uc.car_model_id, uc.reserved
 		from user_car uc
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		where uc.user_id = ?
 	`
 	var (
-		stmt *sql.Stmt
 		rows *sql.Rows
 	)
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		return
-	}
-	defer stmt.Close()
-
-	if rows, err = stmt.Query(userId); err != nil {
+	if rows, err = config.DB.Query(query, userId); err != nil {
 		return
 	}
 	defer rows.Close()
@@ -70,8 +58,9 @@ func getCarByUserId(userId int32) (cars []modules.Car, err error){
 		car := modules.Car{}
 
 		if err = rows.Scan(
-			&car.Id, &car.UserId, &car.ReportId, &car.Plate, &car.State, &car.Year,
-			&car.Color, &car.Maker, &car.Model, &car.MakerId, &car.ModelId,
+			&car.Id, &car.UserId, &car.ReportId, &car.Plate,
+			&car.State, &car.Year, &car.Color, &car.Maker,
+			&car.Model, &car.MakerId, &car.ModelId, &car.Reserved,
 		); err != nil {
 			return
 		}
@@ -92,8 +81,14 @@ func GetCarMaker(c *gin.Context) {
 		makers []modules.CarMaker
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if rows, err = config.DB.Query(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -102,7 +97,6 @@ func GetCarMaker(c *gin.Context) {
 		maker := modules.CarMaker{}
 
 		if err = rows.Scan(&maker.Id, &maker.Title); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -117,16 +111,22 @@ func GetCarModel(c *gin.Context) {
 		select id, car_maker_id, title from car_model
 	`
 	var (
-		err error
-		rows *sql.Rows
+		err    error
+		rows   *sql.Rows
 		models []modules.CarModel
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if rows, err = config.DB.Query(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		model := modules.CarModel{}
@@ -134,8 +134,6 @@ func GetCarModel(c *gin.Context) {
 		if err = rows.Scan(
 			&model.Id, &model.MakerId, &model.Title,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
 			return
 		}
 
@@ -158,15 +156,20 @@ func GetCarModelForMaker(c *gin.Context) {
 		models  []modules.CarModel
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if makerId, err = strconv.ParseInt(c.Param("makerId"), 10, 32); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if rows, err = config.DB.Query(
 		query, int32(makerId),
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	defer rows.Close()
@@ -177,7 +180,6 @@ func GetCarModelForMaker(c *gin.Context) {
 		if err = rows.Scan(
 			&model.Id, &model.Title,
 		); err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -195,18 +197,22 @@ func GetCarById(c *gin.Context) {
 		body []byte
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if car, err = getCarByIdAndUserId(request.Id, request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -214,25 +220,29 @@ func GetCarById(c *gin.Context) {
 }
 
 func GetCarForUser(c *gin.Context) {
-	request := modules.CarRequstForUser{}
+	request := modules.BaseRequest{}
 	var (
 		cars []modules.Car
 		body []byte
 		err  error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if cars, err = getCarByUserId(request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -248,46 +258,42 @@ func UpdateCar(c *gin.Context) {
 	`
 	request := modules.UpdateCar{}
 	var (
-		stmt        *sql.Stmt
 		result      sql.Result
 		affectedRow int64
 		body        []byte
 		err         error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	defer stmt.Close()
-
-	if result, err = stmt.Exec(
+	if result, err = config.DB.Exec(query,
 		request.Plate, request.State, request.Year,
 		request.Color, request.Maker, request.Model,
 		request.Id, request.UserId); err != nil {
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	} else if affectedRow <= 0 {
-		c.IndentedJSON(http.StatusBadRequest, errors.New("Car not found"))
+		err = errors.New("Car not found")
 		return
 	}
 
-	if car, err := getCarByIdAndUserId(request.Id, request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	} else {
+	if car, err := getCarByIdAndUserId(
+		request.Id, request.UserId,
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, car)
 	}
 }
@@ -299,44 +305,39 @@ func CreateCar(c *gin.Context) {
 	`
 	request := modules.CarNew{}
 	var (
-		stmt   *sql.Stmt
 		result sql.Result
 		newId  int64
 		body   []byte
 		err    error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if stmt, err = config.DB.Prepare(query); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	defer stmt.Close()
-
-	if result, err = stmt.Exec(
+	if result, err = config.DB.Exec(query,
 		request.UserId, request.Plate, request.State,
 		request.Year, request.Color, request.Maker, request.Model,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	} else if newId, err = result.LastInsertId(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if car, err := getCarByIdAndUserId(int32(newId), request.UserId); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	} else {
+	if car, err := getCarByIdAndUserId(
+		int32(newId), request.UserId,
+	); err == nil {
 		c.IndentedJSON(http.StatusOK, car)
 	}
 }
@@ -353,33 +354,82 @@ func DeleteCar(c *gin.Context) {
 		err         error
 	)
 
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort();
 		return
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort();
+		return
+	}
+
+	if checkCarStatus(request.Id, request.UserId) {
+		err = errors.New("This vehicle cannot be deleted since you have one reservation on it.")
 		return
 	}
 
 	if result, err = config.DB.Exec(
 		query, request.Id, request.UserId,
 	); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort();
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort();
 		return
 	} else if affectedRow <= 0 {
-		c.IndentedJSON(http.StatusBadRequest, "Car not found")
-		c.Abort();
+		err = errors.New("Car not found")
 		return
 	}
 
 	c.IndentedJSON(http.StatusOK, "OK")
+}
+
+func checkCarStatus(id, userId int32) bool {
+	query := `
+		select reserved from user_car where id = ? and user_id = ?
+	`
+	var temp int32
+
+	if err := config.DB.QueryRow(
+		query, id, userId,
+	).Scan(&temp); err != nil {
+		fmt.Println("Check Car Status - Error - ", err)
+		return true
+	}
+
+	fmt.Println("temp = ", temp)
+
+	return temp > 0
+}
+
+func lockCar(tx *sql.Tx, id, userId int32) (err error) {
+	query := `
+		update user_car set reserved = reserved + 1 where id = ? and user_id = ?
+	`
+
+	if _, err = config.DB.Exec(
+		query, id, userId,
+	); err != nil {
+		fmt.Println("Lock Car - Error - ", err.Error())
+	}
+
+	return
+}
+
+func unlockCar(tx *sql.Tx, id, userId int32) (err error) {
+	query := `
+		update user_car set reserved = reserved - 1 where id = ? and user_id = ?
+	`
+
+	if _, err = tx.Exec(
+		query, id, userId,
+	); err != nil {
+		fmt.Println("Unlock Car - Error - ", err.Error())
+	}
+
+	return
 }

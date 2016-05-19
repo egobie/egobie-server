@@ -6,17 +6,27 @@ import (
 
 func initServiceRoutes() {
 	// Get all services
-	serviceRouter.GET("", controllers.GetService)
+	serviceRouter.POST("", controllers.GetService)
 
-	serviceRouter.POST("/user", controllers.GetUserService)
+	serviceRouter.POST("/reservation", controllers.GetReservation)
+
+	serviceRouter.POST("/reserved", controllers.GetUserServiceReserved)
+
+	serviceRouter.POST("/done", controllers.GetUserServiceDone)
 
 	serviceRouter.POST("/opening", controllers.GetOpening)
 
 	serviceRouter.POST("/order", controllers.PlaceOrder)
 
-	serviceRouter.GET("/demand/opening/:id", controllers.OpeningDemand)
+	serviceRouter.POST("/cancel", controllers.CancelOrder)
 
-	serviceRouter.GET("/read/:id", controllers.ServiceReading);
+	serviceRouter.POST("/demand/opening/:id", controllers.OpeningDemand)
+
+	serviceRouter.POST("/read/:id", controllers.ServiceReading)
 
 	serviceRouter.POST("/demand", controllers.ServiceDemand)
+
+	serviceRouter.POST("/demand/addon", controllers.AddonDemand)
+
+	serviceRouter.POST("/now", controllers.OnDemand);
 }

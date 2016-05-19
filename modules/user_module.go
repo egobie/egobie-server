@@ -10,6 +10,7 @@ type User struct {
 	Username          string      `json:"username"`
 	Password          string      `json:"password"`
 	Coupon            string      `json:"coupon"`
+	Discount          int32       `json:"discount"`
 	Email             null.String `json:"email"`
 	PhoneNumber       null.String `json:"phone_number"`
 	FirstName         null.String `json:"first_name"`
@@ -102,7 +103,29 @@ type UpdateAddress struct {
 }
 
 type Feedback struct {
-	UserId   int32  `json:"user_id"`
+	BaseRequest
+
 	Title    string `json:"title"`
 	Feedback string `json:"feedback"`
+}
+
+const USER_EGOBIE_TOKEN int32 = 4
+const USER_RESIDENTIAL_TOKEN int32 = 6
+const USER_FLEET_TOKEN int32 = 8
+const USER_BUSINESS_TOKEN int32 = 10
+
+func IsResidential(userType string) bool {
+	return userType == "RESIDENTIAL"
+}
+
+func IsBusiness(userType string) bool {
+	return userType == "BUSINESS"
+}
+
+func IsEgobie(userType string) bool {
+	return userType == "EGOBIE"
+}
+
+func IsFleet(userType string) bool {
+	return userType == "FLEET"
 }
