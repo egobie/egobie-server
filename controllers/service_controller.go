@@ -1040,6 +1040,10 @@ func updateAddonDemand(ids []int32) {
 	query := `update service_addon set demand = demand + 1 where id in (`
 	last := len(ids) - 1
 
+	if (last < 0) {
+		return
+	}
+
 	for i, id := range ids {
 		query += strconv.Itoa(int(id))
 		if i != last {
