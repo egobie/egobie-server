@@ -4,7 +4,9 @@ CREATE DATABASE egobie;
 
 USE egobie;
 
-SET GLOBAL time_zone = '-04:00';
+-- SET GLOBAL time_zone = '-04:00';
+
+-- SET GLOBAL log_bin_trust_function_creators = 1;
 
 CREATE TABLE user (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
