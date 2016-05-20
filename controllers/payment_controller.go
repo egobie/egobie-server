@@ -380,8 +380,6 @@ func UpdatePayment(c *gin.Context) {
 }
 
 func validatePayment(firstName, lastName, account, code, month, year string) (err error) {
-	var customer *braintree.Customer
-
 	/*
 		fmt.Println("First -", firstName, "-")
 		fmt.Println("Last -", lastName, "-")
@@ -391,7 +389,7 @@ func validatePayment(firstName, lastName, account, code, month, year string) (er
 		fmt.Println("year -", year, "-")
 	*/
 
-	customer, err = config.BT.Customer().Create(&braintree.Customer{
+	_, err = config.BT.Customer().Create(&braintree.Customer{
 		FirstName: firstName,
 		LastName:  lastName,
 		CreditCard: &braintree.CreditCard{
@@ -402,7 +400,9 @@ func validatePayment(firstName, lastName, account, code, month, year string) (er
 		},
 	})
 
-	fmt.Println(customer)
+	if err != nil {
+		err = errors.New("Invalid card number")
+	}
 
 	return
 }
