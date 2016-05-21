@@ -330,7 +330,7 @@ func timeDiffInMins(str string) int32 {
 	now := time.Now().In(newYork)
 
 	if t, err := time.ParseInLocation(
-		"2006-01-02T15:04:05.000Z", str, now.Location(),
+		"2006-01-02T15:04:05.000Z", str, newYork,
 	); err != nil {
 		return -1
 	} else {
