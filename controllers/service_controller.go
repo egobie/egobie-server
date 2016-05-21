@@ -302,6 +302,8 @@ func OnDemand(c *gin.Context) {
 }
 
 func getCurrentPeriod() int32 {
+	time.LoadLocation("America/New_York")
+
 	//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
 	t := time.Now()
 	now := t.Add(30 * time.Minute)
