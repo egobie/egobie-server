@@ -160,7 +160,7 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
 	}
 
-	query += " and id = ? and user_id = ?"
+	query += " where id = ? and user_id = ?"
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		return
