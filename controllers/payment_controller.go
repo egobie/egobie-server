@@ -559,7 +559,7 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err
 				up.code, up.expire_month, up.expire_year, up.account_type
 		from user_service us
 		inner join user_payment up on up.id = us.user_payment_id and up.user_id = us.user_id
-		where us.id = ? and up.id = ? and us.user_id = ? and us.status = 'DONE'
+		where us.id = ? and up.id = ? and us.user_id = ?
 	`
 	process := struct {
 		PaymentId     int32

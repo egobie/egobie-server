@@ -151,12 +151,10 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 	if status == "IN_PROGRESS" {
 		query += `
 			, start_timestamp = CURRENT_TIMESTAMP()
-			where status = "RESERVED"
 		`
 	} else if status == "DONE" {
 		query += `
 			, end_timestamp = CURRENT_TIMESTAMP()
-			where status = "IN_PROGRESS"
 		`
 	} else if status == "RESERVED" {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
