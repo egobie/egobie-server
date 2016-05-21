@@ -302,8 +302,11 @@ func OnDemand(c *gin.Context) {
 }
 
 func getCurrentPeriod() int32 {
+	newYork, _ := time.LoadLocation("America/New_York")
+
 	//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-	t := time.Now()
+	t := time.Now().In(newYork)
+
 	now := t.Add(30 * time.Minute)
 	hour := now.Hour()
 
@@ -321,13 +324,13 @@ func getCurrentPeriod() int32 {
 }
 
 func timeDiffInMins(str string) int32 {
-	time.LoadLocation("America/New_York")
+	newYork, _ := time.LoadLocation("America/New_York")
 
 	//	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-	now := time.Now()
+	now := time.Now().In(newYork)
 
 	if t, err := time.ParseInLocation(
-		"2006-01-02T15:04:05.000Z", str, now.Location(),
+		"2006-01-02T15:04:05.000Z", str, newYork,
 	); err != nil {
 		return -1
 	} else {
@@ -1039,6 +1042,10 @@ func AddonDemand(c *gin.Context) {
 func updateAddonDemand(ids []int32) {
 	query := `update service_addon set demand = demand + 1 where id in (`
 	last := len(ids) - 1
+
+	if (last < 0) {
+		return
+	}
 
 	for i, id := range ids {
 		query += strconv.Itoa(int(id))
