@@ -575,9 +575,13 @@ func PlaceOrder(c *gin.Context) {
 			if err1 := tx.Rollback(); err1 != nil {
 				fmt.Println("Error -Rollback - ", err1.Error())
 			}
+
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
 		} else {
 			if err1 := tx.Commit(); err1 != nil {
 				fmt.Println("Error - Commit - ", err1.Error())
+			} else {
+				c.IndentedJSON(http.StatusOK, "OK")
 			}
 		}
 	}()
@@ -673,8 +677,6 @@ func PlaceOrder(c *gin.Context) {
 	if err = lockPayment(tx, request.PaymentId, request.UserId); err != nil {
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, "OK")
 }
 
 func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error) {
@@ -722,6 +724,10 @@ func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error)
 }
 
 func getAddonsTimeAndPrice(addons []modules.AddonRequest) (time int32, price float32, err error) {
+	if (len(addons) == 0) {
+		return 0, 0, nil
+	}
+
 	query := `
 		select id, time, price from service_addon where id in (
 	`
