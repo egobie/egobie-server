@@ -1714,7 +1714,7 @@ INSERT INTO user (id, type, username, password, email, phone_number, discount) V
 (2, 'EGOBIE', 'egobie_em_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'em1@egobie.com', '2019120383', 0),
 (3, 'EGOBIE', 'egobie_em_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'em2@egobie.com', '2019120383', 0),
 (4, 'EGOBIE', 'a', '5df3bf93b9153cc6ab5ef8f32ad7ce3fd06ae656', 'a@egobie.com', '2019120383', 0),
-(5, 'EGOBIE', 'egobie', 'b623e6fda297e4b589815902c5ec3bee0cf75891cd5fbb64', 'egobie@egobie.com', '1234567890', 0);
+(5, 'RESIDENTIAL', 'egobie', 'b623e6fda297e4b589815902c5ec3bee0cf75891cd5fbb64', 'egobie@egobie.com', '1234567890', 0);
 
 UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
 home_address_zip = '07601', home_address_city = 'Hackensack', home_address_street = '414 Hackensack Avenue'
