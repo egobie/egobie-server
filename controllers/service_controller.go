@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
-	"math"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -484,16 +484,17 @@ func PlaceOrder(c *gin.Context) {
 	user := modules.User{}
 
 	var (
-		result     sql.Result
-		tx         *sql.Tx
-		body       []byte
-		err        error
-		price      float32
-		time       int32
-		gap        int32
-		insertedId int64
-		reserved   string
-		assignee   int32
+		result            sql.Result
+		tx                *sql.Tx
+		body              []byte
+		err               error
+		price             float32
+		time              int32
+		gap               int32
+		insertedId        int64
+		reserved          string
+		assignee          int32
+		reservationNumber string
 	)
 
 	defer func() {
@@ -519,9 +520,6 @@ func PlaceOrder(c *gin.Context) {
 		}
 		return
 	}
-
-	// Send Email To User
-	go sendPlaceOrderEmail([]string{user.Email.String}, []byte("Thank you!"))
 
 	if payment, err = getPaymentByIdAndUserId(
 		request.PaymentId, request.UserId,
@@ -580,10 +578,21 @@ func PlaceOrder(c *gin.Context) {
 			}
 
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			err = nil
 		} else {
 			if err1 := tx.Commit(); err1 != nil {
 				fmt.Println("Error - Commit - ", err1.Error())
 			} else {
+				// Send Email To User
+				go sendPlaceOrderEmail(
+					user.Email.String,
+					user.FirstName.String,
+					reservationNumber,
+					reserved,
+					price,
+				)
+
 				c.IndentedJSON(http.StatusOK, "OK")
 			}
 		}
@@ -645,6 +654,12 @@ func PlaceOrder(c *gin.Context) {
 
 	user_service_id := int32(insertedId)
 
+	if err = tx.QueryRow(`
+		select reservation_id from user_service where id = ?`, user_service_id,
+	).Scan(&reservationNumber); err != nil {
+		return
+	}
+
 	queryUserServiceList := `
 		insert into user_service_list (
 			service_id, user_service_id
@@ -652,7 +667,7 @@ func PlaceOrder(c *gin.Context) {
 	`
 
 	for _, id := range request.Services {
-		if _, err = config.DB.Exec(
+		if _, err = tx.Exec(
 			queryUserServiceList, id, user_service_id,
 		); err != nil {
 			return
@@ -666,7 +681,7 @@ func PlaceOrder(c *gin.Context) {
 	`
 
 	for _, addon := range request.Addons {
-		if _, err = config.DB.Exec(
+		if _, err = tx.Exec(
 			queryUserServiceAddonList, addon.Id, user_service_id, addon.Amount,
 		); err != nil {
 			return
@@ -727,7 +742,7 @@ func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error)
 }
 
 func getAddonsTimeAndPrice(addons []modules.AddonRequest) (time int32, price float32, err error) {
-	if (len(addons) == 0) {
+	if len(addons) == 0 {
 		return 0, 0, nil
 	}
 
@@ -1052,7 +1067,7 @@ func updateAddonDemand(ids []int32) {
 	query := `update service_addon set demand = demand + 1 where id in (`
 	last := len(ids) - 1
 
-	if (last < 0) {
+	if last < 0 {
 		return
 	}
 
@@ -1144,8 +1159,8 @@ func updateServiceDemand(ids []int32) {
 
 func assignService(tx *sql.Tx, openingId, gap int32) (assignee int32, err error) {
 	var (
-		day      string
-		period   int32
+		day    string
+		period int32
 	)
 
 	if err = tx.QueryRow(`
