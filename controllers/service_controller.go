@@ -520,6 +520,9 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
+	// Send Email To User
+	go sendPlaceOrderEmail([]string{user.Email.String}, []byte("Thank you!"))
+
 	if payment, err = getPaymentByIdAndUserId(
 		request.PaymentId, request.UserId,
 	); err != nil {
