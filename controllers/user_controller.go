@@ -81,6 +81,8 @@ func updateAddress(body []byte, setClause string) (err error) {
 		return
 	}
 
+	go changeAddress(request.UserId)
+
 	return nil
 }
 
@@ -153,6 +155,8 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	go changeUser(request.UserId)
+
 	if user, err := getUserById(request.UserId); err == nil {
 		user.Password = getUserToken(user.Type, user.Password)
 		c.IndentedJSON(http.StatusOK, user)
@@ -208,6 +212,8 @@ func UpdatePassword(c *gin.Context) {
 	); err != nil {
 		return
 	}
+
+	go changePassword(request.UserId)
 
 	c.IndentedJSON(http.StatusOK, modules.UserInfo{
 		request.UserId, getUserToken(user.Type, enPassword),

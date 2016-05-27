@@ -174,6 +174,8 @@ func Rating(c *gin.Context) {
 		return
 	}
 
+	go rateService(request.UserId)
+
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 

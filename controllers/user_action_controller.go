@@ -161,8 +161,8 @@ func changePassword(userId int32) {
 	create(userId, "Change Password")
 }
 
-func changeUserInfo(userId int32) {
-	create(userId, "Change User Info")
+func changeUser(userId int32) {
+	create(userId, "Change User")
 }
 
 func makeReservation(userId int32) {

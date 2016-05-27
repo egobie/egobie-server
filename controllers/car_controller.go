@@ -291,6 +291,8 @@ func UpdateCar(c *gin.Context) {
 		return
 	}
 
+	go editCar(request.UserId)
+
 	if car, err := getCarByIdAndUserId(
 		request.Id, request.UserId,
 	); err == nil {
@@ -334,6 +336,8 @@ func CreateCar(c *gin.Context) {
 	} else if newId, err = result.LastInsertId(); err != nil {
 		return
 	}
+
+	go addCar(request.UserId)
 
 	if car, err := getCarByIdAndUserId(
 		int32(newId), request.UserId,
@@ -384,6 +388,8 @@ func DeleteCar(c *gin.Context) {
 		err = errors.New("Car not found")
 		return
 	}
+
+	go deleteCar(request.UserId)
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }

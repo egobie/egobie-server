@@ -301,6 +301,8 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
+	go addPayment(request.UserId)
+
 	if payment, err := getPaymentByIdAndUserId(
 		int32(insertId), request.UserId,
 	); err == nil {
@@ -371,6 +373,8 @@ func UpdatePayment(c *gin.Context) {
 		err = errors.New("Payment not found")
 		return
 	}
+
+	go editPayment(request.UserId)
 
 	if payment, err := getPaymentByIdAndUserId(
 		request.Id, request.UserId,
@@ -451,6 +455,8 @@ func DeletePayment(c *gin.Context) {
 		err = errors.New("Payment not found")
 		c.Abort()
 	}
+
+	go deletePayment(request.UserId)
 
 	c.IndentedJSON(http.StatusOK, "OK")
 }

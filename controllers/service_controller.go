@@ -267,6 +267,8 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
+	go checkAvailability(request.UserId, string(request.Services))
+
 	if openings, err = filterOpening(
 		request.Services, addons, openings,
 	); err == nil {
@@ -688,6 +690,8 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}
 
+	go makeReservation(request.UserId)
+
 	if err = lockCar(tx, request.CarId, request.UserId); err != nil {
 		return
 	}
@@ -914,6 +918,8 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
+	go cancelReservation(request.UserId)
+
 	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
 		return
 	}
@@ -936,11 +942,24 @@ func CancelOrder(c *gin.Context) {
 }
 
 func OpeningDemand(c *gin.Context) {
-	if id, err := strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
+	request := modules.BaseRequest{}
+	var (
+		id   int64
+		err  error
+		data []byte
+	)
+
+	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	} else {
+		if data, err = ioutil.ReadAll(c.Request.Body); err == nil {
+			if err = json.Unmarshal(data, &request); err == nil {
+				go chooseOpening(request.UserId, strconv.Itoa(int(id)))
+			}
+		}
+
 		updateOpeningDemand(int32(id))
 		c.IndentedJSON(http.StatusOK, "OK")
 	}
@@ -1087,9 +1106,11 @@ func updateAddonDemand(ids []int32) {
 
 func ServiceReading(c *gin.Context) {
 	query := `update service set reading = reading + 1 where id = ?`
+	request := modules.BaseRequest{}
 	var (
-		err error
-		id  int64
+		data []byte
+		err  error
+		id   int64
 	)
 
 	defer func() {
@@ -1106,6 +1127,12 @@ func ServiceReading(c *gin.Context) {
 
 	if _, err = config.DB.Exec(query, int32(id)); err != nil {
 		return
+	}
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err == nil {
+		if err = json.Unmarshal(data, &request); err == nil {
+			go readService(request.UserId, strconv.Itoa(int(id)))
+		}
 	}
 }
 
