@@ -177,8 +177,8 @@ func rateService(userId int32) {
 	create(userId, "Rate Service")
 }
 
-func checkAvailability(userId int32, data string) {
-	createWithData(userId, "Check Availability", data)
+func checkAvailability(userId int32) {
+	create(userId, "Check Availability")
 }
 
 func applyExtraService(userId int32, data string) {

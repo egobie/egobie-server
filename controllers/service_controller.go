@@ -263,7 +263,7 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
-	go checkAvailability(request.UserId, string(request.Services))
+	go checkAvailability(request.UserId)
 
 	if openings, err = loadOpening(query, curr); err != nil {
 		return
