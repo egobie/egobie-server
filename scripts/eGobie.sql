@@ -41,6 +41,14 @@ CREATE TABLE user (
     INDEX(home_address_city)
 );
 
+CREATE TABLE user_action (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(512) NOT NULL,
+    data VARCHAR(128) NULL,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE service (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
