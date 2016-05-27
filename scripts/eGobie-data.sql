@@ -264,14 +264,14 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "(Basic) Oil Filter"
 ]', 45, 30);
 
-INSERT INTO service_addon (service_id, name, note, price, time) VALUES
-(10, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
-(10, "Engine Cleaning", "", 50, 30),
-(10, "Hand Wax", "", 35, 60),
-(10, "Headlight Reconditioning", "", 65, 60),
-(10, "Hot Carpet Extraction", "", 15, 30),
-(10, "Paint Protectant", "Multi-layer", 50, 60),
-(10, "Wax & Polish", "Multi-layer", 75, 60);
+-- INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+-- (10, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+-- (10, "Engine Cleaning", "", 50, 30),
+-- (10, "Hand Wax", "", 35, 60),
+-- (10, "Headlight Reconditioning", "", 65, 60),
+-- (10, "Hot Carpet Extraction", "", 15, 30),
+-- (10, "Paint Protectant", "Multi-layer", 50, 60),
+-- (10, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Fill Brake Fluid", 0),
@@ -285,8 +285,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Change Engine Air Filter",  45),
 (10, "Change Serpentine Belts",  150);
 
-INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
-(10, 'Extra Conventional Oil', 4, 30, 'quart');
+INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
+(10, 'Extra Conventional Oil', 'per quart', 4, 30, 'quart');
 
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
@@ -295,14 +295,14 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "(Full) Filter"
 ]', 75, 30);
 
-INSERT INTO service_addon (service_id, name, note, price, time) VALUES
-(11, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
-(11, "Engine Cleaning", "", 50, 30),
-(11, "Hand Wax", "", 35, 60),
-(11, "Headlight Reconditioning", "", 65, 60),
-(11, "Hot Carpet Extraction", "", 15, 30),
-(11, "Paint Protectant", "Multi-layer", 50, 60),
-(11, "Wax & Polish", "Multi-layer", 75, 60);
+-- INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+-- (11, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+-- (11, "Engine Cleaning", "", 50, 30),
+-- (11, "Hand Wax", "", 35, 60),
+-- (11, "Headlight Reconditioning", "", 65, 60),
+-- (11, "Hot Carpet Extraction", "", 15, 30),
+-- (11, "Paint Protectant", "Multi-layer", 50, 60),
+-- (11, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Fill Brake Fluid", 0),
@@ -316,8 +316,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Change Engine Air Filter", 45),
 (11, "Change Serpentine Belts", 150);
 
-INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
-(11, 'Extra Synthetic Oil', 8, 30, 'quart');
+INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
+(11, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
 
 
 INSERT INTO car_maker (id, name, title) VALUES
