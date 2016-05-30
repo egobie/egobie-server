@@ -1080,6 +1080,7 @@ func GetService(c *gin.Context) {
 		select id, name, type, items, description, note,
 			estimated_price, estimated_time
 		from service
+		where type != 'DETAILING'
 		order by id
 	`
 	index := make(map[int32]int32)
