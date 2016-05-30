@@ -941,6 +941,84 @@ func CancelOrder(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "OK")
 }
 
+func AddService(c *gin.Context) {
+	query := `
+		select estimated_price from user_service
+		where id = ? and user_id = ?
+	`
+	request := modules.AddServiceRequest{}
+	var (
+		err error
+		data []byte
+		price float32
+		tx *sql.Tx
+	)
+
+	defer func() {
+		if err != nil {
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err = tx.Commit(); err != nil {
+				return
+			}
+		}
+	}()
+
+	if err = tx.QueryRow(
+		query, request.ServiceId, request.UserId,
+	).Scan(&price); err != nil {
+		return
+	}
+
+	queryAdd := `
+		insert into user_service_addon_list (
+			service_addon_id, user_service_id, amount
+		) values (?, ?, ?)
+	`
+
+	for _, addon := range request.Addons {
+		if _, err = tx.Exec(
+			queryAdd, addon, request.ServiceId, 1,
+		); err != nil {
+			return
+		}
+	}
+
+	queryUpdate := `
+		update user_service set estimated_price = ?
+		where id = ? and user_id = ?
+	`
+
+	if _, err = tx.Exec(
+		queryUpdate, request.RealPrice, request.ServiceId, request.UserId,
+	); err != nil {
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, "OK")
+}
+
 func OpeningDemand(c *gin.Context) {
 	request := modules.BaseRequest{}
 	var (

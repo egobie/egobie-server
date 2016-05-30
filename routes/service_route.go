@@ -20,6 +20,8 @@ func initServiceRoutes() {
 
 	serviceRouter.POST("/cancel", controllers.CancelOrder)
 
+	serviceRouter.POST("/add", controllers.AddService);
+
 	serviceRouter.POST("/demand/opening/:id", controllers.OpeningDemand)
 
 	serviceRouter.POST("/read/:id", controllers.ServiceReading)

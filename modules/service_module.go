@@ -204,6 +204,16 @@ type AddonRequest struct {
 	Amount int32 `json:"amount"`
 }
 
+type AddServiceRequest struct {
+	BaseRequest
+
+	ServiceId int32   `json:"user_service_id"`
+	Discount  float32 `json:"discount"`
+	Price     float32 `json:"price"`
+	RealPrice float32 `json:"real_price"`
+	Addons    []int32 `json:"addons"`
+}
+
 type OpeningRequest struct {
 	BaseRequest
 
