@@ -83,7 +83,7 @@ func GetCarMaker(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -103,7 +103,7 @@ func GetCarMaker(c *gin.Context) {
 		makers = append(makers, maker)
 	}
 
-	c.IndentedJSON(http.StatusOK, makers)
+	c.JSON(http.StatusOK, makers)
 }
 
 func GetCarModel(c *gin.Context) {
@@ -118,7 +118,7 @@ func GetCarModel(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -140,7 +140,7 @@ func GetCarModel(c *gin.Context) {
 		models = append(models, model)
 	}
 
-	c.IndentedJSON(http.StatusOK, models)
+	c.JSON(http.StatusOK, models)
 }
 
 func GetCarModelForMaker(c *gin.Context) {
@@ -158,7 +158,7 @@ func GetCarModelForMaker(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -186,7 +186,7 @@ func GetCarModelForMaker(c *gin.Context) {
 		models = append(models, model)
 	}
 
-	c.IndentedJSON(http.StatusOK, models)
+	c.JSON(http.StatusOK, models)
 }
 
 func GetCarById(c *gin.Context) {
@@ -199,7 +199,7 @@ func GetCarById(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -216,7 +216,7 @@ func GetCarById(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, car)
+	c.JSON(http.StatusOK, car)
 }
 
 func GetCarForUser(c *gin.Context) {
@@ -229,7 +229,7 @@ func GetCarForUser(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -246,7 +246,7 @@ func GetCarForUser(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, cars)
+	c.JSON(http.StatusOK, cars)
 }
 
 func UpdateCar(c *gin.Context) {
@@ -266,7 +266,7 @@ func UpdateCar(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -296,7 +296,7 @@ func UpdateCar(c *gin.Context) {
 	if car, err := getCarByIdAndUserId(
 		request.Id, request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, car)
+		c.JSON(http.StatusOK, car)
 	}
 }
 
@@ -315,7 +315,7 @@ func CreateCar(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -342,7 +342,7 @@ func CreateCar(c *gin.Context) {
 	if car, err := getCarByIdAndUserId(
 		int32(newId), request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, car)
+		c.JSON(http.StatusOK, car)
 	}
 }
 
@@ -360,7 +360,7 @@ func DeleteCar(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -391,7 +391,7 @@ func DeleteCar(c *gin.Context) {
 
 	go deleteCar(request.UserId)
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func checkCarStatus(id, userId int32) bool {

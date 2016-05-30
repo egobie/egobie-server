@@ -44,7 +44,7 @@ func GetTask(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -98,37 +98,37 @@ func GetTask(c *gin.Context) {
 		)
 	}
 
-	c.IndentedJSON(http.StatusOK, tasks)
+	c.JSON(http.StatusOK, tasks)
 }
 
 func MakeServiceDone(c *gin.Context) {
 	if err := changeServiceStatus(c, "DONE"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func MakeServiceReserved(c *gin.Context) {
 	if err := changeServiceStatus(c, "RESERVED"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func MakeServiceInProgress(c *gin.Context) {
 	if err := changeServiceStatus(c, "IN_PROGRESS"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func changeServiceStatus(c *gin.Context, status string) (err error) {

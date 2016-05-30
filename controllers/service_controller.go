@@ -142,7 +142,7 @@ func GetReservation(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -158,7 +158,7 @@ func GetReservation(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'RESERVED' or status = 'IN_PROGRESS'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -171,7 +171,7 @@ func GetUserServiceReserved(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -187,7 +187,7 @@ func GetUserServiceReserved(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'RESERVED'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -200,7 +200,7 @@ func GetUserServiceDone(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -216,7 +216,7 @@ func GetUserServiceDone(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'DONE'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -231,7 +231,7 @@ func OnDemand(c *gin.Context) {
 	curr := getCurrentPeriod()
 
 	if curr < 0 {
-		c.IndentedJSON(http.StatusBadRequest, "NO")
+		c.JSON(http.StatusBadRequest, "NO")
 		c.Abort()
 		return
 	}
@@ -245,7 +245,7 @@ func OnDemand(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -295,9 +295,9 @@ func OnDemand(c *gin.Context) {
 
 			temp.Diff = timeDiffInMins(str)
 
-			c.IndentedJSON(http.StatusOK, temp)
+			c.JSON(http.StatusOK, temp)
 		} else {
-			c.IndentedJSON(http.StatusBadRequest, "NO")
+			c.JSON(http.StatusBadRequest, "NO")
 			c.Abort()
 		}
 	}
@@ -356,7 +356,7 @@ func GetOpening(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -381,7 +381,7 @@ func GetOpening(c *gin.Context) {
 	if openings, err = filterOpening(
 		request.Services, request.Addons, openings,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, openings)
+		c.JSON(http.StatusOK, openings)
 	}
 }
 
@@ -501,7 +501,7 @@ func PlaceOrder(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -579,7 +579,7 @@ func PlaceOrder(c *gin.Context) {
 				fmt.Println("Error -Rollback - ", err1.Error())
 			}
 
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 			err = nil
 		} else {
@@ -595,7 +595,7 @@ func PlaceOrder(c *gin.Context) {
 					price,
 				)
 
-				c.IndentedJSON(http.StatusOK, "OK")
+				c.JSON(http.StatusOK, "OK")
 			}
 		}
 	}()
@@ -871,7 +871,7 @@ func CancelOrder(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -938,7 +938,7 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func AddService(c *gin.Context) {
@@ -956,7 +956,7 @@ func AddService(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -1016,7 +1016,7 @@ func AddService(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func OpeningDemand(c *gin.Context) {
@@ -1028,7 +1028,7 @@ func OpeningDemand(c *gin.Context) {
 	)
 
 	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	} else {
@@ -1039,7 +1039,7 @@ func OpeningDemand(c *gin.Context) {
 		}
 
 		updateOpeningDemand(int32(id))
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}
 }
 
@@ -1069,7 +1069,7 @@ func GetService(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -1131,7 +1131,7 @@ func GetService(c *gin.Context) {
 		}
 	}
 
-	c.IndentedJSON(http.StatusOK, services)
+	c.JSON(http.StatusOK, services)
 }
 
 func AddonDemand(c *gin.Context) {
@@ -1146,7 +1146,7 @@ func AddonDemand(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -1196,7 +1196,7 @@ func ServiceReading(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
@@ -1226,7 +1226,7 @@ func ServiceDemand(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {

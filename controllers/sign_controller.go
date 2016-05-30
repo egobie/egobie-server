@@ -49,7 +49,7 @@ func check(c *gin.Context, query, errorMessage string) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -65,9 +65,9 @@ func check(c *gin.Context, query, errorMessage string) {
 	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
 		return
 	} else if count >= 1{
-		c.IndentedJSON(http.StatusAccepted, errorMessage + " is already in use")
+		c.JSON(http.StatusAccepted, errorMessage + " is already in use")
 	} else {
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}
 }
 
@@ -98,7 +98,7 @@ func SignUp(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -144,7 +144,7 @@ func SignUp(c *gin.Context) {
 		return
 	} else {
 		user.Password = getUserToken("RESIDENTIAL", user.Password)
-		c.IndentedJSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, user)
 	}
 
 	updateUserSignIn(int32(lastInsertId))
@@ -165,7 +165,7 @@ func SignIn(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -201,15 +201,15 @@ func SignIn(c *gin.Context) {
 
 	user.Password = getUserToken(user.Type, user.Password)
 
-	c.IndentedJSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, user)
 }
 
 func Secure(c *gin.Context) {
 	if code, err := secures.EncryptPassword(c.Param("code")); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	} else {
-		c.IndentedJSON(http.StatusOK, code)
+		c.JSON(http.StatusOK, code)
 	}
 }

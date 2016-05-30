@@ -191,7 +191,7 @@ func GetPaymentById(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -210,7 +210,7 @@ func GetPaymentById(c *gin.Context) {
 		payment.AccountNumber = getPaymentLastFour(payment.AccountNumber)
 		payment.Code = ""
 
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -224,7 +224,7 @@ func GetPaymentByUserId(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -238,7 +238,7 @@ func GetPaymentByUserId(c *gin.Context) {
 	}
 
 	if payments, err = getPaymentForUser(request.UserId); err == nil {
-		c.IndentedJSON(http.StatusOK, payments)
+		c.JSON(http.StatusOK, payments)
 	}
 }
 
@@ -260,7 +260,7 @@ func CreatePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -306,7 +306,7 @@ func CreatePayment(c *gin.Context) {
 	if payment, err := getPaymentByIdAndUserId(
 		int32(insertId), request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -328,7 +328,7 @@ func UpdatePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -379,7 +379,7 @@ func UpdatePayment(c *gin.Context) {
 	if payment, err := getPaymentByIdAndUserId(
 		request.Id, request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -425,7 +425,7 @@ func DeletePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -458,7 +458,7 @@ func DeletePayment(c *gin.Context) {
 
 	go deletePayment(request.UserId)
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func checkPaymentStatus(id, userId int32) (bool, string) {
@@ -521,7 +521,7 @@ func MakePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -556,7 +556,7 @@ func MakePayment(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err error) {
