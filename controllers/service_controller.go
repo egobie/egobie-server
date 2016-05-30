@@ -849,7 +849,7 @@ func CancelOrder(c *gin.Context) {
 		select user_car_id, user_payment_id, opening_id, gap, assignee
 		from user_service
 		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
-		and id = ? and user_id = ?
+		and id = ? and user_id = ? and status = 'RESERVED'
 	`
 	query := `
 		update user_service set status = 'CANCEL' where id = ? and user_id = ?
