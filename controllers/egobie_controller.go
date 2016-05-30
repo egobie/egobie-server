@@ -218,7 +218,7 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		}
 
 		if err = processPayment(
-			tx, request.ServiceId, taskInfo.UserPaymentId, taskInfo.UserId,
+			tx, request.ServiceId, taskInfo.UserPaymentId, taskInfo.UserId, 1.0,
 		); err != nil {
 			return
 		}

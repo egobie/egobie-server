@@ -845,11 +845,18 @@ func getTotalTimeAndPrice(services, addons []int32) (time int32, price float32, 
 }
 
 func CancelOrder(c *gin.Context) {
+	cancel(c, false)
+}
+
+func ForceCancelOrder(c *gin.Context) {
+	cancel(c, true)
+}
+
+func cancel(c *gin.Context, force bool) {
 	checkQuery := `
 		select user_car_id, user_payment_id, opening_id, gap, assignee
 		from user_service
-		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
-		and id = ? and user_id = ? and status = 'RESERVED'
+		where id = ? and user_id = ? and status = 'RESERVED'
 	`
 	query := `
 		update user_service set status = 'CANCEL' where id = ? and user_id = ?
@@ -900,13 +907,20 @@ func CancelOrder(c *gin.Context) {
 		}
 	}()
 
+	if !force {
+		checkQuery += `
+			and DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
+		`
+	}
+
 	if err = tx.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
 		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Assignee,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			err = errors.New("Cannot cancel this order")
+			err = nil
+			c.JSON(http.StatusAccepted, "Cannot cancel this reservation")
 		}
 
 		return
@@ -936,6 +950,14 @@ func CancelOrder(c *gin.Context) {
 		tx, request.Id, temp.Opening, temp.Gap, temp.Assignee,
 	); err != nil {
 		return
+	}
+
+	if force {
+		if err = processPayment(
+			tx, request.Id, temp.PaymentId, request.UserId, 0.5,
+		); err != nil {
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, "OK")

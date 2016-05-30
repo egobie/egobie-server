@@ -511,55 +511,7 @@ func unlockPayment(tx *sql.Tx, id, userId int32) (err error) {
 	return
 }
 
-func MakePayment(c *gin.Context) {
-	request := modules.ProcessRequest{}
-	var (
-		data []byte
-		err  error
-		tx   *sql.Tx
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
-
-	if tx, err = config.DB.Begin(); err != nil {
-		return
-	}
-
-	defer func() {
-		if (err != nil) {
-			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error - Rollback - ", err1.Error())
-			}
-		} else {
-			if err2 := tx.Commit(); err2 != nil {
-				fmt.Println("Error - Commit - ", err2.Error())
-			}
-		}
-	}()
-
-	if err = processPayment(
-		tx, request.ServiceId, request.PaymentId, request.UserId,
-	); err != nil {
-		return
-	}
-
-	c.JSON(http.StatusOK, "OK")
-}
-
-func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err error) {
+func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32, factor float32) (err error) {
 	query := `
 		select up.id, us.estimated_price, up.account_number, up.account_zip,
 				up.code, up.expire_month, up.expire_year, up.account_type
@@ -612,7 +564,7 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err
 	if _, err = config.BT.Transaction().Create(
 		&braintree.Transaction{
 			Type:   "sale",
-			Amount: braintree.NewDecimal(int64(process.Price*100), 2),
+			Amount: braintree.NewDecimal(int64(process.Price*factor*100), 2),
 			CreditCard: &braintree.CreditCard{
 				Number:          process.AccountNumber,
 				CVV:             process.Code,
