@@ -1016,6 +1016,8 @@ func AddService(c *gin.Context) {
 		return
 	}
 
+	go applyExtraService(request.UserId, string(request.Addons));
+
 	c.JSON(http.StatusOK, "OK")
 }
 
