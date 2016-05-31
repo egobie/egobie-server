@@ -41,6 +41,14 @@ CREATE TABLE user (
     INDEX(home_address_city)
 );
 
+CREATE TABLE user_action (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(512) NOT NULL,
+    data VARCHAR(128) NULL,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE service (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
@@ -93,7 +101,8 @@ CREATE TABLE opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,
     period INT NOT NULL,
-    count INT NOT NULL DEFAULT 2,
+    count_wash INT NOT NULL DEFAULT 1,
+    count_oil INT NOT NULL DEFAULT 1,
     demand INT NOT NULL DEFAULT 0,
     UNIQUE KEY (day, period)
 );
@@ -143,6 +152,7 @@ CREATE TABLE user_service (
     user_payment_id INT NOT NULL,
     report_id INT NULL,
     gap INT NOT NULL DEFAULT 0,
+    types VARCHAR(32) NOT NULL,
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
     note VARCHAR(2048) NOT NULL DEFAULT '',
@@ -217,6 +227,7 @@ CREATE TABLE user_opening (
     day DATE NOT NULL,
     user_id INT NOT NULL,
     user_schedule INT NOT NULL DEFAULT 16777215,
+    mixed INT NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)

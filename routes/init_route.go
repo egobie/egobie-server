@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"database/sql"
-	"bytes"
 	"io/ioutil"
 	"net/http"
 
@@ -15,12 +15,13 @@ import (
 )
 
 var (
-	router        = gin.New()
-	userRouter    = router.Group("/user")
-	carRouter     = router.Group("/car")
-	paymentRouter = router.Group("/payment")
-	serviceRouter = router.Group("/service")
-	historyRouter = router.Group("/history")
+	router           = gin.New()
+	userRouter       = router.Group("/user")
+	userActionRouter = router.Group("/action")
+	carRouter        = router.Group("/car")
+	paymentRouter    = router.Group("/payment")
+	serviceRouter    = router.Group("/service")
+	historyRouter    = router.Group("/history")
 
 	egobieRouter = router.Group("/egobie")
 )
@@ -37,6 +38,7 @@ func init() {
 	historyRouter.Use(cors, request, authorizeResidentialUser)
 
 	egobieRouter.Use(cors, request, authorizeEgobieUser)
+	userActionRouter.Use(cors, request, authorizeResidentialUser)
 
 	initSignRoutes()
 	initUserRoutes()
@@ -46,6 +48,7 @@ func init() {
 	initHistoryRoutes()
 
 	initEgobieRoutes()
+	initUserActionRoutes()
 }
 
 func cors(c *gin.Context) {
@@ -141,8 +144,8 @@ func authorizeEgobieUser(c *gin.Context) {
 func parseUser(c *gin.Context) (int32, string, error) {
 	request := modules.BaseRequest{}
 	var (
-		data   []byte
-		err    error
+		data []byte
+		err  error
 	)
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {

@@ -40,7 +40,7 @@ func GetHistory(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -110,7 +110,7 @@ func GetHistory(c *gin.Context) {
 		)
 	}
 
-	c.IndentedJSON(http.StatusOK, histories)
+	c.JSON(http.StatusOK, histories)
 }
 
 func Rating(c *gin.Context) {
@@ -132,7 +132,7 @@ func Rating(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -174,7 +174,9 @@ func Rating(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	go rateService(request.UserId)
+
+	c.JSON(http.StatusOK, "OK")
 }
 
 func createHistory(tx *sql.Tx, userId, serviceId int32) (err error) {

@@ -197,6 +197,7 @@ type OrderRequest struct {
 	Opening   int32          `json:"opening"`
 	Services  []int32        `json:"services"`
 	Addons    []AddonRequest `json:"addons"`
+	Types     string         `json:"types"`
 }
 
 type AddonRequest struct {
@@ -204,11 +205,22 @@ type AddonRequest struct {
 	Amount int32 `json:"amount"`
 }
 
+type AddServiceRequest struct {
+	BaseRequest
+
+	ServiceId int32   `json:"user_service_id"`
+	Discount  float32 `json:"discount"`
+	Price     float32 `json:"price"`
+	RealPrice float32 `json:"real_price"`
+	Addons    []int32 `json:"addons"`
+}
+
 type OpeningRequest struct {
 	BaseRequest
 
 	Services []int32 `json:"services"`
 	Addons   []int32 `json:"addons"`
+	Types    string  `json:"types"`
 }
 
 /**
@@ -239,4 +251,5 @@ type OnDemandRequest struct {
 	BaseRequest
 
 	Services []int32 `json:"services"`
+	Types    string  `json:"types"`
 }
