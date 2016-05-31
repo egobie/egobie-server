@@ -224,8 +224,7 @@ func OnDemand(c *gin.Context) {
 	query := `
 		select id, day, period
 		from opening
-		where period >= ? and count > 0 and day = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		order by period
+		where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and period >= ?
 	`
 	request := modules.OnDemandRequest{}
 	curr := getCurrentPeriod()
@@ -258,7 +257,13 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("Mixed - ", request.Mixed)
+	fmt.Println("Types - ", request.Types)
+
+	if request.Types == "CAR_WASH" {
+		query += " and count_wash > 0 order by period"
+	} else {
+		query += " and count_oil > 0 order by period"
+	}
 
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
@@ -266,6 +271,8 @@ func OnDemand(c *gin.Context) {
 	}
 
 	go checkAvailability(request.UserId)
+
+	fmt.Println(query, curr)
 
 	if openings, err = loadOpening(query, curr); err != nil {
 		return
@@ -346,8 +353,7 @@ func GetOpening(c *gin.Context) {
 	query := `
 		select id, day, period
 		from opening
-		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		order by day, period
+		where day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
 	`
 	request := modules.OpeningRequest{}
 	var (
@@ -371,7 +377,13 @@ func GetOpening(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("Mixed - ", request.Mixed)
+	fmt.Println("Types - ", request.Types)
+
+	if request.Types == "CAR_WASH" {
+		query += " and count_wash > 0 order by day, period"
+	} else {
+		query += " and count_oil > 0 order by day, period"
+	}
 
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
@@ -619,12 +631,14 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	if err = holdOpening(
-		tx, request.Opening, request.Opening+gap,
+		tx, request.Opening, request.Opening+gap, request.Types,
 	); err != nil {
 		return
 	}
 
-	if assignee, err = assignService(tx, request.Opening, gap); err != nil {
+	if assignee, err = assignService(
+		tx, request.Opening, gap, request.Types,
+	); err != nil {
 		return
 	}
 
@@ -653,13 +667,14 @@ func PlaceOrder(c *gin.Context) {
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
 			reserved_start_timestamp, gap, assignee,
-			estimated_time, estimated_price, status
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			estimated_time, estimated_price, status, types
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertUserService,
 		user.Id, car.Id, payment.Id, request.Opening,
 		reserved, gap, assignee, time, price, "RESERVED",
+		request.Types,
 	); err != nil {
 		return
 	}
@@ -797,10 +812,10 @@ func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error)
 		from service where id in (
 	`
 	var (
-		rows  *sql.Rows
-		t     int32
-		c     int32
-		p     float32
+		rows *sql.Rows
+		t    int32
+		c    int32
+		p    float32
 	)
 
 	for index, id := range ids {
@@ -944,7 +959,7 @@ func ForceCancelOrder(c *gin.Context) {
 
 func cancel(c *gin.Context, force bool) {
 	checkQuery := `
-		select user_car_id, user_payment_id, opening_id, gap, assignee
+		select user_car_id, user_payment_id, opening_id, gap, assignee, types
 		from user_service
 		where id = ? and user_id = ? and status = 'RESERVED'
 	`
@@ -958,6 +973,7 @@ func cancel(c *gin.Context, force bool) {
 		Opening   int32
 		Gap       int32
 		Assignee  int32
+		Types     string
 	}{}
 
 	var (
@@ -1006,7 +1022,8 @@ func cancel(c *gin.Context, force bool) {
 	if err = tx.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Assignee,
+		&temp.CarId, &temp.PaymentId, &temp.Opening,
+		&temp.Gap, &temp.Assignee, &temp.Types,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = nil
@@ -1032,7 +1049,7 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
-	if err = releaseOpening(tx, temp.Opening, temp.Gap); err != nil {
+	if err = releaseOpening(tx, temp.Opening, temp.Gap, temp.Types); err != nil {
 		return
 	}
 
@@ -1377,24 +1394,34 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func assignService(tx *sql.Tx, openingId, gap int32) (assignee int32, err error) {
+func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int32, err error) {
+	query := "select day, period from opening where id = ?"
 	var (
 		day    string
 		period int32
 	)
 
-	if err = tx.QueryRow(`
-		select day, period from opening where id = ?`,
-		openingId,
+	if err = tx.QueryRow(
+		query, openingId,
 	).Scan(&day, &period); err != nil {
 		return
 	}
 
 	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
 
-	if err = tx.QueryRow(`
-		select user_id from user_opening where day = ? and user_schedule & ? = ?`,
-		day, mask, mask,
+	query = `
+		select user_id from user_opening
+		where day = ? and user_schedule & ? = ?
+	`
+
+	if types == "CAR_WASH" {
+		query += " and mixed = 0"
+	} else {
+		query += " and mixed = 1"
+	}
+
+	if err = tx.QueryRow(
+		query, day, mask, mask,
 	).Scan(&assignee); err != nil {
 		return
 	}
@@ -1437,15 +1464,25 @@ func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (e
 	return
 }
 
-func holdOpening(tx *sql.Tx, start, end int32) (err error) {
-	updateOpening := `
-		update opening set count = count - 1 where id >= ? and id < ? and count > 0
-	`
+func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 	gap := end - start
 	var (
-		result      sql.Result
-		affectedRow int64
+		result        sql.Result
+		affectedRow   int64
+		updateOpening string
 	)
+
+	if types == "CAR_WASH" {
+		updateOpening = `
+			update opening set count_wash = count_wash - 1
+			where id >= ? and id < ? and count_wash > 0
+		`
+	} else {
+		updateOpening = `
+			update opening set count_oil = count_oil - 1
+			where id >= ? and id < ? and count_oil > 0
+		`
+	}
 
 	if result, err = tx.Exec(
 		updateOpening, start, end,
@@ -1463,10 +1500,22 @@ func holdOpening(tx *sql.Tx, start, end int32) (err error) {
 	return
 }
 
-func releaseOpening(tx *sql.Tx, id, gap int32) (err error) {
-	_, err = tx.Exec(`
-		update opening set count = count + 1 where id >= ? and id < ?
-	`, id, id+gap)
+func releaseOpening(tx *sql.Tx, id, gap int32, types string) (err error) {
+	var query string
+
+	if types == "CAR_WASH" {
+		query = `
+			update opening set count_wash = count_wash + 1
+			where id >= ? and id < ?
+		`
+	} else {
+		query = `
+			update opening set count_oil = count_oil + 1
+			where id >= ? and id < ?
+		`
+	}
+
+	_, err = tx.Exec(query, id, id+gap)
 
 	return
 }

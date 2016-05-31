@@ -197,6 +197,7 @@ type OrderRequest struct {
 	Opening   int32          `json:"opening"`
 	Services  []int32        `json:"services"`
 	Addons    []AddonRequest `json:"addons"`
+	Types     string         `json:"types"`
 }
 
 type AddonRequest struct {
@@ -219,7 +220,7 @@ type OpeningRequest struct {
 
 	Services []int32 `json:"services"`
 	Addons   []int32 `json:"addons"`
-	Mixed    bool    `json:"mixed"`
+	Types    string  `json:"types"`
 }
 
 /**
@@ -250,5 +251,5 @@ type OnDemandRequest struct {
 	BaseRequest
 
 	Services []int32 `json:"services"`
-	Mixed    bool    `json:"mixed"`
+	Types    string  `json:"types"`
 }

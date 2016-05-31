@@ -26,7 +26,7 @@ func GetTask(c *gin.Context) {
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
 			select id from opening
-			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and count < 2
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by us.reserved_start_timestamp
 	`
 

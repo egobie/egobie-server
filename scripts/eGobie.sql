@@ -152,6 +152,7 @@ CREATE TABLE user_service (
     user_payment_id INT NOT NULL,
     report_id INT NULL,
     gap INT NOT NULL DEFAULT 0,
+    types VARCHAR(32) NOT NULL,
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL,
     note VARCHAR(2048) NOT NULL DEFAULT '',
