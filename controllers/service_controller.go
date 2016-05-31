@@ -258,6 +258,8 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("Mixed - ", request.Mixed)
+
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
 		return
@@ -368,6 +370,8 @@ func GetOpening(c *gin.Context) {
 	if err = json.Unmarshal(body, &request); err != nil {
 		return
 	}
+
+	fmt.Println("Mixed - ", request.Mixed)
 
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
@@ -497,8 +501,8 @@ func PlaceOrder(c *gin.Context) {
 		reserved          string
 		assignee          int32
 		reservationNumber string
-		services []string
-		addons []string
+		services          []string
+		addons            []string
 	)
 
 	defer func() {
@@ -718,10 +722,10 @@ func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonReque
 	queryAddon := `
 		select name from service_addon where id in (
 	`
-	serviceTypes := map[string]string {
-		"CAR_WASH": "Car Wash",
+	serviceTypes := map[string]string{
+		"CAR_WASH":   "Car Wash",
 		"OIL_CHANGE": "Oil & Filter",
-		"DETAILING": "Detailing",
+		"DETAILING":  "Detailing",
 	}
 
 	var (
@@ -754,7 +758,7 @@ func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonReque
 
 			services = append(
 				services,
-				temp1 + " (" + serviceTypes[temp2] + ")",
+				temp1+" ("+serviceTypes[temp2]+")",
 			)
 		}
 	}
@@ -793,10 +797,10 @@ func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error)
 		from service where id in (
 	`
 	var (
-		rows *sql.Rows
-		t    int32
-		c    int32
-		p    float32
+		rows  *sql.Rows
+		t     int32
+		c     int32
+		p     float32
 	)
 
 	for index, id := range ids {
@@ -1056,10 +1060,10 @@ func AddService(c *gin.Context) {
 	`
 	request := modules.AddServiceRequest{}
 	var (
-		err error
-		data []byte
+		err   error
+		data  []byte
 		price float32
-		tx *sql.Tx
+		tx    *sql.Tx
 	)
 
 	defer func() {
@@ -1124,7 +1128,7 @@ func AddService(c *gin.Context) {
 		return
 	}
 
-	go applyExtraService(request.UserId, string(request.Addons));
+	go applyExtraService(request.UserId, string(request.Addons))
 
 	c.JSON(http.StatusOK, "OK")
 }

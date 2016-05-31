@@ -101,7 +101,8 @@ CREATE TABLE opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,
     period INT NOT NULL,
-    count INT NOT NULL DEFAULT 2,
+    count_wash INT NOT NULL DEFAULT 1,
+    count_oil INT NOT NULL DEFAULT 1,
     demand INT NOT NULL DEFAULT 0,
     UNIQUE KEY (day, period)
 );
@@ -225,6 +226,7 @@ CREATE TABLE user_opening (
     day DATE NOT NULL,
     user_id INT NOT NULL,
     user_schedule INT NOT NULL DEFAULT 16777215,
+    mixed INT NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)
