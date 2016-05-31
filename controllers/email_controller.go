@@ -10,7 +10,11 @@ import (
 	"github.com/egobie/egobie-server/modules"
 )
 
-func sendPlaceOrderEmail(address, name, reservationNumber, startTime string, cost float32) {
+func sendPlaceOrderEmail(
+	address, name, reservationNumber, startTime string,
+	services []string, addons []string,
+	cost float32) {
+
 	message := "Hello " + name + ",\n" +
 		"\n" +
 		"This letter is confirmation of your reservation at eGobie Car Services. " +
@@ -18,8 +22,25 @@ func sendPlaceOrderEmail(address, name, reservationNumber, startTime string, cos
 		"\n" +
 		"Reservation Number: " + reservationNumber + "\n" +
 		"Estimated Start: " + startTime + "\n" +
-		"Total Cost: $" + fmt.Sprintf("%v", cost) + "\n" +
-		"\n" +
+		"Total Cost: $" + fmt.Sprintf("%v", cost) + "\n"
+
+	if len(services) > 0 {
+		message += "Services: \n"
+
+		for _, service := range services {
+			message += " - " + service + "\n"
+		}
+	}
+
+	if len(addons) > 0 {
+		message += "Extra Services: \n"
+
+		for _, addon := range addons {
+			message += " - " + addon + "\n"
+		}
+	}
+
+	message += "\n" +
 		"We only process the payment after the service is done. We require you to cancel " +
 		"the service appointment 24 hours ahead, otherwise we will charge 50% of the appointment cost. " +
 		"If we show up at the door and no one is around, we will charge 100% of the appointment cost " +

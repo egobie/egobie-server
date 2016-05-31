@@ -497,6 +497,8 @@ func PlaceOrder(c *gin.Context) {
 		reserved          string
 		assignee          int32
 		reservationNumber string
+		services []string
+		addons []string
 	)
 
 	defer func() {
@@ -555,6 +557,12 @@ func PlaceOrder(c *gin.Context) {
 		price += p
 	}
 
+	if services, addons, err = getServicesAndAddons(
+		request.Services, request.Addons,
+	); err != nil {
+		return
+	}
+
 	if user.Discount > 0 {
 		price = price * 1.07 * 0.9
 	} else {
@@ -592,6 +600,8 @@ func PlaceOrder(c *gin.Context) {
 					user.FirstName.String,
 					reservationNumber,
 					reserved,
+					services,
+					addons,
 					price,
 				)
 
@@ -699,6 +709,82 @@ func PlaceOrder(c *gin.Context) {
 	if err = lockPayment(tx, request.PaymentId, request.UserId); err != nil {
 		return
 	}
+}
+
+func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonRequest) (services, addons []string, err error) {
+	queryService := `
+		select name, type from service where id in (
+	`
+	queryAddon := `
+		select name from service_addon where id in (
+	`
+	serviceTypes := map[string]string {
+		"CAR_WASH": "Car Wash",
+		"OIL_CHANGE": "Oil & Filter",
+		"DETAILING": "Detailing",
+	}
+
+	var (
+		rows1 *sql.Rows
+		rows2 *sql.Rows
+		temp1 string
+		temp2 string
+	)
+
+	if len(serviceIds) > 0 {
+		for index, id := range serviceIds {
+			if index == 0 {
+				queryService += strconv.Itoa(int(id))
+			} else {
+				queryService += "," + strconv.Itoa(int(id))
+			}
+		}
+
+		queryService += ")"
+
+		if rows1, err = config.DB.Query(queryService); err != nil {
+			return
+		}
+		defer rows1.Close()
+
+		for rows1.Next() {
+			if err = rows1.Scan(&temp1, &temp2); err != nil {
+				return
+			}
+
+			services = append(
+				services,
+				temp1 + " (" + serviceTypes[temp2] + ")",
+			)
+		}
+	}
+
+	if len(addonRequests) > 0 {
+		for index, addonRequest := range addonRequests {
+			if index == 0 {
+				queryAddon += strconv.Itoa(int(addonRequest.Id))
+			} else {
+				queryAddon += "," + strconv.Itoa(int(addonRequest.Id))
+			}
+		}
+
+		queryAddon += ")"
+
+		if rows2, err = config.DB.Query(queryAddon); err != nil {
+			return
+		}
+		defer rows2.Close()
+
+		for rows2.Next() {
+			if err = rows2.Scan(&temp1); err != nil {
+				return
+			}
+
+			addons = append(addons, temp1)
+		}
+	}
+
+	return services, addons, nil
 }
 
 func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error) {
