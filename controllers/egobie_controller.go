@@ -26,7 +26,7 @@ func GetTask(c *gin.Context) {
 		inner join car_model cmo on cmo.id = uc.car_model_id
 		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
 			select id from opening
-			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and count < 2
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by us.reserved_start_timestamp
 	`
 
@@ -44,7 +44,7 @@ func GetTask(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -98,37 +98,37 @@ func GetTask(c *gin.Context) {
 		)
 	}
 
-	c.IndentedJSON(http.StatusOK, tasks)
+	c.JSON(http.StatusOK, tasks)
 }
 
 func MakeServiceDone(c *gin.Context) {
 	if err := changeServiceStatus(c, "DONE"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func MakeServiceReserved(c *gin.Context) {
 	if err := changeServiceStatus(c, "RESERVED"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func MakeServiceInProgress(c *gin.Context) {
 	if err := changeServiceStatus(c, "IN_PROGRESS"); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func changeServiceStatus(c *gin.Context, status string) (err error) {
@@ -160,7 +160,7 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
 	}
 
-	query += " and id = ? and user_id = ?"
+	query += " where id = ? and user_id = ?"
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		return
@@ -218,7 +218,7 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		}
 
 		if err = processPayment(
-			tx, request.ServiceId, taskInfo.UserPaymentId, taskInfo.UserId,
+			tx, request.ServiceId, taskInfo.UserPaymentId, taskInfo.UserId, 1.0,
 		); err != nil {
 			return
 		}

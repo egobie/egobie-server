@@ -81,6 +81,8 @@ func updateAddress(body []byte, setClause string) (err error) {
 		return
 	}
 
+	go changeAddress(request.UserId)
+
 	return nil
 }
 
@@ -94,7 +96,7 @@ func GetUser(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -115,7 +117,7 @@ func GetUser(c *gin.Context) {
 
 	user.Password = ""
 
-	c.IndentedJSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, user)
 }
 
 func UpdateUser(c *gin.Context) {
@@ -133,7 +135,7 @@ func UpdateUser(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -153,9 +155,11 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	go changeUser(request.UserId)
+
 	if user, err := getUserById(request.UserId); err == nil {
 		user.Password = getUserToken(user.Type, user.Password)
-		c.IndentedJSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, user)
 	}
 }
 
@@ -172,7 +176,7 @@ func UpdatePassword(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -209,7 +213,9 @@ func UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, modules.UserInfo{
+	go changePassword(request.UserId)
+
+	c.JSON(http.StatusOK, modules.UserInfo{
 		request.UserId, getUserToken(user.Type, enPassword),
 	})
 }
@@ -222,7 +228,7 @@ func UpdateHome(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -237,7 +243,7 @@ func UpdateHome(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func UpdateWork(c *gin.Context) {
@@ -248,7 +254,7 @@ func UpdateWork(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -263,7 +269,7 @@ func UpdateWork(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func Feedback(c *gin.Context) {
@@ -278,7 +284,7 @@ func Feedback(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -297,7 +303,7 @@ func Feedback(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	c.JSON(http.StatusOK, "OK")
 }
 
 func useDiscount(tx *sql.Tx, userId int32) (err error) {

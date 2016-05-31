@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
-	"math"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -142,7 +142,7 @@ func GetReservation(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -158,7 +158,7 @@ func GetReservation(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'RESERVED' or status = 'IN_PROGRESS'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -171,7 +171,7 @@ func GetUserServiceReserved(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -187,7 +187,7 @@ func GetUserServiceReserved(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'RESERVED'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -200,7 +200,7 @@ func GetUserServiceDone(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -216,7 +216,7 @@ func GetUserServiceDone(c *gin.Context) {
 	if userServices, err := getUserService(
 		request.UserId, "status = 'DONE'",
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, userServices)
+		c.JSON(http.StatusOK, userServices)
 	}
 }
 
@@ -224,14 +224,13 @@ func OnDemand(c *gin.Context) {
 	query := `
 		select id, day, period
 		from opening
-		where period >= ? and count > 0 and day = DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		order by period
+		where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and period >= ?
 	`
 	request := modules.OnDemandRequest{}
 	curr := getCurrentPeriod()
 
 	if curr < 0 {
-		c.IndentedJSON(http.StatusBadRequest, "NO")
+		c.JSON(http.StatusBadRequest, "NO")
 		c.Abort()
 		return
 	}
@@ -245,7 +244,7 @@ func OnDemand(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -258,10 +257,22 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("Types - ", request.Types)
+
+	if request.Types == "CAR_WASH" {
+		query += " and count_wash > 0 order by period"
+	} else {
+		query += " and count_oil > 0 order by period"
+	}
+
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
 		return
 	}
+
+	go checkAvailability(request.UserId)
+
+	fmt.Println(query, curr)
 
 	if openings, err = loadOpening(query, curr); err != nil {
 		return
@@ -293,9 +304,9 @@ func OnDemand(c *gin.Context) {
 
 			temp.Diff = timeDiffInMins(str)
 
-			c.IndentedJSON(http.StatusOK, temp)
+			c.JSON(http.StatusOK, temp)
 		} else {
-			c.IndentedJSON(http.StatusBadRequest, "NO")
+			c.JSON(http.StatusBadRequest, "NO")
 			c.Abort()
 		}
 	}
@@ -342,8 +353,7 @@ func GetOpening(c *gin.Context) {
 	query := `
 		select id, day, period
 		from opening
-		where count > 0 and day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
-		order by day, period
+		where day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
 	`
 	request := modules.OpeningRequest{}
 	var (
@@ -354,7 +364,7 @@ func GetOpening(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -365,6 +375,14 @@ func GetOpening(c *gin.Context) {
 
 	if err = json.Unmarshal(body, &request); err != nil {
 		return
+	}
+
+	fmt.Println("Types - ", request.Types)
+
+	if request.Types == "CAR_WASH" {
+		query += " and count_wash > 0 order by day, period"
+	} else {
+		query += " and count_oil > 0 order by day, period"
 	}
 
 	if len(request.Services) == 0 {
@@ -379,7 +397,7 @@ func GetOpening(c *gin.Context) {
 	if openings, err = filterOpening(
 		request.Services, request.Addons, openings,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, openings)
+		c.JSON(http.StatusOK, openings)
 	}
 }
 
@@ -484,21 +502,24 @@ func PlaceOrder(c *gin.Context) {
 	user := modules.User{}
 
 	var (
-		result     sql.Result
-		tx         *sql.Tx
-		body       []byte
-		err        error
-		price      float32
-		time       int32
-		gap        int32
-		insertedId int64
-		reserved   string
-		assignee   int32
+		result            sql.Result
+		tx                *sql.Tx
+		body              []byte
+		err               error
+		price             float32
+		time              int32
+		gap               int32
+		insertedId        int64
+		reserved          string
+		assignee          int32
+		reservationNumber string
+		services          []string
+		addons            []string
 	)
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -552,6 +573,12 @@ func PlaceOrder(c *gin.Context) {
 		price += p
 	}
 
+	if services, addons, err = getServicesAndAddons(
+		request.Services, request.Addons,
+	); err != nil {
+		return
+	}
+
 	if user.Discount > 0 {
 		price = price * 1.07 * 0.9
 	} else {
@@ -575,9 +602,26 @@ func PlaceOrder(c *gin.Context) {
 			if err1 := tx.Rollback(); err1 != nil {
 				fmt.Println("Error -Rollback - ", err1.Error())
 			}
+
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			err = nil
 		} else {
 			if err1 := tx.Commit(); err1 != nil {
 				fmt.Println("Error - Commit - ", err1.Error())
+			} else {
+				// Send Email To User
+				go sendPlaceOrderEmail(
+					user.Email.String,
+					user.FirstName.String,
+					reservationNumber,
+					reserved,
+					services,
+					addons,
+					price,
+				)
+
+				c.JSON(http.StatusOK, "OK")
 			}
 		}
 	}()
@@ -587,12 +631,14 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	if err = holdOpening(
-		tx, request.Opening, request.Opening+gap,
+		tx, request.Opening, request.Opening+gap, request.Types,
 	); err != nil {
 		return
 	}
 
-	if assignee, err = assignService(tx, request.Opening, gap); err != nil {
+	if assignee, err = assignService(
+		tx, request.Opening, gap, request.Types,
+	); err != nil {
 		return
 	}
 
@@ -621,13 +667,14 @@ func PlaceOrder(c *gin.Context) {
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
 			reserved_start_timestamp, gap, assignee,
-			estimated_time, estimated_price, status
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			estimated_time, estimated_price, status, types
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertUserService,
 		user.Id, car.Id, payment.Id, request.Opening,
 		reserved, gap, assignee, time, price, "RESERVED",
+		request.Types,
 	); err != nil {
 		return
 	}
@@ -638,6 +685,12 @@ func PlaceOrder(c *gin.Context) {
 
 	user_service_id := int32(insertedId)
 
+	if err = tx.QueryRow(`
+		select reservation_id from user_service where id = ?`, user_service_id,
+	).Scan(&reservationNumber); err != nil {
+		return
+	}
+
 	queryUserServiceList := `
 		insert into user_service_list (
 			service_id, user_service_id
@@ -645,7 +698,7 @@ func PlaceOrder(c *gin.Context) {
 	`
 
 	for _, id := range request.Services {
-		if _, err = config.DB.Exec(
+		if _, err = tx.Exec(
 			queryUserServiceList, id, user_service_id,
 		); err != nil {
 			return
@@ -659,12 +712,14 @@ func PlaceOrder(c *gin.Context) {
 	`
 
 	for _, addon := range request.Addons {
-		if _, err = config.DB.Exec(
+		if _, err = tx.Exec(
 			queryUserServiceAddonList, addon.Id, user_service_id, addon.Amount,
 		); err != nil {
 			return
 		}
 	}
+
+	go makeReservation(request.UserId)
 
 	if err = lockCar(tx, request.CarId, request.UserId); err != nil {
 		return
@@ -673,8 +728,82 @@ func PlaceOrder(c *gin.Context) {
 	if err = lockPayment(tx, request.PaymentId, request.UserId); err != nil {
 		return
 	}
+}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonRequest) (services, addons []string, err error) {
+	queryService := `
+		select name, type from service where id in (
+	`
+	queryAddon := `
+		select name from service_addon where id in (
+	`
+	serviceTypes := map[string]string{
+		"CAR_WASH":   "Car Wash",
+		"OIL_CHANGE": "Oil & Filter",
+		"DETAILING":  "Detailing",
+	}
+
+	var (
+		rows1 *sql.Rows
+		rows2 *sql.Rows
+		temp1 string
+		temp2 string
+	)
+
+	if len(serviceIds) > 0 {
+		for index, id := range serviceIds {
+			if index == 0 {
+				queryService += strconv.Itoa(int(id))
+			} else {
+				queryService += "," + strconv.Itoa(int(id))
+			}
+		}
+
+		queryService += ")"
+
+		if rows1, err = config.DB.Query(queryService); err != nil {
+			return
+		}
+		defer rows1.Close()
+
+		for rows1.Next() {
+			if err = rows1.Scan(&temp1, &temp2); err != nil {
+				return
+			}
+
+			services = append(
+				services,
+				temp1+" ("+serviceTypes[temp2]+")",
+			)
+		}
+	}
+
+	if len(addonRequests) > 0 {
+		for index, addonRequest := range addonRequests {
+			if index == 0 {
+				queryAddon += strconv.Itoa(int(addonRequest.Id))
+			} else {
+				queryAddon += "," + strconv.Itoa(int(addonRequest.Id))
+			}
+		}
+
+		queryAddon += ")"
+
+		if rows2, err = config.DB.Query(queryAddon); err != nil {
+			return
+		}
+		defer rows2.Close()
+
+		for rows2.Next() {
+			if err = rows2.Scan(&temp1); err != nil {
+				return
+			}
+
+			addons = append(addons, temp1)
+		}
+	}
+
+	return services, addons, nil
 }
 
 func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error) {
@@ -722,6 +851,10 @@ func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error)
 }
 
 func getAddonsTimeAndPrice(addons []modules.AddonRequest) (time int32, price float32, err error) {
+	if len(addons) == 0 {
+		return 0, 0, nil
+	}
+
 	query := `
 		select id, time, price from service_addon where id in (
 	`
@@ -817,11 +950,18 @@ func getTotalTimeAndPrice(services, addons []int32) (time int32, price float32, 
 }
 
 func CancelOrder(c *gin.Context) {
+	cancel(c, false)
+}
+
+func ForceCancelOrder(c *gin.Context) {
+	cancel(c, true)
+}
+
+func cancel(c *gin.Context, force bool) {
 	checkQuery := `
-		select user_car_id, user_payment_id, opening_id, gap, assignee
+		select user_car_id, user_payment_id, opening_id, gap, assignee, types
 		from user_service
-		where DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
-		and id = ? and user_id = ?
+		where id = ? and user_id = ? and status = 'RESERVED'
 	`
 	query := `
 		update user_service set status = 'CANCEL' where id = ? and user_id = ?
@@ -833,6 +973,7 @@ func CancelOrder(c *gin.Context) {
 		Opening   int32
 		Gap       int32
 		Assignee  int32
+		Types     string
 	}{}
 
 	var (
@@ -843,7 +984,7 @@ func CancelOrder(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -872,13 +1013,21 @@ func CancelOrder(c *gin.Context) {
 		}
 	}()
 
+	if !force {
+		checkQuery += `
+			and DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
+		`
+	}
+
 	if err = tx.QueryRow(
 		checkQuery, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Assignee,
+		&temp.CarId, &temp.PaymentId, &temp.Opening,
+		&temp.Gap, &temp.Assignee, &temp.Types,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			err = errors.New("Cannot cancel this order")
+			err = nil
+			c.JSON(http.StatusAccepted, "Cannot cancel this reservation")
 		}
 
 		return
@@ -890,6 +1039,8 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
+	go cancelReservation(request.UserId)
+
 	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
 		return
 	}
@@ -898,7 +1049,7 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	if err = releaseOpening(tx, temp.Opening, temp.Gap); err != nil {
+	if err = releaseOpening(tx, temp.Opening, temp.Gap, temp.Types); err != nil {
 		return
 	}
 
@@ -908,17 +1059,118 @@ func CancelOrder(c *gin.Context) {
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	if force {
+		if err = processPayment(
+			tx, request.Id, temp.PaymentId, request.UserId, 0.5,
+		); err != nil {
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func AddService(c *gin.Context) {
+	query := `
+		select estimated_price from user_service
+		where id = ? and user_id = ?
+	`
+	request := modules.AddServiceRequest{}
+	var (
+		err   error
+		data  []byte
+		price float32
+		tx    *sql.Tx
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err = tx.Commit(); err != nil {
+				return
+			}
+		}
+	}()
+
+	if err = tx.QueryRow(
+		query, request.ServiceId, request.UserId,
+	).Scan(&price); err != nil {
+		return
+	}
+
+	queryAdd := `
+		insert into user_service_addon_list (
+			service_addon_id, user_service_id, amount
+		) values (?, ?, ?)
+	`
+
+	for _, addon := range request.Addons {
+		if _, err = tx.Exec(
+			queryAdd, addon, request.ServiceId, 1,
+		); err != nil {
+			return
+		}
+	}
+
+	queryUpdate := `
+		update user_service set estimated_price = ?
+		where id = ? and user_id = ?
+	`
+
+	if _, err = tx.Exec(
+		queryUpdate, request.RealPrice, request.ServiceId, request.UserId,
+	); err != nil {
+		return
+	}
+
+	go applyExtraService(request.UserId, string(request.Addons))
+
+	c.JSON(http.StatusOK, "OK")
 }
 
 func OpeningDemand(c *gin.Context) {
-	if id, err := strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	request := modules.BaseRequest{}
+	var (
+		id   int64
+		err  error
+		data []byte
+	)
+
+	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	} else {
+		if data, err = ioutil.ReadAll(c.Request.Body); err == nil {
+			if err = json.Unmarshal(data, &request); err == nil {
+				go chooseOpening(request.UserId, strconv.Itoa(int(id)))
+			}
+		}
+
 		updateOpeningDemand(int32(id))
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}
 }
 
@@ -935,6 +1187,7 @@ func GetService(c *gin.Context) {
 		select id, name, type, items, description, note,
 			estimated_price, estimated_time
 		from service
+		where type != 'DETAILING'
 		order by id
 	`
 	index := make(map[int32]int32)
@@ -948,7 +1201,7 @@ func GetService(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -1010,7 +1263,7 @@ func GetService(c *gin.Context) {
 		}
 	}
 
-	c.IndentedJSON(http.StatusOK, services)
+	c.JSON(http.StatusOK, services)
 }
 
 func AddonDemand(c *gin.Context) {
@@ -1025,7 +1278,7 @@ func AddonDemand(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -1043,7 +1296,7 @@ func updateAddonDemand(ids []int32) {
 	query := `update service_addon set demand = demand + 1 where id in (`
 	last := len(ids) - 1
 
-	if (last < 0) {
+	if last < 0 {
 		return
 	}
 
@@ -1063,9 +1316,11 @@ func updateAddonDemand(ids []int32) {
 
 func ServiceReading(c *gin.Context) {
 	query := `update service set reading = reading + 1 where id = ?`
+	request := modules.BaseRequest{}
 	var (
-		err error
-		id  int64
+		data []byte
+		err  error
+		id   int64
 	)
 
 	defer func() {
@@ -1073,7 +1328,7 @@ func ServiceReading(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if id, err = strconv.ParseInt(c.Param("id"), 10, 32); err != nil {
@@ -1082,6 +1337,12 @@ func ServiceReading(c *gin.Context) {
 
 	if _, err = config.DB.Exec(query, int32(id)); err != nil {
 		return
+	}
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err == nil {
+		if err = json.Unmarshal(data, &request); err == nil {
+			go readService(request.UserId, strconv.Itoa(int(id)))
+		}
 	}
 }
 
@@ -1097,7 +1358,7 @@ func ServiceDemand(c *gin.Context) {
 			fmt.Println(err.Error())
 		}
 
-		c.IndentedJSON(http.StatusOK, "OK")
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -1133,24 +1394,34 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func assignService(tx *sql.Tx, openingId, gap int32) (assignee int32, err error) {
+func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int32, err error) {
+	query := "select day, period from opening where id = ?"
 	var (
-		day      string
-		period   int32
+		day    string
+		period int32
 	)
 
-	if err = tx.QueryRow(`
-		select day, period from opening where id = ?`,
-		openingId,
+	if err = tx.QueryRow(
+		query, openingId,
 	).Scan(&day, &period); err != nil {
 		return
 	}
 
 	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
 
-	if err = tx.QueryRow(`
-		select user_id from user_opening where day = ? and user_schedule & ? = ?`,
-		day, mask, mask,
+	query = `
+		select user_id from user_opening
+		where day = ? and user_schedule & ? = ?
+	`
+
+	if types == "CAR_WASH" {
+		query += " and mixed = 0"
+	} else {
+		query += " and mixed = 1"
+	}
+
+	if err = tx.QueryRow(
+		query, day, mask, mask,
 	).Scan(&assignee); err != nil {
 		return
 	}
@@ -1193,15 +1464,25 @@ func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (e
 	return
 }
 
-func holdOpening(tx *sql.Tx, start, end int32) (err error) {
-	updateOpening := `
-		update opening set count = count - 1 where id >= ? and id < ? and count > 0
-	`
+func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 	gap := end - start
 	var (
-		result      sql.Result
-		affectedRow int64
+		result        sql.Result
+		affectedRow   int64
+		updateOpening string
 	)
+
+	if types == "CAR_WASH" {
+		updateOpening = `
+			update opening set count_wash = count_wash - 1
+			where id >= ? and id < ? and count_wash > 0
+		`
+	} else {
+		updateOpening = `
+			update opening set count_oil = count_oil - 1
+			where id >= ? and id < ? and count_oil > 0
+		`
+	}
 
 	if result, err = tx.Exec(
 		updateOpening, start, end,
@@ -1219,10 +1500,22 @@ func holdOpening(tx *sql.Tx, start, end int32) (err error) {
 	return
 }
 
-func releaseOpening(tx *sql.Tx, id, gap int32) (err error) {
-	_, err = tx.Exec(`
-		update opening set count = count + 1 where id >= ? and id < ?
-	`, id, id+gap)
+func releaseOpening(tx *sql.Tx, id, gap int32, types string) (err error) {
+	var query string
+
+	if types == "CAR_WASH" {
+		query = `
+			update opening set count_wash = count_wash + 1
+			where id >= ? and id < ?
+		`
+	} else {
+		query = `
+			update opening set count_oil = count_oil + 1
+			where id >= ? and id < ?
+		`
+	}
+
+	_, err = tx.Exec(query, id, id+gap)
 
 	return
 }

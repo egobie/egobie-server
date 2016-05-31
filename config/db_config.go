@@ -69,8 +69,6 @@ func init() {
 		)
 	}
 
-	fmt.Println(dbConfig)
-
 	tmp, _ := sql.Open("mysql", dbConfig)
 
 	DB = db{tmp}

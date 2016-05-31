@@ -3,31 +3,31 @@ use egobie;
 DROP PROCEDURE IF EXISTS INSERT_OPENING;
 
 DELIMITER $$
-CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count INT) BEGIN
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 1, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 2, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 3, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 4, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 5, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 6, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 7, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 8, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 9, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 10, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 11, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 12, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 13, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 14, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 15, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 16, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 17, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 18, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 19, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 20, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 21, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 22, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 23, opening_count);
-    INSERT INTO opening (day, period, count) VALUES (opening_date, 24, opening_count);
+CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count_wash INT, IN opening_count_oil INT) BEGIN
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 1, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 2, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 3, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 4, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 5, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 6, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 7, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 8, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 9, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 10, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 11, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 12, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 13, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 14, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 15, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 16, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 17, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 18, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 19, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 20, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 21, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 22, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 23, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 24, opening_count_wash, opening_count_oil);
 
     INSERT INTO user_opening (day, user_id)
     SELECT opening_date, u.id FROM user u WHERE u.type = 'EGOBIE';
@@ -264,14 +264,14 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "(Basic) Oil Filter"
 ]', 45, 30);
 
-INSERT INTO service_addon (service_id, name, note, price, time) VALUES
-(10, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
-(10, "Engine Cleaning", "", 50, 30),
-(10, "Hand Wax", "", 35, 60),
-(10, "Headlight Reconditioning", "", 65, 60),
-(10, "Hot Carpet Extraction", "", 15, 30),
-(10, "Paint Protectant", "Multi-layer", 50, 60),
-(10, "Wax & Polish", "Multi-layer", 75, 60);
+-- INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+-- (10, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+-- (10, "Engine Cleaning", "", 50, 30),
+-- (10, "Hand Wax", "", 35, 60),
+-- (10, "Headlight Reconditioning", "", 65, 60),
+-- (10, "Hot Carpet Extraction", "", 15, 30),
+-- (10, "Paint Protectant", "Multi-layer", 50, 60),
+-- (10, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Fill Brake Fluid", 0),
@@ -285,8 +285,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Change Engine Air Filter",  45),
 (10, "Change Serpentine Belts",  150);
 
-INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
-(10, 'Extra Conventional Oil', 4, 30, 'quart');
+INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
+(10, 'Extra Conventional Oil', 'per quart', 4, 30, 'quart');
 
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
@@ -295,14 +295,14 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "(Full) Filter"
 ]', 75, 30);
 
-INSERT INTO service_addon (service_id, name, note, price, time) VALUES
-(11, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
-(11, "Engine Cleaning", "", 50, 30),
-(11, "Hand Wax", "", 35, 60),
-(11, "Headlight Reconditioning", "", 65, 60),
-(11, "Hot Carpet Extraction", "", 15, 30),
-(11, "Paint Protectant", "Multi-layer", 50, 60),
-(11, "Wax & Polish", "Multi-layer", 75, 60);
+-- INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+-- (11, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+-- (11, "Engine Cleaning", "", 50, 30),
+-- (11, "Hand Wax", "", 35, 60),
+-- (11, "Headlight Reconditioning", "", 65, 60),
+-- (11, "Hot Carpet Extraction", "", 15, 30),
+-- (11, "Paint Protectant", "Multi-layer", 50, 60),
+-- (11, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Fill Brake Fluid", 0),
@@ -316,8 +316,8 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (11, "Change Engine Air Filter", 45),
 (11, "Change Serpentine Belts", 150);
 
-INSERT INTO service_addon (service_id, name, price, max, unit) VALUES
-(11, 'Extra Synthetic Oil', 8, 30, 'quart');
+INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
+(11, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
 
 
 INSERT INTO car_maker (id, name, title) VALUES
@@ -1711,9 +1711,9 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 
 INSERT INTO user (id, type, username, password, email, phone_number, discount) VALUES
 (1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
-(2, 'EGOBIE', 'egobie_em_1', '53d298bedaf32c061a7efbc58776d22c892ab02a04ff09244f6be43556f0668c', 'em1@egobie.com', '2019120383', 0),
-(3, 'EGOBIE', 'egobie_em_2', 'cd06a3a1f754044f78668d7af1901a015e9787c8514e8d86968a53e05c727404', 'em2@egobie.com', '2019120383', 0),
-(4, 'EGOBIE', 'a', '5df3bf93b9153cc6ab5ef8f32ad7ce3fd06ae656', 'a@egobie.com', '2019120383', 0);
+(2, 'EGOBIE', 'em1', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em1@egobie.com', '2019120383', 0),
+(3, 'EGOBIE', 'em2', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em2@egobie.com', '2019120383', 0),
+(4, 'RESIDENTIAL', 'egobie', 'b623e6fda297e4b589815902c5ec3bee0cf75891cd5fbb64', 'egobie@egobie.com', '1234567890', 0);
 
 UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
 home_address_zip = '07601', home_address_city = 'Hackensack', home_address_street = '414 Hackensack Avenue'
@@ -1756,13 +1756,16 @@ INSERT INTO user_service_addon_list (service_addon_id, user_service_id, amount) 
 
 */
 
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 2);
-CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 2);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 0 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 3 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 4 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 5 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 6 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 7 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 1, 1);
+CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 1, 1);
+
+UPDATE user_opening SET mixed = 1 WHERE user_id = 2;

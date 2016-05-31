@@ -25,6 +25,15 @@ type TaskRequest struct {
 	BaseRequest
 }
 
+/**
+{
+	"user_id": 1,
+	"user_token": "abcd",
+	"car_id": 1,
+	"service_id": 1,
+	"payment_id": 1
+}
+**/
 type ChangeServiceStatus struct {
 	BaseRequest
 

@@ -191,7 +191,7 @@ func GetPaymentById(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -210,7 +210,7 @@ func GetPaymentById(c *gin.Context) {
 		payment.AccountNumber = getPaymentLastFour(payment.AccountNumber)
 		payment.Code = ""
 
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -224,7 +224,7 @@ func GetPaymentByUserId(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -238,7 +238,7 @@ func GetPaymentByUserId(c *gin.Context) {
 	}
 
 	if payments, err = getPaymentForUser(request.UserId); err == nil {
-		c.IndentedJSON(http.StatusOK, payments)
+		c.JSON(http.StatusOK, payments)
 	}
 }
 
@@ -260,7 +260,7 @@ func CreatePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -301,10 +301,12 @@ func CreatePayment(c *gin.Context) {
 		return
 	}
 
+	go addPayment(request.UserId)
+
 	if payment, err := getPaymentByIdAndUserId(
 		int32(insertId), request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -326,7 +328,7 @@ func UpdatePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -372,10 +374,12 @@ func UpdatePayment(c *gin.Context) {
 		return
 	}
 
+	go editPayment(request.UserId)
+
 	if payment, err := getPaymentByIdAndUserId(
 		request.Id, request.UserId,
 	); err == nil {
-		c.IndentedJSON(http.StatusOK, payment)
+		c.JSON(http.StatusOK, payment)
 	}
 }
 
@@ -421,7 +425,7 @@ func DeletePayment(c *gin.Context) {
 
 	defer func() {
 		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
 		}
 	}()
@@ -452,7 +456,9 @@ func DeletePayment(c *gin.Context) {
 		c.Abort()
 	}
 
-	c.IndentedJSON(http.StatusOK, "OK")
+	go deletePayment(request.UserId)
+
+	c.JSON(http.StatusOK, "OK")
 }
 
 func checkPaymentStatus(id, userId int32) (bool, string) {
@@ -505,55 +511,7 @@ func unlockPayment(tx *sql.Tx, id, userId int32) (err error) {
 	return
 }
 
-func MakePayment(c *gin.Context) {
-	request := modules.ProcessRequest{}
-	var (
-		data []byte
-		err  error
-		tx   *sql.Tx
-	)
-
-	defer func() {
-		if err != nil {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
-
-	if tx, err = config.DB.Begin(); err != nil {
-		return
-	}
-
-	defer func() {
-		if (err != nil) {
-			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error - Rollback - ", err1.Error())
-			}
-		} else {
-			if err2 := tx.Commit(); err2 != nil {
-				fmt.Println("Error - Commit - ", err2.Error())
-			}
-		}
-	}()
-
-	if err = processPayment(
-		tx, request.ServiceId, request.PaymentId, request.UserId,
-	); err != nil {
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, "OK")
-}
-
-func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err error) {
+func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32, factor float32) (err error) {
 	query := `
 		select up.id, us.estimated_price, up.account_number, up.account_zip,
 				up.code, up.expire_month, up.expire_year, up.account_type
@@ -606,7 +564,7 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32) (err
 	if _, err = config.BT.Transaction().Create(
 		&braintree.Transaction{
 			Type:   "sale",
-			Amount: braintree.NewDecimal(int64(process.Price*100), 2),
+			Amount: braintree.NewDecimal(int64(process.Price*factor*100), 2),
 			CreditCard: &braintree.CreditCard{
 				Number:          process.AccountNumber,
 				CVV:             process.Code,
