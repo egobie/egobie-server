@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -27,20 +26,23 @@ var (
 )
 
 func init() {
+	// Release
+	gin.SetMode(gin.ReleaseMode)
+
 	// CORS
-	router.Use(cors, request, sleep)
+	router.Use(cors)
 
 	// CORS, Authorize User
-	userRouter.Use(cors, request, authorizeResidentialUser)
-	carRouter.Use(cors, request, authorizeResidentialUser)
-	paymentRouter.Use(cors, request, authorizeResidentialUser)
-	serviceRouter.Use(cors, request, authorizeResidentialUser)
-	historyRouter.Use(cors, request, authorizeResidentialUser)
+	userRouter.Use(cors, authorizeResidentialUser)
+	carRouter.Use(cors, authorizeResidentialUser)
+	paymentRouter.Use(cors, authorizeResidentialUser)
+	serviceRouter.Use(cors, authorizeResidentialUser)
+	historyRouter.Use(cors, authorizeResidentialUser)
 
-	egobieRouter.Use(cors, request, authorizeEgobieUser)
-	userActionRouter.Use(cors, request, authorizeResidentialUser)
+	egobieRouter.Use(cors, authorizeEgobieUser)
+	userActionRouter.Use(cors, authorizeResidentialUser)
 
-	router.GET("", func(c *gin.Context) {
+	router.GET("/hc", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "OK")
 	})
 
@@ -175,18 +177,6 @@ func readUser(userId int32, token string) (userType string, err error) {
 	}
 
 	return userType, nil
-}
-
-func request(c *gin.Context) {
-	fmt.Println(c.Request.URL)
-
-	c.Next()
-}
-
-func sleep(c *gin.Context) {
-	//	time.Sleep(500 * time.Millisecond)
-
-	c.Next()
 }
 
 func Serve(port string) {
