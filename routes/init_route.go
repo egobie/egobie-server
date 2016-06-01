@@ -40,6 +40,10 @@ func init() {
 	egobieRouter.Use(cors, request, authorizeEgobieUser)
 	userActionRouter.Use(cors, request, authorizeResidentialUser)
 
+	router.GET("", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "OK")
+	})
+
 	initSignRoutes()
 	initUserRoutes()
 	initServiceRoutes()
