@@ -181,8 +181,8 @@ func checkAvailability(userId int32) {
 	create(userId, "Check Availability")
 }
 
-func applyExtraService(userId int32, data string) {
-	createWithData(userId, "Apply Extra Service", data)
+func applyExtraService(userId int32) {
+	create(userId, "Apply Extra Service")
 }
 
 func addPayment(userId int32) {
