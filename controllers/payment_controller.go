@@ -385,12 +385,12 @@ func UpdatePayment(c *gin.Context) {
 
 func validatePayment(firstName, lastName, account, code, month, year string) (err error) {
 	/*
-		fmt.Println("First -", firstName, "-")
-		fmt.Println("Last -", lastName, "-")
-		fmt.Println("account -", account, "-")
-		fmt.Println("code -", code, "-")
-		fmt.Println("month -", month, "-")
-		fmt.Println("year -", year, "-")
+	fmt.Println("First -", firstName, "-")
+	fmt.Println("Last -", lastName, "-")
+	fmt.Println("account -", account, "-")
+	fmt.Println("code -", code, "-")
+	fmt.Println("month -", month, "-")
+	fmt.Println("year -", year, "-")
 	*/
 
 	_, err = config.BT.Customer().Create(&braintree.Customer{

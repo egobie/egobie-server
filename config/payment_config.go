@@ -26,9 +26,11 @@ func init() {
 		os.Exit(1)
 	}
 
+	/*
 	fmt.Println("merchantId - ", merchantId)
 	fmt.Println("publicKey - ", publicKey)
 	fmt.Println("privateKey - ", privateKey)
+	*/
 
 	BT = braintree.New(
 		braintree.Production,
