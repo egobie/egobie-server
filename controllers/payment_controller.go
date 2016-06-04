@@ -274,9 +274,10 @@ func CreatePayment(c *gin.Context) {
 	}
 
 	names := strings.Split(request.AccountName, " ")
+	length := len(names)
 
 	if err = validatePayment(
-		strings.TrimSpace(names[0]), strings.TrimSpace(names[1]),
+		strings.TrimSpace(names[0]), strings.TrimSpace(names[length-1]),
 		request.AccountNumber, request.Code,
 		request.ExpireMonth, request.ExpireYear[2:],
 	); err != nil {
@@ -346,9 +347,10 @@ func UpdatePayment(c *gin.Context) {
 	}
 
 	names := strings.Split(request.AccountName, " ")
+	length := len(names)
 
 	if err = validatePayment(
-		strings.TrimSpace(names[0]), strings.TrimSpace(names[1]),
+		strings.TrimSpace(names[0]), strings.TrimSpace(names[length-1]),
 		request.AccountNumber, request.Code,
 		request.ExpireMonth, request.ExpireYear[2:],
 	); err != nil {
