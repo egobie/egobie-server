@@ -1197,6 +1197,8 @@ func GetService(c *gin.Context) {
 		services []modules.Service
 		err      error
 		temp     string
+		i        int32
+		ok       bool
 	)
 
 	defer func() {
@@ -1246,20 +1248,16 @@ func GetService(c *gin.Context) {
 			return
 		}
 
-		addOn.Amount = 1
+		if i, ok = index[addOn.ServiceId]; ok {
+			addOn.Amount = 1
 
-		if addOn.Price == 0 {
-			services[index[addOn.ServiceId]].Free = append(
-				services[index[addOn.ServiceId]].Free, addOn,
-			)
-		} else if addOn.Time == 0 {
-			services[index[addOn.ServiceId]].Charge = append(
-				services[index[addOn.ServiceId]].Charge, addOn,
-			)
-		} else {
-			services[index[addOn.ServiceId]].Addons = append(
-				services[index[addOn.ServiceId]].Addons, addOn,
-			)
+			if addOn.Price == 0 {
+				services[i].Free = append(services[i].Free, addOn)
+			} else if addOn.Time == 0 {
+				services[i].Charge = append(services[i].Charge, addOn)
+			} else {
+				services[i].Addons = append(services[i].Addons, addOn)
+			}
 		}
 	}
 
