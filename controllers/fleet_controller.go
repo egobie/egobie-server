@@ -16,9 +16,9 @@ import (
 
 func NewFleetUser(c *gin.Context) {
 	queryUser := `
-		insert into user (type, password, first_name, last_name,
+		insert into user (type, username, password, first_name, last_name,
 			middle_name, email, phone_number)
-		values ('FLEET', ?, ?, ?, ?, ?, ?)
+		values ('FLEET', ?, ?, ?, ?, ?, ?, ?)
 	`
 	queryFLeet := `
 		insert into fleet (name, user_id)
@@ -38,6 +38,7 @@ func NewFleetUser(c *gin.Context) {
 		err        error
 		result     sql.Result
 		id         int64
+		username   string
 		enPassword string
 		user       modules.FleetUser
 	)
@@ -64,9 +65,9 @@ func NewFleetUser(c *gin.Context) {
 		return
 	}
 
-	if enPassword, err = secures.EncryptPassword(
-		secures.RandString(8),
-	); err != nil {
+	username = "fleet-" + secures.RandString(8)
+
+	if enPassword, err = secures.EncryptPassword(username); err != nil {
 		return
 	}
 
@@ -81,8 +82,9 @@ func NewFleetUser(c *gin.Context) {
 	}()
 
 	if result, err = tx.Exec(
-		queryUser, enPassword, request.FirstName, request.LastName,
-		request.MiddleName, request.Email, request.Phone,
+		queryUser, username, enPassword, request.FirstName,
+		request.LastName, request.MiddleName, request.Email,
+		request.Phone,
 	); err != nil {
 		return
 	} else if id, err = result.LastInsertId(); err != nil {

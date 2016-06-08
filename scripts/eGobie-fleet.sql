@@ -20,7 +20,7 @@ BEGIN
     DECLARE id INT DEFAULT 0;
 
     SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
-    WHERE TABLE_NAME = 'fleet_token' and TABLE_SCHEMA = database();
+    WHERE TABLE_NAME = 'fleet' and TABLE_SCHEMA = database();
 
     SET NEW.token = UPPER(SUBSTRING(SHA2(id, 256), 32, 5));
 END $$
