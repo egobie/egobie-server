@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"errors"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -21,6 +22,8 @@ var (
 	paymentRouter    = router.Group("/payment")
 	serviceRouter    = router.Group("/service")
 	historyRouter    = router.Group("/history")
+
+	fleetRouter = router.Group("/fleet");
 
 	egobieRouter = router.Group("/egobie")
 )
@@ -38,9 +41,11 @@ func init() {
 	paymentRouter.Use(cors, authorizeResidentialUser)
 	serviceRouter.Use(cors, authorizeResidentialUser)
 	historyRouter.Use(cors, authorizeResidentialUser)
+	userActionRouter.Use(cors, authorizeResidentialUser)
 
 	egobieRouter.Use(cors, authorizeEgobieUser)
-	userActionRouter.Use(cors, authorizeResidentialUser)
+
+	fleetRouter.Use(cors, authorizeFleetUser)
 
 	router.GET("/hc", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "OK")
@@ -52,9 +57,11 @@ func init() {
 	initCarRoutes()
 	initPaymentRoutes()
 	initHistoryRoutes()
+	initUserActionRoutes()
 
 	initEgobieRoutes()
-	initUserActionRoutes()
+
+	initFleetRoutes()
 }
 
 func cors(c *gin.Context) {
@@ -77,33 +84,10 @@ func cors(c *gin.Context) {
 }
 
 func authorizeResidentialUser(c *gin.Context) {
-	var (
-		err      error
-		token    string
-		userId   int32
-		userType string
-	)
-
-	if userId, token, err = parseUser(c); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
-	} else if int32(len(token)) != modules.USER_RESIDENTIAL_TOKEN {
-		c.Abort()
-		return
-	}
-
-	if userType, err = readUser(userId, token); err != nil {
-		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusBadRequest, "Invalid user")
-		} else {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-		}
-
-		c.Abort()
-		return
-	} else if !modules.IsResidential(userType) {
-		c.IndentedJSON(http.StatusBadRequest, "Invalid user")
+	if err := authorizeUser(
+		c, modules.USER_RESIDENTIAL_TOKEN, modules.IsResidential,
+	); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
 	}
@@ -112,39 +96,54 @@ func authorizeResidentialUser(c *gin.Context) {
 }
 
 func authorizeEgobieUser(c *gin.Context) {
+	if err := authorizeUser(
+		c, modules.USER_EGOBIE_TOKEN, modules.IsEgobie,
+	); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.Next()
+}
+
+func authorizeFleetUser(c *gin.Context) {
+	if err := authorizeUser(
+		c, modules.USER_FLEET_TOKEN, modules.IsFleet,
+	); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.Next()
+}
+
+func authorizeUser(c *gin.Context, expectTokenLen int32, checkFunc modules.CheckUserFunc) (err error) {
 	var (
-		err      error
 		token    string
 		userId   int32
 		userType string
 	)
 
 	if userId, token, err = parseUser(c); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		c.Abort()
 		return
-	} else if int32(len(token)) != modules.USER_EGOBIE_TOKEN {
-		c.IndentedJSON(http.StatusBadRequest, "Invalid user")
-		c.Abort()
+	} else if int32(len(token)) != expectTokenLen {
+		err = errors.New("Invalid user");
 		return
 	}
 
 	if userType, err = readUser(userId, token); err != nil {
 		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusBadRequest, "Invalid user")
-		} else {
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			err = errors.New("User not found");
 		}
-
-		c.Abort()
 		return
-	} else if !modules.IsEgobie(userType) {
-		c.IndentedJSON(http.StatusBadRequest, "Invalid user")
-		c.Abort()
+	} else if !checkFunc(userType) {
+		err = errors.New("Invalid user");
 		return
 	}
 
-	c.Next()
+	return nil
 }
 
 func parseUser(c *gin.Context) (int32, string, error) {

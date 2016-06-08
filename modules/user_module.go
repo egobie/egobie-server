@@ -114,6 +114,8 @@ const USER_RESIDENTIAL_TOKEN int32 = 6
 const USER_FLEET_TOKEN int32 = 8
 const USER_BUSINESS_TOKEN int32 = 10
 
+type CheckUserFunc func(string) bool
+
 func IsResidential(userType string) bool {
 	return userType == "RESIDENTIAL"
 }

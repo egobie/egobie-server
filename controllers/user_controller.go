@@ -45,10 +45,6 @@ func getUserById(id int32) (user modules.User, err error) {
 	return getUser("id = ?", id)
 }
 
-func getUserByUsername(username string) (user modules.User, err error) {
-	return getUser("username = ?", username)
-}
-
 func getUserToken(userType, password string) string {
 	if modules.IsResidential(userType) {
 		return password[:modules.USER_RESIDENTIAL_TOKEN]
