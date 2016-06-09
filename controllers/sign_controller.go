@@ -302,7 +302,18 @@ func SignIn(c *gin.Context) {
 
 	user.Password = getUserToken(user.Type, user.Password)
 
-	c.JSON(http.StatusOK, user)
+	if (user.Type == modules.USER_FLEET) {
+		var ui modules.FleetUserBasicInfo
+
+		if ui, err = getFleetUserBasicInfo(user.Id); err == nil {
+			c.JSON(http.StatusOK, modules.FleetUser{
+				User: user,
+				FleetUserBasicInfo: ui,
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, user)
+	}
 }
 
 func Secure(c *gin.Context) {
