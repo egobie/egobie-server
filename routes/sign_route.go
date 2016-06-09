@@ -13,5 +13,7 @@ func initSignRoutes() {
 
 	router.POST("/signin", controllers.SignIn)
 
+	router.POST("/signup/fleet", controllers.SignUpFleet)
+
 	router.GET("/secure/:code", controllers.Secure)
 }

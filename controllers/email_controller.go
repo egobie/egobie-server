@@ -46,7 +46,7 @@ func sendPlaceOrderEmail(
 		"If we show up at the door and no one is around, we will charge 100% of the appointment cost " +
 		"as no-show fee.\n" +
 		"\n" +
-		"Thank you for using eGobie car services\n"
+		"Thank you for using eGobie Car Services\n"
 
 	email := &modules.EmailTemplate{
 		config.EmailSender,
@@ -82,5 +82,54 @@ func sendPlaceOrderEmail(
 		doc.Bytes(),
 	); err != nil {
 		fmt.Println("Error - Email - PlaceOrder: ", err.Error())
+	}
+}
+
+func sendNewFleetUserEmail(address, name, token string) {
+
+	message := "Hello " + name + ",\n" +
+		"\n" +
+		"Thank you for using eGobie Car Services. " +
+		"Please use following email address and token to sign up eGobie fleet app:\n" +
+		"\n" +
+		"Email Address: " + address + "\n" +
+		"Sign-Up Token: " + token + "\n" +
+		"\n" +
+		"Thank you for using eGobie car services\n"
+
+	email := &modules.EmailTemplate{
+		config.EmailSender,
+		address,
+		"[New Fleet Service User] Thanks for using eGobie",
+		message,
+	}
+	content := "From: eGobie Car Services <{{.From}}>\n" +
+		"To: {{.To}}\n" +
+		"Subject: {{.Subject}}\n" +
+		"\n" +
+		"{{.Body}}"
+
+	var (
+		t *template.Template
+		err error
+		doc bytes.Buffer
+	)
+
+	if t, err = template.New("template").Parse(content); err != nil {
+		fmt.Println("Error - Parse - ", err.Error())
+	}
+
+	if err = t.Execute(&doc, email); err != nil {
+		fmt.Println("Error - Execute - ", err.Error())
+	}
+
+	if err = smtp.SendMail(
+		config.EmailAddress,
+		config.Email,
+		config.EmailSender,
+		[]string{address, config.EmailCEO},
+		doc.Bytes(),
+	); err != nil {
+		fmt.Println("Error - Email - NewFleetUser: ", err.Error())
 	}
 }

@@ -13,6 +13,4 @@ func initEgobieRoutes() {
 	egobieRouter.POST("/service/reserved", controllers.MakeServiceReserved)
 
 	egobieRouter.POST("/service/progress", controllers.MakeServiceInProgress)
-
-	egobieRouter.POST("/fleet/user/new", controllers.NewFleetUser)
 }

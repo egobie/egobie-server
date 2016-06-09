@@ -19,6 +19,21 @@ type SignUp struct {
 
 /**
 {
+	"email": "test@test.com",
+	"token": "747AD",
+	"username": "fleet-1",
+	"password": "12345678"
+}
+**/
+type SignUpFleet struct {
+	Email    string `json:"email"`
+	Token    string `json:"token"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+/**
+{
 	"username": "test_user",
 	"password": "a123456"
 }

@@ -1,109 +1,65 @@
 package controllers
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
-	"github.com/egobie/egobie-server/secures"
-
-	"github.com/gin-gonic/gin"
 )
 
-func NewFleetUser(c *gin.Context) {
-	queryUser := `
-		insert into user (type, username, password, first_name, last_name,
-			middle_name, email, phone_number)
-		values ('FLEET', ?, ?, ?, ?, ?, ?, ?)
-	`
-	queryFLeet := `
-		insert into fleet (name, user_id)
-		values (?, ?)
-	`
-	selectFleet := `
-		select f.id, f.name, f.token, u.id, u.first_name,
-				u.last_name, u.middle_name, u.email, u.phone_number
+func getFleetUserBasicInfo(userId int32) (info modules.FleetUserBasicInfo, err error) {
+	query := `
+		select f.id, f.setup, f.name, f.token
 		from fleet f
 		inner join user u on u.id = f.user_id
-		where f.id = ?
+		where u.id = ?
 	`
-	request := modules.NewFLeetUserRequest{}
-	var (
-		tx         *sql.Tx
-		data       []byte
-		err        error
-		result     sql.Result
-		id         int64
-		username   string
-		enPassword string
-		user       modules.FleetUser
+
+	err = config.DB.QueryRow(query, userId).Scan(
+		&info.FleetId, &info.SetUp, &info.FleetName, &info.Token,
 	)
 
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-			return
-		}
+	return
+}
 
-		c.JSON(http.StatusOK, user)
-	}()
+func getFleetUserInfoByUserId(userId int32) (info modules.FleetUserInfo, err error) {
+	query := `
+		select f.id, f.name, f.setup, f.token, u.id, u.first_name, u.last_name,
+				u.middle_name, u.email, u.phone_number, u.work_address_street,
+				u.work_address_city, u.work_address_state, u.work_address_zip
+		from fleet f
+		inner join user u on u.id = f.user_id
+		where u.id = ?
+	`
 
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+	err = config.DB.QueryRow(query, userId).Scan(
+		&info.FleetId, &info.FleetName, &info.SetUp, &info.Token, &info.UserId,
+		&info.FirstName, &info.LastName, &info.MiddleName, &info.Email,
+		&info.PhoneNumber, &info.WorkAddressStreet, &info.WorkAddressCity,
+		&info.WorkAddressState, &info.WorkAddressZip,
+	)
+
+	return
+}
+
+func getFleetUser(condition string, args ...interface{}) (user modules.FleetUser, err error) {
+	var (
+		u modules.User
+		ui modules.FleetUserBasicInfo
+	)
+
+	if u, err = getUser(condition, args...); err != nil {
 		return
+	} else if ui, err = getFleetUserBasicInfo(u.Id); err == nil {
+		user.User = u
+		user.FleetUserBasicInfo = ui
 	}
 
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
+	return user, nil
+}
 
-	if tx, err = config.DB.Begin(); err != nil {
-		return
-	}
+func getFleetUserByUserId(userId int32) (user modules.FleetUser, err error) {
+	return getFleetUser("id = ?", userId)
+}
 
-	username = "fleet-" + secures.RandString(8)
-
-	if enPassword, err = secures.EncryptPassword(username); err != nil {
-		return
-	}
-
-	defer func() {
-		if err != nil {
-			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error - Rollback - ", err1.Error())
-			}
-		} else {
-			err = tx.Commit()
-		}
-	}()
-
-	if result, err = tx.Exec(
-		queryUser, username, enPassword, request.FirstName,
-		request.LastName, request.MiddleName, request.Email,
-		request.Phone,
-	); err != nil {
-		return
-	} else if id, err = result.LastInsertId(); err != nil {
-		return
-	}
-
-	if result, err = tx.Exec(
-		queryFLeet, request.FleetName, id,
-	); err != nil {
-		return
-	} else if id, err = result.LastInsertId(); err != nil {
-		return
-	}
-
-	if err = tx.QueryRow(selectFleet, id).Scan(
-		&user.FleetId, &user.FleetName, &user.Token,
-		&user.UserId, &user.FirstName, &user.LastName,
-		&user.MiddleName, &user.Email, &user.Phone,
-	); err != nil {
-		return
-	}
+func getFleetUserByUsername(username string) (user modules.FleetUser, err error) {
+	return getFleetUser("username = ?", username)
 }

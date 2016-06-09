@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
-	"errors"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
@@ -23,9 +23,10 @@ var (
 	serviceRouter    = router.Group("/service")
 	historyRouter    = router.Group("/history")
 
-	fleetRouter = router.Group("/fleet");
+	fleetRouter      = router.Group("/fleet")
+	saleRouter       = router.Group("/sale")
 
-	egobieRouter = router.Group("/egobie")
+	egobieRouter     = router.Group("/egobie")
 )
 
 func init() {
@@ -43,9 +44,10 @@ func init() {
 	historyRouter.Use(cors, authorizeResidentialUser)
 	userActionRouter.Use(cors, authorizeResidentialUser)
 
-	egobieRouter.Use(cors, authorizeEgobieUser)
-
 	fleetRouter.Use(cors, authorizeFleetUser)
+	saleRouter.Use(cors, authorizeSaleUser)
+
+	egobieRouter.Use(cors, authorizeEgobieUser)
 
 	router.GET("/hc", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "OK")
@@ -62,6 +64,7 @@ func init() {
 	initEgobieRoutes()
 
 	initFleetRoutes()
+	initSaleRoutes()
 }
 
 func cors(c *gin.Context) {
@@ -107,6 +110,18 @@ func authorizeEgobieUser(c *gin.Context) {
 	c.Next()
 }
 
+func authorizeSaleUser(c *gin.Context) {
+	if err := authorizeUser(
+		c, modules.USER_SALE_TOKEN, modules.IsSale,
+	); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.Next()
+}
+
 func authorizeFleetUser(c *gin.Context) {
 	if err := authorizeUser(
 		c, modules.USER_FLEET_TOKEN, modules.IsFleet,
@@ -129,17 +144,17 @@ func authorizeUser(c *gin.Context, expectTokenLen int32, checkFunc modules.Check
 	if userId, token, err = parseUser(c); err != nil {
 		return
 	} else if int32(len(token)) != expectTokenLen {
-		err = errors.New("Invalid user");
+		err = errors.New("Invalid user")
 		return
 	}
 
 	if userType, err = readUser(userId, token); err != nil {
 		if err == sql.ErrNoRows {
-			err = errors.New("User not found");
+			err = errors.New("User not found")
 		}
 		return
 	} else if !checkFunc(userType) {
-		err = errors.New("Invalid user");
+		err = errors.New("Invalid user")
 		return
 	}
 
