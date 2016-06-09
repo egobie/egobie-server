@@ -12,8 +12,7 @@ import (
 
 func sendPlaceOrderEmail(
 	address, name, reservationNumber, startTime string,
-	services []string, addons []string,
-	cost float32) {
+	services []string, addons []string, cost float32) {
 
 	message := "Hello " + name + ",\n" +
 		"\n" +
@@ -48,45 +47,12 @@ func sendPlaceOrderEmail(
 		"\n" +
 		"Thank you for using eGobie Car Services\n"
 
-	email := &modules.EmailTemplate{
-		config.EmailSender,
-		address,
-		"Thanks for using eGobie",
-		message,
-	}
-	content := "From: eGobie Car Services <{{.From}}>\n" +
-		"To: {{.To}}\n" +
-		"Subject: {{.Subject}}\n" +
-		"\n" +
-		"{{.Body}}"
-
-	var (
-		t *template.Template
-		err error
-		doc bytes.Buffer
+	sendEmail(
+		address, "[New Residential Reservation] Thanks for using eGobie", message,
 	)
-
-	if t, err = template.New("template").Parse(content); err != nil {
-		fmt.Println("Error - Parse - ", err.Error())
-	}
-
-	if err = t.Execute(&doc, email); err != nil {
-		fmt.Println("Error - Execute - ", err.Error())
-	}
-
-	if err = smtp.SendMail(
-		config.EmailAddress,
-		config.Email,
-		config.EmailSender,
-		[]string{address},
-		doc.Bytes(),
-	); err != nil {
-		fmt.Println("Error - Email - PlaceOrder: ", err.Error())
-	}
 }
 
 func sendNewFleetUserEmail(address, name, token string) {
-
 	message := "Hello " + name + ",\n" +
 		"\n" +
 		"Thank you for using eGobie Car Services. " +
@@ -97,11 +63,17 @@ func sendNewFleetUserEmail(address, name, token string) {
 		"\n" +
 		"Thank you for using eGobie car services\n"
 
+	sendEmail(
+		address, "[New Fleet Service User] Thanks for using eGobie", message,
+	)
+}
+
+func sendEmail(address, subject, body string) {
 	email := &modules.EmailTemplate{
 		config.EmailSender,
 		address,
-		"[New Fleet Service User] Thanks for using eGobie",
-		message,
+		subject,
+		body,
 	}
 	content := "From: eGobie Car Services <{{.From}}>\n" +
 		"To: {{.To}}\n" +
@@ -116,11 +88,11 @@ func sendNewFleetUserEmail(address, name, token string) {
 	)
 
 	if t, err = template.New("template").Parse(content); err != nil {
-		fmt.Println("Error - Parse - ", err.Error())
+		fmt.Println("Error - Parse Template - ", err.Error())
 	}
 
 	if err = t.Execute(&doc, email); err != nil {
-		fmt.Println("Error - Execute - ", err.Error())
+		fmt.Println("Error - Execute Template - ", err.Error())
 	}
 
 	if err = smtp.SendMail(
@@ -130,6 +102,6 @@ func sendNewFleetUserEmail(address, name, token string) {
 		[]string{address, config.EmailCEO},
 		doc.Bytes(),
 	); err != nil {
-		fmt.Println("Error - Email - NewFleetUser: ", err.Error())
+		fmt.Println("Error - Send Email - ", err.Error())
 	}
 }
