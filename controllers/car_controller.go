@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
+	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 
@@ -71,122 +71,12 @@ func getCarByUserId(userId int32) (cars []modules.Car, err error) {
 	return cars, nil
 }
 
-func GetCarMaker(c *gin.Context) {
-	query := `
-		select id, title from car_maker order by title;
-	`
-	var (
-		err    error
-		rows   *sql.Rows
-		makers []modules.CarMaker
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		maker := modules.CarMaker{}
-
-		if err = rows.Scan(&maker.Id, &maker.Title); err != nil {
-			return
-		}
-
-		makers = append(makers, maker)
-	}
-
-	c.JSON(http.StatusOK, makers)
+func GetCarMake(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.CAR_MAKES_ARRAY)
 }
 
 func GetCarModel(c *gin.Context) {
-	query := `
-		select id, car_maker_id, title from car_model
-	`
-	var (
-		err    error
-		rows   *sql.Rows
-		models []modules.CarModel
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		model := modules.CarModel{}
-
-		if err = rows.Scan(
-			&model.Id, &model.MakerId, &model.Title,
-		); err != nil {
-			return
-		}
-
-		models = append(models, model)
-	}
-
-	c.JSON(http.StatusOK, models)
-}
-
-func GetCarModelForMaker(c *gin.Context) {
-	query := `
-		select id, title from car_model
-		where car_maker_id = ?
-		order by title
-	`
-	var (
-		err     error
-		rows    *sql.Rows
-		makerId int64
-		models  []modules.CarModel
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if makerId, err = strconv.ParseInt(c.Param("makerId"), 10, 32); err != nil {
-		return
-	}
-
-	if rows, err = config.DB.Query(
-		query, int32(makerId),
-	); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		model := modules.CarModel{}
-
-		if err = rows.Scan(
-			&model.Id, &model.Title,
-		); err != nil {
-			return
-		}
-
-		models = append(models, model)
-	}
-
-	c.JSON(http.StatusOK, models)
+	c.JSON(http.StatusOK, cache.CAR_MODELS_ARRAY)
 }
 
 func GetCarById(c *gin.Context) {

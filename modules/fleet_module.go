@@ -20,3 +20,25 @@ type FleetUser struct {
 	User
 	FleetUserBasicInfo
 }
+
+type FleetOrderRequest struct {
+	BaseRequest
+
+	Note     string                `json:"note"`
+	Types    string                `json:"types"`
+	Opening  int32                 `json:"opening"`
+	Day      string                `json:"day"`
+	Hour     string                `json:"Hour"`
+	Services []FleetServiceRequest `json:"services"`
+	Addons   []FleetAddonRequest   `json:"addons"`
+}
+
+type FleetServiceRequest struct {
+	CarCount    int32   `json:"car_count"`
+	ServicesIds []int32 `json:"service_ids"`
+}
+
+type FleetAddonRequest struct {
+	CarCount   int32          `json:"car_count"`
+	AddonInfos []AddonRequest `json:"addons"`
+}

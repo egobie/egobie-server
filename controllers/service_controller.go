@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 
@@ -586,12 +587,7 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	price = float32(int(price*100)) / 100
-
-	gap = time/30 + 1
-
-	if time%30 != 0 {
-		gap += 1
-	}
+	gap = calculateGap(time)
 
 	if tx, err = config.DB.Begin(); err != nil {
 		return
@@ -642,25 +638,8 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	temp := struct {
-		day    string
-		period int32
-	}{}
-
-	if err = tx.QueryRow(
-		"select day, period from opening where id = ?", request.Opening,
-	).Scan(&temp.day, &temp.period); err != nil {
+	if reserved, err = calculateReservedTime(tx, request.Opening); err != nil {
 		return
-	} else {
-		total := (temp.period - 1) * 30
-		hour := strconv.Itoa(int(OPENING_BASE) + int(total/60))
-		minute := total % 60
-
-		if minute == 0 {
-			reserved = temp.day + " " + hour + ":00:00"
-		} else {
-			reserved = temp.day + " " + hour + ":30:00"
-		}
 	}
 
 	insertUserService := `
@@ -1183,85 +1162,7 @@ func updateOpeningDemand(id int32) {
 }
 
 func GetService(c *gin.Context) {
-	query := `
-		select id, name, type, items, description, note,
-			estimated_price, estimated_time
-		from service
-		where type != 'DETAILING'
-		order by id
-	`
-	index := make(map[int32]int32)
-	var (
-		rows1    *sql.Rows
-		rows2    *sql.Rows
-		services []modules.Service
-		err      error
-		temp     string
-		i        int32
-		ok       bool
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if rows1, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows1.Close()
-
-	for rows1.Next() {
-		service := modules.Service{}
-		if err = rows1.Scan(
-			&service.Id, &service.Name, &service.Type, &temp,
-			&service.Description, &service.Note, &service.Price, &service.Time,
-		); err != nil {
-			return
-		}
-
-		if err = json.Unmarshal([]byte(temp), &service.Items); err != nil {
-			return
-		}
-
-		index[service.Id] = int32(len(services))
-		services = append(services, service)
-	}
-
-	if rows2, err = config.DB.Query(`
-		select id, service_id, name, note,
-			price, time, max, unit
-		from service_addon
-	`); err != nil {
-		return
-	}
-	defer rows2.Close()
-
-	for rows2.Next() {
-		addOn := modules.AddOn{}
-		if err = rows2.Scan(
-			&addOn.Id, &addOn.ServiceId, &addOn.Name, &addOn.Note,
-			&addOn.Price, &addOn.Time, &addOn.Max, &addOn.Unit,
-		); err != nil {
-			return
-		}
-
-		if i, ok = index[addOn.ServiceId]; ok {
-			addOn.Amount = 1
-
-			if addOn.Price == 0 {
-				services[i].Free = append(services[i].Free, addOn)
-			} else if addOn.Time == 0 {
-				services[i].Charge = append(services[i].Charge, addOn)
-			} else {
-				services[i].Addons = append(services[i].Addons, addOn)
-			}
-		}
-	}
-
-	c.JSON(http.StatusOK, services)
+	c.JSON(http.StatusOK, cache.SERVICES_ARRAY)
 }
 
 func AddonDemand(c *gin.Context) {
@@ -1612,4 +1513,39 @@ func getSimpleAddon(userServices []int32) (addons []modules.SimpleAddon, err err
 	}
 
 	return
+}
+
+func calculateGap(time int32) (gap int32) {
+	gap = time/30 + 1
+
+	if time%30 != 0 {
+		gap += 1
+	}
+
+	return gap
+}
+
+func calculateReservedTime(tx *sql.Tx, opening int32) (reserved string, err error) {
+	var (
+		day    string
+		period int32
+	)
+
+	if err = tx.QueryRow(
+		"select day, period from opening where id = ?", opening,
+	).Scan(&day, &period); err != nil {
+		return
+	} else {
+		total := (period - 1) * 30
+		hour := strconv.Itoa(int(OPENING_BASE) + int(total/60))
+		minute := total % 60
+
+		if minute == 0 {
+			reserved = day + " " + hour + ":00:00"
+		} else {
+			reserved = day + " " + hour + ":30:00"
+		}
+	}
+
+	return reserved, nil
 }
