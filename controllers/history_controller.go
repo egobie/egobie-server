@@ -3,7 +3,6 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -16,10 +15,10 @@ import (
 func GetHistory(c *gin.Context) {
 	size := 6
 	query := `
-		select uh.id, uh.rating, uh.note,
-				uh.car_plate, uh.car_state, uh.car_maker, uh.car_model, uh.car_year, uh.car_color,
-				uh.payment_holder, uh.payment_number, uh.payment_type, uh.payment_price,
-				us.id, us.reservation_id, us.start_timestamp, us.end_timestamp
+		select uh.id, uh.rating, uh.note, uh.car_plate, uh.car_state, uh.car_maker,
+				uh.car_model, uh.car_year, uh.car_color, uh.payment_holder, us.id,
+				uh.payment_number, uh.payment_type, uh.payment_price,
+				us.reservation_id, us.start_timestamp, us.end_timestamp
 		from user_history uh
 		inner join user_service us on us.id = uh.user_service_id and us.status = 'DONE'
 		where uh.user_id = ?
@@ -114,27 +113,25 @@ func GetHistory(c *gin.Context) {
 }
 
 func Rating(c *gin.Context) {
-	historyQuery := `
+	query := `
 		update user_history set rating = ?, note = ?
 		where id = ? and user_id = ? and user_service_id = ?
-	`
-	serviceQuery := `
-		update user_service set status = 'DONE'
-		where id = ? and user_id = ?
 	`
 
 	request := modules.RatingRequest{}
 	var (
 		data []byte
 		err  error
-		tx   *sql.Tx
 	)
 
 	defer func() {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
+			return
 		}
+
+		c.JSON(http.StatusOK, "OK")
 	}()
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -145,38 +142,14 @@ func Rating(c *gin.Context) {
 		return
 	}
 
-	if tx, err = config.DB.Begin(); err != nil {
-		return
-	}
-
-	defer func() {
-		if err != nil {
-			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error - Rollback - ", err1.Error())
-			}
-		} else {
-			if err1 := tx.Commit(); err1 != nil {
-				fmt.Println("Error - Commit - ", err1.Error())
-			}
-		}
-	}()
-
-	if _, err = tx.Exec(
-		historyQuery, request.Rating, request.Note,
-		request.Id, request.UserId, request.ServiceId,
-	); err != nil {
-		return
-	}
-
-	if _, err = tx.Exec(
-		serviceQuery, request.ServiceId, request.UserId,
+	if _, err = config.DB.Exec(
+		query, request.Rating, request.Note, request.Id,
+		request.UserId, request.ServiceId,
 	); err != nil {
 		return
 	}
 
 	go rateService(request.UserId)
-
-	c.JSON(http.StatusOK, "OK")
 }
 
 func createHistory(tx *sql.Tx, userId, serviceId int32) (err error) {

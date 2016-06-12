@@ -149,7 +149,6 @@ type SimpleAddon struct {
 type UserService struct {
 	Id               int32       `json:"id"`
 	ReservationId    string      `json:"reservation_id"`
-	UserId           int32       `json:"user_id"`
 	CarId            int32       `json:"car_id"`
 	CarPlate         string      `json:"plate"`
 	PaymentId        int32       `json:"payment_id"`

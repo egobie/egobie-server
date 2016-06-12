@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS fleet_service_addon_list_id;
 DROP TABLE IF EXISTS fleet_service_addon_list;
 DROP TABLE IF EXISTS fleet_service_list_id;
 DROP TABLE IF EXISTS fleet_service_list;
+DROP TABLE IF EXISTS fleet_history;
 DROP TABLE IF EXISTS fleet_service;
 DROP TABLE IF EXISTS fleet;
 DROP TRIGGER IF EXISTS INSERT_FLEET_TOKEN;
@@ -19,7 +20,9 @@ CREATE TABLE fleet (
     name VARCHAR(128) NOT NULL DEFAULT '',
     setup INT NOT NULL DEFAULT 0,
     user_id INT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES user(id)
+    sale_user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (sale_user_id) REFERENCES user(id)
 );
 
 CREATE TABLE fleet_service (
@@ -32,7 +35,7 @@ CREATE TABLE fleet_service (
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL DEFAULT 0.0,
     note VARCHAR(2048) NOT NULL DEFAULT '',
-    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    status ENUM('WAITING', 'RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     opening_id INT NOT NULL,
     assignee INT NOT NULL DEFAULT -1,
     reserved_start_timestamp TIMESTAMP NULL,
@@ -73,6 +76,16 @@ CREATE TABLE fleet_service_addon_list_id (
     amount INT NOT NULL,
     FOREIGN KEY (service_addon_id) REFERENCES service_addon(id),
     FOREIGN KEY (fleet_service_addon_list_id) REFERENCES fleet_service_addon_list(id)
+);
+
+CREATE TABLE fleet_history (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rating FLOAT NOT NULL DEFAULT 0,
+    fleet_service_id INT NOT NULL,
+    report_id INT NULL,
+    note VARCHAR(2048) NOT NULL DEFAULT '',
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
 );
 
 DELIMITER $$

@@ -99,3 +99,32 @@ func NewFleetUser(c *gin.Context) {
 		return
 	}
 }
+
+func AllFleetUser(c *gin.Context) {
+	request := modules.GetFleetUserRequest{}
+	var (
+		data  []byte
+		err   error
+		users []modules.FleetUserInfo
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, users)
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	users, err = getFleetUserInfoBySaleUserId(request.UserId, request.Page)
+}

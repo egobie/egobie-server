@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func toStringList(ints []int32) string {
+func ToStringList(ints []int32) string {
 	var buffer bytes.Buffer
 
 	for i, val := range ints {

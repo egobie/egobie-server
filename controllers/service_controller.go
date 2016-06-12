@@ -14,6 +14,7 @@ import (
 	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
+	"github.com/egobie/egobie-server/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,7 +24,7 @@ var OPENING_BASE = 8.0
 
 func getUserService(userId int32, condition string) (userServices []modules.UserService, err error) {
 	query := `
-		select us.id, us.reservation_id, us.user_id, us.user_car_id, uc.plate,
+		select us.id, us.reservation_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
 				us.reserved_start_timestamp,
 				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP(), us.reserved_start_timestamp) as mins,
@@ -57,12 +58,13 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 		service := modules.Service{}
 
 		if err = rows1.Scan(
-			&userService.Id, &userService.ReservationId, &userService.UserId,
-			&userService.CarId, &userService.CarPlate, &userService.PaymentId,
-			&userService.Time, &userService.Price, &userService.ReserveStartTime,
-			&mins, &userService.StartTime, &userService.EndTime, &userService.Note,
-			&userService.Status, &userService.ReserveTime, &service.Id, &service.Name,
-			&service.Type, &service.Note, &service.Description, &service.Time, &service.Price,
+			&userService.Id, &userService.ReservationId, &userService.CarId,
+			&userService.CarPlate, &userService.PaymentId, &userService.Time,
+			&userService.Price, &userService.ReserveStartTime, &mins,
+			&userService.StartTime, &userService.EndTime, &userService.Note,
+			&userService.Status, &userService.ReserveTime, &service.Id,
+			&service.Name, &service.Type, &service.Note, &service.Description,
+			&service.Time, &service.Price,
 		); err != nil {
 			return
 		}
@@ -72,17 +74,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 				userServices[len(userServices)-1].ServiceList, service,
 			)
 		} else {
-			if mins >= 1440 {
-				userService.HowLong = int32(mins / 1440)
-				userService.Unit = "DAY"
-			} else if mins >= 60 {
-				userService.HowLong = int32(mins / 60)
-				userService.Unit = "HOUR"
-			} else {
-				userService.HowLong = mins
-				userService.Unit = "MINUTE"
-			}
-
+			userService.HowLong, userService.Unit = calculateHowLong(mins)
 			userService.ServiceList = append(userService.ServiceList, service)
 			userServices = append(userServices, userService)
 
@@ -98,17 +90,7 @@ func getUserService(userId int32, condition string) (userServices []modules.User
 		from service_addon sa
 		inner join user_service_addon_list usal on usal.service_addon_id = sa.id
 		where usal.user_service_id in (
-	`
-
-	for i, id := range ids {
-		if i == 0 {
-			query += strconv.Itoa(int(id))
-		} else {
-			query += (", " + strconv.Itoa(int(id)))
-		}
-	}
-
-	query += ")"
+	` + utils.ToStringList(ids) + ")"
 
 	if rows2, err = config.DB.Query(query); err != nil {
 		return
@@ -1548,4 +1530,14 @@ func calculateReservedTime(tx *sql.Tx, opening int32) (reserved string, err erro
 	}
 
 	return reserved, nil
+}
+
+func calculateHowLong(mins int32) (int32, string) {
+	if mins >= 1440 {
+		return int32(mins / 1440), "DAY"
+	} else if mins >= 60 {
+		return int32(mins / 60), "HOUR"
+	} else {
+		return mins, "MINUTE"
+	}
 }
