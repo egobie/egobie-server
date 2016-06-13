@@ -32,7 +32,7 @@ type FleetOrderRequest struct {
 	Types    string                `json:"types"`
 	Opening  int32                 `json:"opening"`
 	Day      string                `json:"day"`
-	Hour     string                `json:"Hour"`
+	Hour     string                `json:"hour"`
 	Services []FleetServiceRequest `json:"services"`
 	Addons   []FleetAddonRequest   `json:"addons"`
 }
