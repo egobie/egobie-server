@@ -6,6 +6,10 @@ import (
 
 func initFleetRoutes() {
 
+	fleetRouter.POST("/service", controllers.GetFleetService)
+
+	fleetRouter.POST("/addon", controllers.GetFleetAddon)
+
 	fleetRouter.POST("/order", controllers.PlaceFleetOrder)
 
 	//	fleetRouter.POST("/cancel", controllers.CancelOrder)

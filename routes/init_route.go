@@ -17,7 +17,6 @@ import (
 var (
 	router           = gin.New()
 	userRouter       = router.Group("/user")
-	userActionRouter = router.Group("/action")
 	carRouter        = router.Group("/car")
 	paymentRouter    = router.Group("/payment")
 	serviceRouter    = router.Group("/service")
@@ -25,6 +24,8 @@ var (
 
 	fleetRouter      = router.Group("/fleet")
 	saleRouter       = router.Group("/sale")
+
+	userActionRouter = router.Group("/action")
 
 	egobieRouter     = router.Group("/egobie")
 )
@@ -42,12 +43,13 @@ func init() {
 	paymentRouter.Use(cors, authorizeResidentialUser)
 	serviceRouter.Use(cors, authorizeResidentialUser)
 	historyRouter.Use(cors, authorizeResidentialUser)
-	userActionRouter.Use(cors, authorizeResidentialUser)
 
 	fleetRouter.Use(cors, authorizeFleetUser)
 	saleRouter.Use(cors, authorizeSaleUser)
 
 	egobieRouter.Use(cors, authorizeEgobieUser)
+
+	userActionRouter.Use(cors)
 
 	router.GET("/hc", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "OK")

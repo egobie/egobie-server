@@ -5,10 +5,10 @@ import (
 )
 
 type FleetUserBasicInfo struct {
-	SetUp     int32  `json:"setup"`
+	SetUp     int32  `json:"fleet_setup"`
 	FleetId   int32  `json:"fleet_id"`
 	FleetName string `json:"fleet_name"`
-	Token     string `json:"token"`
+	Token     string `json:"fleet_token"`
 }
 
 type FleetUserInfo struct {

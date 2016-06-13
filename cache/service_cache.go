@@ -13,6 +13,7 @@ import (
 var SERVICES_MAP map[int32]modules.Service
 var SERVICES_ARRAY []modules.Service
 var FLEET_ADDONS_MAP map[int32]modules.AddOn
+var FLEET_ADDONS_ARRAY []modules.AddOn
 
 func init() {
 	SERVICES_MAP = make(map[int32]modules.Service)
@@ -96,6 +97,7 @@ func cacheService() {
 		} else if addOn.ServiceId == 0 {
 			// Addon for fleet only
 			FLEET_ADDONS_MAP[addOn.Id] = addOn
+			FLEET_ADDONS_ARRAY = append(FLEET_ADDONS_ARRAY, addOn)
 		}
 	}
 }

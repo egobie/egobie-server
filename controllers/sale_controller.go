@@ -22,8 +22,8 @@ func NewFleetUser(c *gin.Context) {
 		values ('FLEET', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	queryFLeet := `
-		insert into fleet (name, user_id)
-		values (?, ?)
+		insert into fleet (name, user_id, sale_user_id)
+		values (?, ?, ?)
 	`
 	request := modules.NewFLeetUser{}
 	var (
@@ -94,7 +94,7 @@ func NewFleetUser(c *gin.Context) {
 	}
 
 	if result, err = tx.Exec(
-		queryFLeet, request.FleetName, userId,
+		queryFLeet, request.FleetName, userId, request.UserId,
 	); err != nil {
 		return
 	}

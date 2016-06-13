@@ -118,6 +118,14 @@ func getFleetUserByUsername(username string) (user modules.FleetUser, err error)
 	return getFleetUser("username = ?", username)
 }
 
+func GetFleetService(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.SERVICES_ARRAY)
+}
+
+func GetFleetAddon(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.FLEET_ADDONS_ARRAY)
+}
+
 func PlaceFleetOrder(c *gin.Context) {
 	request := modules.FleetOrderRequest{}
 	var (
