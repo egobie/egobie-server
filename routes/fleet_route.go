@@ -22,5 +22,13 @@ func initFleetRoutes() {
 
 	fleetRouter.POST("/history", controllers.GetFleetHistory)
 
-	fleetRouter.POST("/rating", controllers.RatingFleet)
+	fleetRouter.POST("/history/rating", controllers.RatingFleet)
+
+	fleetRouter.POST("/demand/opening/:id", controllers.OpeningDemand)
+
+	fleetRouter.POST("/read/:id", controllers.ServiceReading)
+
+	fleetRouter.POST("/demand", controllers.ServiceDemand)
+
+	fleetRouter.POST("/demand/addon", controllers.AddonDemand)
 }

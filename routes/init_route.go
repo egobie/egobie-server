@@ -15,19 +15,19 @@ import (
 )
 
 var (
-	router           = gin.New()
-	userRouter       = router.Group("/user")
-	carRouter        = router.Group("/car")
-	paymentRouter    = router.Group("/payment")
-	serviceRouter    = router.Group("/service")
-	historyRouter    = router.Group("/history")
+	router        = gin.New()
+	userRouter    = router.Group("/user")
+	carRouter     = router.Group("/car")
+	paymentRouter = router.Group("/payment")
+	serviceRouter = router.Group("/service")
+	historyRouter = router.Group("/history")
 
-	fleetRouter      = router.Group("/fleet")
-	saleRouter       = router.Group("/sale")
+	fleetRouter = router.Group("/fleet")
+	saleRouter  = router.Group("/sale")
 
 	userActionRouter = router.Group("/action")
 
-	egobieRouter     = router.Group("/egobie")
+	egobieRouter = router.Group("/egobie")
 )
 
 func init() {
