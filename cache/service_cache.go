@@ -30,6 +30,7 @@ func cacheService() {
 		where type != 'DETAILING'
 		order by id
 	`
+	index := make(map[int32]int)
 	var (
 		rows1 *sql.Rows
 		rows2 *sql.Rows
@@ -62,7 +63,7 @@ func cacheService() {
 			return
 		}
 
-		SERVICES_MAP[service.Id] = service
+		index[service.Id] = len(SERVICES_ARRAY)
 		SERVICES_ARRAY = append(SERVICES_ARRAY, service)
 	}
 
@@ -84,20 +85,30 @@ func cacheService() {
 			return
 		}
 
-		if service, ok := SERVICES_MAP[addOn.ServiceId]; ok {
+		if i, ok := index[addOn.ServiceId]; ok {
 			addOn.Amount = 1
 
 			if addOn.Price == 0 {
-				service.Free = append(service.Free, addOn)
+				SERVICES_ARRAY[i].Free = append(
+					SERVICES_ARRAY[i].Free, addOn,
+				)
 			} else if addOn.Time == 0 {
-				service.Charge = append(service.Charge, addOn)
+				SERVICES_ARRAY[i].Charge = append(
+					SERVICES_ARRAY[i].Charge, addOn,
+				)
 			} else {
-				service.Addons = append(service.Addons, addOn)
+				SERVICES_ARRAY[i].Addons = append(
+					SERVICES_ARRAY[i].Addons, addOn,
+				)
 			}
 		} else if addOn.ServiceId == 0 {
 			// Addon for fleet only
 			FLEET_ADDONS_MAP[addOn.Id] = addOn
 			FLEET_ADDONS_ARRAY = append(FLEET_ADDONS_ARRAY, addOn)
 		}
+	}
+
+	for _, service := range SERVICES_ARRAY {
+		SERVICES_MAP[service.Id] = service
 	}
 }
