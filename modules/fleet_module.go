@@ -29,7 +29,6 @@ type FleetOrderRequest struct {
 	BaseRequest
 
 	Note     string                `json:"note"`
-	Types    string                `json:"types"`
 	Opening  int32                 `json:"opening"`
 	Day      string                `json:"day"`
 	Hour     string                `json:"hour"`
@@ -111,4 +110,11 @@ type GetFleetUserRequest struct {
 	BaseRequest
 
 	Page int32 `json:"page"`
+}
+
+type FleetOpeningRequest struct {
+	BaseRequest
+
+	Services []FleetServiceRequest `json:"services"`
+	Addons   []FleetAddonRequest   `json:"addons"`
 }

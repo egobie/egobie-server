@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -137,6 +138,7 @@ func PlaceFleetOrder(c *gin.Context) {
 		time     int32
 		gap      int32
 		reserved string
+		types    string
 
 		fleetServiceId int64
 		serviceListId  int64
@@ -172,8 +174,8 @@ func PlaceFleetOrder(c *gin.Context) {
 		}
 	}()
 
-	time = calculateServiceTime(request.Services) +
-		calculateAddonTime(request.Addons)
+	time, types = calculateServiceTimeAndTypes(request.Services)
+	time += calculateAddonTime(request.Addons)
 	gap = calculateGap(time)
 
 	if request.Opening != -1 {
@@ -184,7 +186,7 @@ func PlaceFleetOrder(c *gin.Context) {
 		}
 
 		if assignee, err = assignService(
-			tx, request.Opening, gap, request.Types,
+			tx, request.Opening, gap, types,
 		); err != nil {
 			return
 		}
@@ -200,8 +202,8 @@ func PlaceFleetOrder(c *gin.Context) {
 	`
 
 	if result, err = tx.Exec(
-		query, request.UserId, request.Opening, reserved, gap,
-		assignee, time, "RESERVED", request.Types,
+		query, request.UserId, request.Opening, reserved,
+		gap, assignee, time, "RESERVED", types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
@@ -265,6 +267,56 @@ func PlaceFleetOrder(c *gin.Context) {
 			}
 		}
 	}
+}
+
+func GetFleetOpening(c *gin.Context) {
+	query := `
+		select id, day, period
+		from opening
+		where day > DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+	`
+	request := modules.FleetOpeningRequest{}
+	var (
+		totalTime int32
+		body      []byte
+		err       error
+		openings  []modules.Opening
+		types     string
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, openings)
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if len(request.Services) == 0 && len(request.Addons) == 0 {
+		err = errors.New("Please provide services")
+		return
+	}
+
+	totalTime, types = calculateServiceTimeAndTypes(request.Services)
+	totalTime += calculateAddonTime(request.Addons)
+
+	if openings, err = loadOpening(query, types); err != nil {
+		return
+	}
+
+	openings, err = filterOpening(
+		calculateGap(totalTime), openings,
+	)
 }
 
 func GetFleetReservation(c *gin.Context) {
@@ -349,9 +401,9 @@ func GetFleetHistory(c *gin.Context) {
 	`
 	request := modules.HistoryRequest{}
 	var (
-		data    []byte
-		err     error
-		rows    *sql.Rows
+		data        []byte
+		err         error
+		rows        *sql.Rows
 		historyList []modules.FleetHistory
 	)
 
@@ -616,19 +668,37 @@ func getFleetService(userId int32, condition string) (fleetServices []modules.Fl
 	return fleetServices, nil
 }
 
-func calculateServiceTime(services []modules.FleetServiceRequest) (totalTime int32) {
-	var tempTime int32 = 0
+func calculateServiceTimeAndTypes(
+	services []modules.FleetServiceRequest,
+) (totalTime int32, types string) {
+	var (
+		tempTime int32
+		wash     bool
+		oil      bool
+	)
+
+	tempTime = 0
 
 	for _, service := range services {
 		for _, id := range service.ServicesIds {
 			if s, ok := cache.SERVICES_MAP[id]; ok {
 				tempTime += s.Time
+
+				if s.Type == "CAR_WASH" {
+					wash = true
+				} else if s.Type == "OIL_CHANGE" {
+					oil = true
+				}
 			}
 		}
 
-		totalTime += tempTime * service.CarCount
+		// TODO totalTime += tempTime * service.CarCount
+		totalTime += tempTime
 		tempTime = 0
 	}
+
+	types = calculateOrderTypes(wash, oil)
+	fmt.Println("Types - ", types)
 
 	return
 }
@@ -643,7 +713,8 @@ func calculateAddonTime(addons []modules.FleetAddonRequest) (totalTime int32) {
 			}
 		}
 
-		totalTime += tempTime * addon.CarCount
+		// TODO totalTime += tempTime * addon.CarCount
+		totalTime += tempTime
 		tempTime = 0
 	}
 

@@ -12,11 +12,15 @@ import (
 
 var SERVICES_MAP map[int32]modules.Service
 var SERVICES_ARRAY []modules.Service
+
+var ADDONS_MAP map[int32]modules.AddOn
+
 var FLEET_ADDONS_MAP map[int32]modules.AddOn
 var FLEET_ADDONS_ARRAY []modules.AddOn
 
 func init() {
 	SERVICES_MAP = make(map[int32]modules.Service)
+	ADDONS_MAP = make(map[int32]modules.AddOn)
 	FLEET_ADDONS_MAP = make(map[int32]modules.AddOn)
 
 	cacheService()
@@ -84,6 +88,8 @@ func cacheService() {
 		); err != nil {
 			return
 		}
+
+		ADDONS_MAP[addOn.Id] = addOn
 
 		if i, ok := index[addOn.ServiceId]; ok {
 			addOn.Amount = 1

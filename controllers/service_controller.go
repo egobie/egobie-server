@@ -21,8 +21,15 @@ import (
 
 var OPENING_GAP = 0.5
 var OPENING_BASE = 8.0
+var SERVICE_TYPES = map[string]string{
+	"CAR_WASH":   "Car Wash",
+	"OIL_CHANGE": "Oil & Filter",
+	"DETAILING":  "Detailing",
+}
 
-func getUserService(userId int32, condition string) (userServices []modules.UserService, err error) {
+func getUserService(userId int32, condition string) (
+	userServices []modules.UserService, err error,
+) {
 	query := `
 		select us.id, us.reservation_id, us.user_car_id, uc.plate,
 				us.user_payment_id, us.estimated_time, us.estimated_price,
@@ -219,10 +226,12 @@ func OnDemand(c *gin.Context) {
 	}
 
 	var (
-		body     []byte
-		err      error
-		addons   []int32
-		openings []modules.Opening
+		body      []byte
+		err       error
+		addons    []int32
+		totalTime int32
+		types     string
+		openings  []modules.Opening
 	)
 
 	defer func() {
@@ -240,14 +249,6 @@ func OnDemand(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("Types - ", request.Types)
-
-	if request.Types == "CAR_WASH" {
-		query += " and count_wash > 0 order by period"
-	} else {
-		query += " and count_oil > 0 order by period"
-	}
-
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
 		return
@@ -255,14 +256,18 @@ func OnDemand(c *gin.Context) {
 
 	go checkAvailability(request.UserId)
 
-	fmt.Println(query, curr)
+	totalTime, _, types = getTotalTimeAndPriceAndTypes(
+		request.Services, addons,
+	)
 
-	if openings, err = loadOpening(query, curr); err != nil {
+	if openings, err = loadOpening(
+		query, types, curr,
+	); err != nil {
 		return
 	}
 
 	if openings, err = filterOpening(
-		request.Services, addons, openings,
+		calculateGap(totalTime), openings,
 	); err == nil {
 		if len(openings) > 0 {
 			str := ""
@@ -340,16 +345,21 @@ func GetOpening(c *gin.Context) {
 	`
 	request := modules.OpeningRequest{}
 	var (
-		body     []byte
-		err      error
-		openings []modules.Opening
+		totalTime int32
+		body      []byte
+		err       error
+		types     string
+		openings  []modules.Opening
 	)
 
 	defer func() {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
+			return
 		}
+
+		c.JSON(http.StatusOK, openings)
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -360,35 +370,37 @@ func GetOpening(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("Types - ", request.Types)
-
-	if request.Types == "CAR_WASH" {
-		query += " and count_wash > 0 order by day, period"
-	} else {
-		query += " and count_oil > 0 order by day, period"
-	}
-
 	if len(request.Services) == 0 {
 		err = errors.New("Please provide services")
 		return
 	}
 
-	if openings, err = loadOpening(query); err != nil {
+	totalTime, _, types = getTotalTimeAndPriceAndTypes(
+		request.Services, request.Addons,
+	)
+
+	if openings, err = loadOpening(query, types); err != nil {
 		return
 	}
 
-	if openings, err = filterOpening(
-		request.Services, request.Addons, openings,
-	); err == nil {
-		c.JSON(http.StatusOK, openings)
-	}
+	openings, err = filterOpening(
+		calculateGap(totalTime), openings,
+	)
 }
 
-func loadOpening(query string, args ...interface{}) (openings []modules.Opening, err error) {
+func loadOpening(query, types string, args ...interface{}) (
+	openings []modules.Opening, err error,
+) {
 	var (
 		rows   *sql.Rows
 		preDay string
 	)
+
+	if types == "CAR_WASH" {
+		query += " and count_wash > 0 order by day, period"
+	} else {
+		query += " and count_oil > 0 order by day, period"
+	}
 
 	if rows, err = config.DB.Query(query, args...); err != nil {
 		return
@@ -422,26 +434,17 @@ func loadOpening(query string, args ...interface{}) (openings []modules.Opening,
 		}
 	}
 
-	return
+	return openings, nil
 }
 
-func filterOpening(services, addons []int32, openings []modules.Opening) (result []modules.Opening, err error) {
+func filterOpening(gap int32, openings []modules.Opening) (
+	result []modules.Opening, err error,
+) {
 	var (
-		time int32
-		p1   int32
-		p2   int32
-		pre  int32
+		p1  int32
+		p2  int32
+		pre int32
 	)
-
-	if time, _, err = getTotalTimeAndPrice(services, addons); err != nil {
-		return
-	}
-
-	if time%30 != 0 {
-		time = (time / 30) + 2
-	} else {
-		time = (time / 30) + 1
-	}
 
 	for _, opening := range openings {
 		o := modules.Opening{}
@@ -452,13 +455,13 @@ func filterOpening(services, addons []int32, openings []modules.Opening) (result
 		pre = opening.Range[p1].Id
 		size := int32(len(opening.Range))
 
-		if p1 < (size - time + 1) {
+		if p1 < (size - gap + 1) {
 			for p2 < size {
 				if opening.Range[p2].Id-pre > 1 {
 					p1 = p2
 					pre = opening.Range[p1].Id
 				} else {
-					if opening.Range[p2].Id-opening.Range[p1].Id+1 == time {
+					if opening.Range[p2].Id-opening.Range[p1].Id+1 == gap {
 						o.Range = append(o.Range, opening.Range[p1])
 						p1 += 1
 					}
@@ -496,6 +499,7 @@ func PlaceOrder(c *gin.Context) {
 		reserved          string
 		assignee          int32
 		reservationNumber string
+		types             string
 		services          []string
 		addons            []string
 	)
@@ -542,25 +546,24 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if t, p, err := getServicesTimeAndPrice(request.Services); err != nil {
-		return
-	} else {
-		time += t
-		price += p
-	}
-
-	if t, p, err := getAddonsTimeAndPrice(request.Addons); err != nil {
-		return
-	} else {
-		time += t
-		price += p
-	}
-
-	if services, addons, err = getServicesAndAddons(
-		request.Services, request.Addons,
+	if t, p, ty, err := getServicesTimeAndPriceAndTypes(
+		request.Services,
 	); err != nil {
 		return
+	} else {
+		time += t
+		price += p
+		types = ty
 	}
+
+	t, p := getAddonsTimeAndPrice(request.Addons)
+
+	time += t
+	price += p
+
+	services, addons = getServicesAndAddons(
+		request.Services, request.Addons,
+	)
 
 	if user.Discount > 0 {
 		price = price * 1.07 * 0.9
@@ -609,13 +612,13 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	if err = holdOpening(
-		tx, request.Opening, request.Opening+gap, request.Types,
+		tx, request.Opening, request.Opening+gap, types,
 	); err != nil {
 		return
 	}
 
 	if assignee, err = assignService(
-		tx, request.Opening, gap, request.Types,
+		tx, request.Opening, gap, types,
 	); err != nil {
 		return
 	}
@@ -633,9 +636,8 @@ func PlaceOrder(c *gin.Context) {
 	`
 
 	if result, err = tx.Exec(insertUserService,
-		user.Id, car.Id, payment.Id, request.Opening,
-		reserved, gap, assignee, time, price, "RESERVED",
-		request.Types,
+		user.Id, car.Id, payment.Id, request.Opening, reserved,
+		gap, assignee, time, price, "RESERVED", types,
 	); err != nil {
 		return
 	}
@@ -691,223 +693,117 @@ func PlaceOrder(c *gin.Context) {
 	}
 }
 
-func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonRequest) (services, addons []string, err error) {
-	queryService := `
-		select name, type from service where id in (
-	`
-	queryAddon := `
-		select name from service_addon where id in (
-	`
-	serviceTypes := map[string]string{
-		"CAR_WASH":   "Car Wash",
-		"OIL_CHANGE": "Oil & Filter",
-		"DETAILING":  "Detailing",
-	}
-
-	var (
-		rows1 *sql.Rows
-		rows2 *sql.Rows
-		temp1 string
-		temp2 string
-	)
-
+func getServicesAndAddons(serviceIds []int32, addonRequests []modules.AddonRequest) (
+	services, addons []string,
+) {
 	if len(serviceIds) > 0 {
-		for index, id := range serviceIds {
-			if index == 0 {
-				queryService += strconv.Itoa(int(id))
-			} else {
-				queryService += "," + strconv.Itoa(int(id))
+		for _, id := range serviceIds {
+			if s, ok := cache.SERVICES_MAP[id]; ok {
+				services = append(
+					services, s.Name+" ("+SERVICE_TYPES[s.Type]+")",
+				)
 			}
-		}
-
-		queryService += ")"
-
-		if rows1, err = config.DB.Query(queryService); err != nil {
-			return
-		}
-		defer rows1.Close()
-
-		for rows1.Next() {
-			if err = rows1.Scan(&temp1, &temp2); err != nil {
-				return
-			}
-
-			services = append(
-				services,
-				temp1+" ("+serviceTypes[temp2]+")",
-			)
 		}
 	}
 
 	if len(addonRequests) > 0 {
-		for index, addonRequest := range addonRequests {
-			if index == 0 {
-				queryAddon += strconv.Itoa(int(addonRequest.Id))
-			} else {
-				queryAddon += "," + strconv.Itoa(int(addonRequest.Id))
+		for _, addon := range addonRequests {
+			if a, ok := cache.ADDONS_MAP[addon.Id]; ok {
+				addons = append(addons, a.Name)
 			}
 		}
+	}
 
-		queryAddon += ")"
+	return
+}
 
-		if rows2, err = config.DB.Query(queryAddon); err != nil {
-			return
-		}
-		defer rows2.Close()
+func getServicesTimeAndPriceAndTypes(ids []int32) (
+	time int32, price float32, types string, err error,
+) {
+	temp := make(map[string]int32)
 
-		for rows2.Next() {
-			if err = rows2.Scan(&temp1); err != nil {
+	var (
+		wash bool
+		oil  bool
+	)
+
+	for _, id := range ids {
+		if s, ok := cache.SERVICES_MAP[id]; ok {
+			time += s.Time
+			price += s.Price
+
+			if s.Type == "CAR_WASH" {
+				wash = true
+			} else if s.Type == "OIL_CHANGE" {
+				oil = true
+			}
+
+			if _, ok = temp[s.Type]; ok {
+				err = errors.New("Can only choose one service for each type")
 				return
+			} else {
+				temp[s.Type] = 0
 			}
-
-			addons = append(addons, temp1)
 		}
 	}
 
-	return services, addons, nil
+	types = calculateOrderTypes(wash, oil)
+
+	return
 }
 
-func getServicesTimeAndPrice(ids []int32) (time int32, price float32, err error) {
-	query := `
-		select sum(estimated_time), sum(estimated_price), count(*)
-		from service where id in (
-	`
-	var (
-		rows *sql.Rows
-		t    int32
-		c    int32
-		p    float32
-	)
-
-	for index, id := range ids {
-		if index == 0 {
-			query += strconv.Itoa(int(id))
-		} else {
-			query += ("," + strconv.Itoa(int(id)))
+func getAddonsTimeAndPrice(addons []modules.AddonRequest) (
+	time int32, price float32,
+) {
+	if len(addons) > 0 {
+		for _, addon := range addons {
+			if a, ok := cache.ADDONS_MAP[addon.Id]; ok {
+				time += a.Time
+				price += (a.Price * float32(addon.Amount))
+			}
 		}
-	}
-
-	query += ") group by type"
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(&t, &p, &c); err != nil {
-			return
-		}
-
-		if c > 1 {
-			err = errors.New("Can only choose one service for each type")
-			return
-		}
-
-		time += t
-		price += p
 	}
 
 	return
 }
 
-func getAddonsTimeAndPrice(addons []modules.AddonRequest) (time int32, price float32, err error) {
-	if len(addons) == 0 {
-		return 0, 0, nil
-	}
-
-	query := `
-		select id, time, price from service_addon where id in (
-	`
-	amount := make(map[int32]int32)
-	var (
-		rows *sql.Rows
-		i    int32
-		t    int32
-		p    float32
-	)
-
-	for index, addon := range addons {
-		if index == 0 {
-			query += strconv.Itoa(int(addon.Id))
-		} else {
-			query += ("," + strconv.Itoa(int(addon.Id)))
-		}
-
-		amount[addon.Id] = addon.Amount
-	}
-
-	query += ")"
-
-	if rows, err = config.DB.Query(query); err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(&i, &t, &p); err != nil {
-			return
-		}
-
-		time += t
-		price += (p * float32(amount[i]))
-	}
-
-	return
-}
-
-func getTotalTimeAndPrice(services, addons []int32) (time int32, price float32, err error) {
-	query1 := `
-		select sum(estimated_time), sum(estimated_price) from service where id in (
-	`
-	query2 := `
-		select sum(time), sum(price) from service_addon where id in (
-	`
+func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price float32, types string) {
 	var (
 		time1  int32
 		time2  int32
 		price1 float32
 		price2 float32
+		wash   bool
+		oil    bool
 	)
 
-	for i, id := range services {
-		if i == 0 {
-			query1 += strconv.Itoa(int(id))
-		} else {
-			query1 += "," + strconv.Itoa(int(id))
+	for _, id := range services {
+		if s, ok := cache.SERVICES_MAP[id]; ok {
+			time1 += s.Time
+			price1 += s.Price
+
+			if s.Type == "CAR_WASH" {
+				wash = true
+			} else if s.Type == "OIL_CHANGE" {
+				oil = true
+			}
 		}
-	}
-
-	query1 += ")"
-
-	if err = config.DB.QueryRow(query1).Scan(
-		&time1, &price1,
-	); err != nil {
-		return
 	}
 
 	if len(addons) > 0 {
-		for i, id := range addons {
-			if i == 0 {
-				query2 += strconv.Itoa(int(id))
-			} else {
-				query2 += "," + strconv.Itoa(int(id))
+		for _, id := range addons {
+			if a, ok := cache.ADDONS_MAP[id]; ok {
+				time2 += a.Time
+				price2 += a.Price
 			}
-		}
-
-		query2 += ")"
-
-		if err = config.DB.QueryRow(query2).Scan(
-			&time2, &price2,
-		); err != nil {
-			return
 		}
 	}
 
 	time = time1 + time2
 	price = price1 + price2
+	types = calculateOrderTypes(wash, oil)
 
-	return time, price, nil
+	return
 }
 
 func CancelOrder(c *gin.Context) {
@@ -1540,4 +1436,19 @@ func calculateHowLong(mins int32) (int32, string) {
 	} else {
 		return mins, "MINUTE"
 	}
+}
+
+func calculateOrderTypes(wash, oil bool) (types string) {
+	switch {
+	case wash && oil:
+		types = "BOTH"
+	case wash:
+		types = "CAR_WASH"
+	case oil:
+		types = "OIL_CHANGE"
+	default:
+		types = "BOTH"
+	}
+
+	return
 }

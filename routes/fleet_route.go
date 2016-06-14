@@ -12,6 +12,8 @@ func initFleetRoutes() {
 
 	fleetRouter.POST("/order", controllers.PlaceFleetOrder)
 
+	fleetRouter.POST("/opening", controllers.GetFleetOpening)
+
 	//	fleetRouter.POST("/cancel", controllers.CancelOrder)
 
 	//	fleetRouter.POST("/cancel/force", controllers.ForceCancelOrder)
