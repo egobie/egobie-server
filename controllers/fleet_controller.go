@@ -187,6 +187,12 @@ func PlaceFleetOrder(c *gin.Context) {
 
 		fmt.Println("place order gap - ", gap)
 
+		if err = holdOpening(
+			tx, request.Opening, request.Opening+gap, types,
+		); err != nil {
+			return
+		}
+
 		if assignee, err = assignService(
 			tx, request.Opening, gap, types,
 		); err != nil {
