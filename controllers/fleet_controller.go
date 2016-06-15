@@ -185,6 +185,8 @@ func PlaceFleetOrder(c *gin.Context) {
 			return
 		}
 
+		fmt.Println("place order gap - ", gap)
+
 		if assignee, err = assignService(
 			tx, request.Opening, gap, types,
 		); err != nil {
@@ -203,7 +205,7 @@ func PlaceFleetOrder(c *gin.Context) {
 
 	if result, err = tx.Exec(
 		query, request.UserId, request.Opening, reserved,
-		gap, assignee, time, "RESERVED", types,
+		gap, assignee, time, "WAITING", types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
@@ -241,6 +243,7 @@ func PlaceFleetOrder(c *gin.Context) {
 
 	queryAddon := `
 		insert into fleet_service_addon_list (fleet_service_id, car_count)
+		values (?, ?)
 	`
 	queryAddonIds := `
 		insert into fleet_service_addon_list_id (service_addon_id,
