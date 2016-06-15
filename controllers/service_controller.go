@@ -446,8 +446,6 @@ func filterOpening(gap int32, openings []modules.Opening) (
 		pre int32
 	)
 
-	fmt.Println("Filter by gap - ", gap)
-
 	for _, opening := range openings {
 		o := modules.Opening{}
 		o.Day = opening.Day
@@ -1199,9 +1197,6 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 		query += " and mixed = 1"
 	}
 
-	fmt.Println("mask - ", mask)
-	fmt.Println("day - ", day)
-
 	if err = tx.QueryRow(
 		query, day, mask, mask,
 	).Scan(&assignee); err != nil {
@@ -1211,8 +1206,6 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 
 		return
 	}
-
-	fmt.Println("assignee - ", assignee)
 
 	_, err = tx.Exec(`
 		update user_opening set user_schedule = user_schedule ^ ?
