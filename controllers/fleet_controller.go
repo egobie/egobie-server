@@ -50,8 +50,8 @@ func getFleetUserInfoByUserId(userId int32) (info modules.FleetUserInfo, err err
 	return
 }
 
-func getFleetUserInfoBySaleUserId(saleUserId int32, page int32) (
-	infoList []modules.FleetUserInfo, err error,
+func getFleetUsersBySaleUserId(saleUserId int32, page int32) (
+	all modules.AllFleetUser, err error,
 ) {
 	size := 15
 	query := `
@@ -89,10 +89,22 @@ func getFleetUserInfoBySaleUserId(saleUserId int32, page int32) (
 		info.Token = ""
 		info.UserId = 0
 
-		infoList = append(infoList, info)
+		all.Users = append(all.Users, info)
 	}
 
-	return infoList, nil
+	query = `
+		select count(*) from fleet f
+		inner join user u on u.id = f.user_id
+		where f.sale_user_id = ?
+	`
+
+	if err = config.DB.QueryRow(query, saleUserId).Scan(
+		&all.Total,
+	); err != nil {
+		return
+	}
+
+	return all, nil
 }
 
 func getFleetUser(condition string, args ...interface{}) (user modules.FleetUser, err error) {
@@ -483,7 +495,7 @@ func GetFleetReservation(c *gin.Context) {
 		return
 	}
 
-	if fleetServices, err := getFleetService(
+	if fleetServices, err := getFleetServiceByFleetUser(
 		request.UserId,
 		"status = 'WAITING' or status = 'RESERVED' or status = 'IN_PROGRESS'",
 	); err == nil {
@@ -757,8 +769,10 @@ func getFleetReservationAddon(fleetServiceId int32) (
 	return addons, nil
 }
 
-func getFleetService(userId int32, condition string) (fleetServices []modules.FleetService, err error) {
-	query := `
+func getFleetServiceByFleetUser(userId int32, condition string) (
+	fleetServices []modules.FleetService, err error,
+) {
+	return getFleetService(`
 		select fs.id, fs.reservation_id, fs.estimated_time,
 				fs.estimated_price, fs.reserved_start_timestamp,
 				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP(), fs.reserved_start_timestamp) as mins,
@@ -766,8 +780,29 @@ func getFleetService(userId int32, condition string) (fleetServices []modules.Fl
 				fs.note, fs.status, fs.create_timestamp
 		from fleet_service fs
 		where fs.user_id = ? and (
-	` + condition + ") order by fs.id"
+	` + condition + ") order by fs.create_timestamp DESC", userId,
+	)
+}
 
+func getFleetServiceBySaleUser(userId int32, condition string) (
+	fleetServices []modules.FleetService, err error,
+) {
+	return getFleetService(`
+		select fs.id, fs.reservation_id, fs.estimated_time,
+				fs.estimated_price, fs.reserved_start_timestamp,
+				TIMESTAMPDIFF(MINUTE, CURRENT_TIMESTAMP(), fs.reserved_start_timestamp) as mins,
+				fs.start_timestamp, fs.end_timestamp,
+				fs.note, fs.status, fs.create_timestamp
+		from fleet_service fs
+		inner join fleet f on f.user_id = fs.user_id
+		where f.sale_user_id = ? and (
+	` + condition + ") order by fs.create_timestamp DESC", userId,
+	)
+}
+
+func getFleetService(query string, userId int32) (
+	fleetServices []modules.FleetService, err error,
+) {
 	var (
 		rows *sql.Rows
 		mins int32

@@ -30,3 +30,8 @@ type NewFLeetUser struct {
 	State      string `json:"state"`
 	Zip        string `json:"zip"`
 }
+
+type AllFleetUser struct {
+	Total int32                   `json:"total"`
+	Users []FleetUserInfo `json:"users"`
+}

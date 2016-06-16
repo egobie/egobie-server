@@ -136,7 +136,9 @@ func authorizeFleetUser(c *gin.Context) {
 	c.Next()
 }
 
-func authorizeUser(c *gin.Context, expectTokenLen int32, checkFunc modules.CheckUserFunc) (err error) {
+func authorizeUser(c *gin.Context, expectTokenLen int32,
+	checkFunc modules.CheckUserFunc,
+) (err error) {
 	var (
 		token    string
 		userId   int32

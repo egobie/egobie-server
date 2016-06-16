@@ -103,9 +103,9 @@ func NewFleetUser(c *gin.Context) {
 func AllFleetUser(c *gin.Context) {
 	request := modules.GetFleetUserRequest{}
 	var (
-		data  []byte
-		err   error
-		users []modules.FleetUserInfo
+		data []byte
+		err  error
+		all  modules.AllFleetUser
 	)
 
 	defer func() {
@@ -115,7 +115,7 @@ func AllFleetUser(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, users)
+		c.JSON(http.StatusOK, all)
 	}()
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -126,5 +126,37 @@ func AllFleetUser(c *gin.Context) {
 		return
 	}
 
-	users, err = getFleetUserInfoBySaleUserId(request.UserId, request.Page)
+	all, err = getFleetUsersBySaleUserId(
+		request.UserId, request.Page,
+	)
+}
+
+func AllFleetOrder(c *gin.Context) {
+	request := modules.BaseRequest{}
+	var (
+		err  error
+		body []byte
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if fleetServices, err := getFleetServiceBySaleUser(
+		request.UserId,
+		"status = 'WAITING' or status = 'RESERVED' or status = 'IN_PROGRESS'",
+	); err == nil {
+		c.JSON(http.StatusOK, fleetServices)
+	}
 }
