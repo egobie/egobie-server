@@ -307,6 +307,109 @@ func insertFleetAddonList(tx *sql.Tx,
 	return nil
 }
 
+func CancelFleetOrder(c *gin.Context) {
+	cancelFleet(c, false)
+}
+
+func ForceCancelFleetOrder(c *gin.Context) {
+	cancelFleet(c, true)
+}
+
+func cancelFleet(c *gin.Context, force bool) {
+	request := modules.CancelRequest{}
+	temp := struct {
+		Opening  int32
+		Gap      int32
+		Assignee int32
+		Types    string
+		Status   string
+	}{}
+
+	var (
+		tx   *sql.Tx
+		body []byte
+		err  error
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	query := `
+		select opening_id, gap, assignee, types, status
+		from fleet_service
+		where id = ? and user_id = ?
+	`
+	if err = tx.QueryRow(
+		query, request.Id, request.UserId,
+	).Scan(
+		&temp.Opening, &temp.Gap, &temp.Assignee,
+		&temp.Types, &temp.Status,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.New("Reservation not found")
+		}
+		return
+	}
+
+	if !force && temp.Status != "WAITING" {
+		err = errors.New("CANNOT")
+		return
+	}
+
+	query = `
+		update fleet_service set status = 'CANCEL', assignee = -1
+		where id = ? and user_id = ?
+	`
+	if _, err = tx.Exec(
+		query, request.Id, request.UserId,
+	); err != nil {
+		return
+	}
+
+	go cancelReservation(request.UserId)
+
+	if err = releaseOpening(
+		tx, temp.Opening, temp.Gap, temp.Types,
+	); err != nil {
+		return
+	}
+
+	if err = revokeUserOpening(
+		tx, temp.Opening, temp.Gap, temp.Assignee,
+	); err != nil {
+		return
+	}
+}
+
 func GetFleetOpening(c *gin.Context) {
 	query := `
 		select id, day, period

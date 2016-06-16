@@ -815,14 +815,6 @@ func ForceCancelOrder(c *gin.Context) {
 }
 
 func cancel(c *gin.Context, force bool) {
-	checkQuery := `
-		select user_car_id, user_payment_id, opening_id, gap, assignee, types
-		from user_service
-		where id = ? and user_id = ? and status = 'RESERVED'
-	`
-	query := `
-		update user_service set status = 'CANCEL' where id = ? and user_id = ?
-	`
 	request := modules.CancelRequest{}
 	temp := struct {
 		CarId     int32
@@ -870,14 +862,20 @@ func cancel(c *gin.Context, force bool) {
 		}
 	}()
 
+	query := `
+		select user_car_id, user_payment_id, opening_id, gap, assignee, types
+		from user_service
+		where id = ? and user_id = ? and status = 'RESERVED'
+	`
+
 	if !force {
-		checkQuery += `
+		query += `
 			and DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
 		`
 	}
 
 	if err = tx.QueryRow(
-		checkQuery, request.Id, request.UserId,
+		query, request.Id, request.UserId,
 	).Scan(
 		&temp.CarId, &temp.PaymentId, &temp.Opening,
 		&temp.Gap, &temp.Assignee, &temp.Types,
@@ -890,6 +888,10 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
+	query = `
+		update user_service set status = 'CANCEL', assignee = -1
+		where id = ? and user_id = ?
+	`
 	if _, err = tx.Exec(
 		query, request.Id, request.UserId,
 	); err != nil {
@@ -910,8 +912,8 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
-	if err = revokeService(
-		tx, request.Id, temp.Opening, temp.Gap, temp.Assignee,
+	if err = revokeUserOpening(
+		tx, temp.Opening, temp.Gap, temp.Assignee,
 	); err != nil {
 		return
 	}
@@ -1215,7 +1217,7 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 	return
 }
 
-func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (err error) {
+func revokeUserOpening(tx *sql.Tx, openingId, gap, assignee int32) (err error) {
 	var (
 		day    string
 		period int32
@@ -1237,8 +1239,6 @@ func revokeService(tx *sql.Tx, userServiceId, openingId, gap, assignee int32) (e
 	); err != nil {
 		return
 	}
-
-	_, err = tx.Exec("update user_service set assignee = -1 where id = ?", userServiceId)
 
 	return
 }
