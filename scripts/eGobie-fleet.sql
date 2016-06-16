@@ -50,6 +50,7 @@ CREATE TABLE fleet_service (
 CREATE TABLE fleet_service_list (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fleet_service_id INT NOT NULL,
+    order_id INT NOT NULL,
     car_count INT NOT NULL,
     FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
 );
@@ -65,6 +66,7 @@ CREATE TABLE fleet_service_list_id (
 CREATE TABLE fleet_service_addon_list (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fleet_service_id INT NOT NULL,
+    order_id INT NOT NULL,
     car_count INT NOT NULL,
     FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
 );

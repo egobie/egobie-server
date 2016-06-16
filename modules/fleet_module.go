@@ -28,22 +28,18 @@ type FleetUser struct {
 type FleetOrderRequest struct {
 	BaseRequest
 
-	Note     string                `json:"note"`
-	Opening  int32                 `json:"opening"`
-	Day      string                `json:"day"`
-	Hour     string                `json:"hour"`
-	Services []FleetServiceRequest `json:"services"`
-	Addons   []FleetAddonRequest   `json:"addons"`
+	Note    string       `json:"note"`
+	Opening int32        `json:"opening"`
+	Day     string       `json:"day"`
+	Hour    string       `json:"hour"`
+	Orders  []FleetOrder `json:"orders"`
 }
 
-type FleetServiceRequest struct {
-	CarCount    int32   `json:"car_count"`
-	ServicesIds []int32 `json:"service_ids"`
-}
-
-type FleetAddonRequest struct {
-	CarCount   int32          `json:"car_count"`
-	AddonInfos []AddonRequest `json:"addons"`
+type FleetOrder struct {
+	OrderId  int32          `json:"order_id"`
+	CarCount int32          `json:"car_count"`
+	Services []int32        `json:"service_ids"`
+	Addons   []AddonRequest `json:"addons"`
 }
 
 type FleetService struct {
@@ -68,27 +64,24 @@ type FleetReservationRequest struct {
 }
 
 type FleetReservationDetail struct {
+	CarCount int32                     `json:"car_count"`
 	Services []FleetReservationService `json:"services"`
 	Addons   []FleetReservationAddon   `json:"addons"`
 }
 
 type FleetReservationService struct {
-	CarCount int32                         `json:"car_count"`
-	Info     []FleetReservationServiceInfo `json:"info"`
-}
+	OrderId  int32 `json:"-"`
+	CarCount int32 `json:"-"`
 
-type FleetReservationServiceInfo struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	Note string `json:"note"`
 }
 
 type FleetReservationAddon struct {
-	CarCount int32                       `json:"car_count"`
-	Info     []FleetReservationAddonInfo `json:"info"`
-}
+	OrderId  int32 `json:"-"`
+	CarCount int32 `json:"-"`
 
-type FleetReservationAddonInfo struct {
 	Name string `json:"name"`
 	Note string `json:"note"`
 }
@@ -115,6 +108,5 @@ type GetFleetUserRequest struct {
 type FleetOpeningRequest struct {
 	BaseRequest
 
-	Services []FleetServiceRequest `json:"services"`
-	Addons   []FleetAddonRequest   `json:"addons"`
+	Orders []FleetOrder `json:"orders"`
 }

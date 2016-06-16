@@ -130,19 +130,16 @@ func GetFleetAddon(c *gin.Context) {
 func PlaceFleetOrder(c *gin.Context) {
 	request := modules.FleetOrderRequest{}
 	var (
-		tx       *sql.Tx
-		result   sql.Result
-		data     []byte
-		err      error
-		assignee int32
-		time     int32
-		gap      int32
-		reserved string
-		types    string
-
+		tx             *sql.Tx
+		result         sql.Result
+		data           []byte
+		err            error
+		assignee       int32
+		time           int32
+		gap            int32
+		reserved       string
+		types          string
 		fleetServiceId int64
-		serviceListId  int64
-		addonListId    int64
 	)
 
 	defer func() {
@@ -174,8 +171,9 @@ func PlaceFleetOrder(c *gin.Context) {
 		}
 	}()
 
-	time, types = calculateServiceTimeAndTypes(request.Services)
-	time += calculateAddonTime(request.Addons)
+	time, types = calculateFleetOrderTimeAndTypes(
+		request.Orders,
+	)
 	gap = calculateGap(time)
 
 	if request.Opening != -1 {
@@ -216,64 +214,97 @@ func PlaceFleetOrder(c *gin.Context) {
 		return
 	}
 
-	queryService := `
-		insert into fleet_service_list (fleet_service_id, car_count)
-		values (?, ?)
-	`
-	queryServiceIds := `
-		insert into fleet_service_list_id (service_id, fleet_service_list_id)
-		values (?, ?)
-	`
-
-	for _, service := range request.Services {
-		if result, err = tx.Exec(
-			queryService, fleetServiceId, service.CarCount,
+	// Insert fleet orders
+	for _, order := range request.Orders {
+		if err = insertFleetServiceList(
+			tx, int32(fleetServiceId), order,
 		); err != nil {
-			return
-		} else if serviceListId, err = result.LastInsertId(); err != nil {
 			return
 		}
 
-		for _, id := range service.ServicesIds {
-			if _, ok := cache.SERVICES_MAP[id]; ok {
-				if _, err = tx.Exec(
-					queryServiceIds, id, serviceListId,
-				); err != nil {
-					return
-				}
+		if err = insertFleetAddonList(
+			tx, int32(fleetServiceId), order,
+		); err != nil {
+			return
+		}
+	}
+}
+
+func insertFleetServiceList(tx *sql.Tx,
+	fleetServiceId int32,
+	order modules.FleetOrder,
+) (err error) {
+	var (
+		result     sql.Result
+		insertedId int64
+	)
+
+	query := `
+		insert into fleet_service_list (fleet_service_id, order_id, car_count)
+		values (?, ?, ?)
+	`
+	if result, err = tx.Exec(
+		query, fleetServiceId, order.OrderId, order.CarCount,
+	); err != nil {
+		return
+	} else if insertedId, err = result.LastInsertId(); err != nil {
+		return
+	}
+
+	query = `
+		insert into fleet_service_list_id (service_id, fleet_service_list_id)
+		values (?, ?)
+	`
+	for _, id := range order.Services {
+		if _, ok := cache.SERVICES_MAP[id]; ok {
+			if _, err = tx.Exec(
+				query, id, insertedId,
+			); err != nil {
+				return
 			}
 		}
 	}
 
-	queryAddon := `
-		insert into fleet_service_addon_list (fleet_service_id, car_count)
-		values (?, ?)
+	return nil
+}
+
+func insertFleetAddonList(tx *sql.Tx,
+	fleetServiceId int32,
+	order modules.FleetOrder,
+) (err error) {
+	var (
+		insertedId int64
+		result     sql.Result
+	)
+
+	query := `
+		insert into fleet_service_addon_list (fleet_service_id, order_id, car_count)
+		values (?, ?, ?)
 	`
-	queryAddonIds := `
+	if result, err = tx.Exec(
+		query, fleetServiceId, order.OrderId, order.CarCount,
+	); err != nil {
+		return
+	} else if insertedId, err = result.LastInsertId(); err != nil {
+		return
+	}
+
+	query = `
 		insert into fleet_service_addon_list_id (service_addon_id,
 			fleet_service_addon_list_id, amount
 		) values (?, ?, ?)
 	`
-
-	for _, addon := range request.Addons {
-		if result, err = tx.Exec(
-			queryAddon, fleetServiceId, addon.CarCount,
-		); err != nil {
-			return
-		} else if addonListId, err = result.LastInsertId(); err != nil {
-			return
-		}
-
-		for _, info := range addon.AddonInfos {
-			if _, ok := cache.FLEET_ADDONS_MAP[info.Id]; ok {
-				if _, err = tx.Exec(
-					queryAddonIds, info.Id, addonListId, info.Amount,
-				); err != nil {
-					return
-				}
+	for _, addon := range order.Addons {
+		if _, ok := cache.FLEET_ADDONS_MAP[addon.Id]; ok {
+			if _, err = tx.Exec(
+				query, addon.Id, insertedId, addon.Amount,
+			); err != nil {
+				return
 			}
 		}
 	}
+
+	return nil
 }
 
 func GetFleetOpening(c *gin.Context) {
@@ -309,13 +340,14 @@ func GetFleetOpening(c *gin.Context) {
 		return
 	}
 
-	if len(request.Services) == 0 && len(request.Addons) == 0 {
-		err = errors.New("Please provide services")
+	if len(request.Orders) == 0 {
+		err = errors.New("Please choose services")
 		return
 	}
 
-	totalTime, types = calculateServiceTimeAndTypes(request.Services)
-	totalTime += calculateAddonTime(request.Addons)
+	totalTime, types = calculateFleetOrderTimeAndTypes(
+		request.Orders,
+	)
 
 	if openings, err = loadOpening(query, types); err != nil {
 		return
@@ -358,10 +390,14 @@ func GetFleetReservation(c *gin.Context) {
 
 func GetFleetReservationDetail(c *gin.Context) {
 	request := modules.FleetReservationRequest{}
+	index := make(map[int32]int)
+
 	var (
-		err    error
-		data   []byte
-		detail modules.FleetReservationDetail
+		err      error
+		data     []byte
+		addons   []modules.FleetReservationAddon
+		services []modules.FleetReservationService
+		details  []modules.FleetReservationDetail
 	)
 
 	defer func() {
@@ -370,7 +406,7 @@ func GetFleetReservationDetail(c *gin.Context) {
 			c.Abort()
 			return
 		} else {
-			c.JSON(http.StatusOK, detail)
+			c.JSON(http.StatusOK, details)
 		}
 	}()
 
@@ -382,16 +418,40 @@ func GetFleetReservationDetail(c *gin.Context) {
 		return
 	}
 
-	if detail.Services, err = getFleetReservationService(
+	if services, err = getFleetReservationService(
 		request.FleetServiceId,
 	); err != nil {
 		return
 	}
 
-	if detail.Addons, err = getFleetReservationAddon(
+	if addons, err = getFleetReservationAddon(
 		request.FleetServiceId,
 	); err != nil {
 		return
+	}
+
+	for _, service := range services {
+		if _, ok := index[service.OrderId]; !ok {
+			index[service.OrderId] = len(details)
+			detail := modules.FleetReservationDetail{}
+			detail.CarCount = service.CarCount
+
+			details = append(details, detail)
+		}
+
+		details[index[service.OrderId]].Services = append(
+			details[index[service.OrderId]].Services,
+			service,
+		)
+	}
+
+	for _, addon := range addons {
+		if _, ok := index[addon.OrderId]; ok {
+			details[index[addon.OrderId]].Addons = append(
+				details[index[addon.OrderId]].Addons,
+				addon,
+			)
+		}
 	}
 }
 
@@ -506,24 +566,19 @@ func RatingFleet(c *gin.Context) {
 func getFleetReservationService(fleetServiceId int32) (
 	services []modules.FleetReservationService, err error,
 ) {
-	var (
-		rows          *sql.Rows
-		prevId        int32
-		tempId        int32
-		tempServiceId int32
-		tempCarCount  int32
-		ok            bool
-		service       modules.Service
-	)
-
-	prevId = -1
 	query := `
-		select f.id, f.car_count, fi.service_id
+		select f.order_id, f.car_count, fi.service_id
 		from fleet_service_list f
 		inner join fleet_service_list_id fi on fi.fleet_service_list_id = f.id
 		where f.fleet_service_id = ?
-		order by f.id
+		order by f.order_id, f.id
 	`
+	var (
+		rows          *sql.Rows
+		tempServiceId int32
+		ok            bool
+		service       modules.Service
+	)
 
 	if rows, err = config.DB.Query(query, fleetServiceId); err != nil {
 		return
@@ -531,8 +586,10 @@ func getFleetReservationService(fleetServiceId int32) (
 	defer rows.Close()
 
 	for rows.Next() {
+		s := modules.FleetReservationService{}
+
 		if err = rows.Scan(
-			&tempId, &tempCarCount, &tempServiceId,
+			&s.OrderId, &s.CarCount, &tempServiceId,
 		); err != nil {
 			return
 		}
@@ -542,29 +599,11 @@ func getFleetReservationService(fleetServiceId int32) (
 			continue
 		}
 
-		if tempId != prevId {
-			s := modules.FleetReservationService{}
-			s.CarCount = tempCarCount
-			s.Info = append(
-				s.Info, modules.FleetReservationServiceInfo{
-					Name: service.Name,
-					Type: service.Type,
-					Note: service.Note,
-				},
-			)
-			services = append(services, s)
-		} else {
-			s := services[len(services)-1]
-			s.Info = append(
-				s.Info, modules.FleetReservationServiceInfo{
-					Name: service.Name,
-					Type: service.Type,
-					Note: service.Note,
-				},
-			)
-		}
+		s.Name = service.Name
+		s.Type = SERVICE_TYPES[service.Type]
+		s.Note = service.Note
 
-		prevId = tempId
+		services = append(services, s)
 	}
 
 	return services, nil
@@ -573,24 +612,19 @@ func getFleetReservationService(fleetServiceId int32) (
 func getFleetReservationAddon(fleetServiceId int32) (
 	addons []modules.FleetReservationAddon, err error,
 ) {
-	var (
-		prevId       int32
-		tempId       int32
-		tempCarCount int32
-		tempAddonId  int32
-		addon        modules.AddOn
-		ok           bool
-		rows         *sql.Rows
-	)
-
-	prevId = -1
 	query := `
-		select f.id, f.car_count, fi.service_addon_id
+		select f.order_id, f.car_count, fi.service_addon_id
 		from fleet_service_addon_list f
 		inner join fleet_service_addon_list_id fi on fi.fleet_service_addon_list_id = f.id
 		where f.fleet_service_id = ?
-		order by f.id
+		order by f.order_id, f.id
 	`
+	var (
+		tempAddonId int32
+		addon       modules.AddOn
+		ok          bool
+		rows        *sql.Rows
+	)
 
 	if rows, err = config.DB.Query(query, fleetServiceId); err != nil {
 		return
@@ -598,8 +632,10 @@ func getFleetReservationAddon(fleetServiceId int32) (
 	defer rows.Close()
 
 	for rows.Next() {
+		a := modules.FleetReservationAddon{}
+
 		if err = rows.Scan(
-			&tempId, &tempCarCount, &tempAddonId,
+			&a.OrderId, &a.CarCount, &tempAddonId,
 		); err != nil {
 			return
 		}
@@ -609,27 +645,10 @@ func getFleetReservationAddon(fleetServiceId int32) (
 			continue
 		}
 
-		if tempId != prevId {
-			a := modules.FleetReservationAddon{}
-			a.CarCount = tempCarCount
-			a.Info = append(
-				a.Info, modules.FleetReservationAddonInfo{
-					Name: addon.Name,
-					Note: addon.Note,
-				},
-			)
-			addons = append(addons, a)
-		} else {
-			a := addons[len(addons)-1]
-			a.Info = append(
-				a.Info, modules.FleetReservationAddonInfo{
-					Name: addon.Name,
-					Note: addon.Note,
-				},
-			)
-		}
+		a.Name = addon.Name
+		a.Note = addon.Note
 
-		prevId = tempId
+		addons = append(addons, a)
 	}
 
 	return addons, nil
@@ -675,8 +694,8 @@ func getFleetService(userId int32, condition string) (fleetServices []modules.Fl
 	return fleetServices, nil
 }
 
-func calculateServiceTimeAndTypes(
-	services []modules.FleetServiceRequest,
+func calculateFleetOrderTimeAndTypes(
+	orders []modules.FleetOrder,
 ) (totalTime int32, types string) {
 	var (
 		tempTime int32
@@ -684,10 +703,11 @@ func calculateServiceTimeAndTypes(
 		oil      bool
 	)
 
-	tempTime = 0
+	for _, order := range orders {
+		// Service
+		tempTime = 0
 
-	for _, service := range services {
-		for _, id := range service.ServicesIds {
+		for _, id := range order.Services {
 			if s, ok := cache.SERVICES_MAP[id]; ok {
 				tempTime += s.Time
 
@@ -699,31 +719,24 @@ func calculateServiceTimeAndTypes(
 			}
 		}
 
-		// TODO totalTime += tempTime * service.CarCount
+		// TODO totalTime += tempTime * order.CarCount
 		totalTime += tempTime
+
+		// Addon
 		tempTime = 0
-	}
 
-	types = calculateOrderTypes(wash, oil)
-	fmt.Println("Types - ", types)
-
-	return
-}
-
-func calculateAddonTime(addons []modules.FleetAddonRequest) (totalTime int32) {
-	var tempTime int32 = 0
-
-	for _, addon := range addons {
-		for _, info := range addon.AddonInfos {
-			if t, ok := cache.FLEET_ADDONS_MAP[info.Id]; ok {
-				tempTime += t.Time
+		for _, addon := range order.Addons {
+			if a, ok := cache.FLEET_ADDONS_MAP[addon.Id]; ok {
+				tempTime += a.Time
 			}
 		}
 
 		// TODO totalTime += tempTime * addon.CarCount
 		totalTime += tempTime
-		tempTime = 0
 	}
+
+	types = calculateOrderTypes(wash, oil)
+	fmt.Println("Types - ", types)
 
 	return
 }
