@@ -60,7 +60,7 @@ func getFleetUsersBySaleUserId(saleUserId int32, page int32) (
 				u.work_address_city, u.work_address_state, u.work_address_zip
 		from fleet f
 		inner join user u on u.id = f.user_id
-		where f.sale_user_id = ?
+		where f.sale_user_id = ? order by u.create_timestamp DESC
 		limit ?, ?
 	`
 	var (
@@ -505,13 +505,9 @@ func GetFleetReservation(c *gin.Context) {
 
 func GetFleetReservationDetail(c *gin.Context) {
 	request := modules.FleetReservationRequest{}
-	index := make(map[int32]int)
-
 	var (
 		err      error
 		data     []byte
-		addons   []modules.FleetReservationAddon
-		services []modules.FleetReservationService
 		details  []modules.FleetReservationDetail
 	)
 
@@ -533,40 +529,10 @@ func GetFleetReservationDetail(c *gin.Context) {
 		return
 	}
 
-	if services, err = getFleetReservationService(
+	if details, err = getFleetReservationDetail(
 		request.FleetServiceId,
 	); err != nil {
 		return
-	}
-
-	if addons, err = getFleetReservationAddon(
-		request.FleetServiceId,
-	); err != nil {
-		return
-	}
-
-	for _, service := range services {
-		if _, ok := index[service.OrderId]; !ok {
-			index[service.OrderId] = len(details)
-			detail := modules.FleetReservationDetail{}
-			detail.CarCount = service.CarCount
-
-			details = append(details, detail)
-		}
-
-		details[index[service.OrderId]].Services = append(
-			details[index[service.OrderId]].Services,
-			service,
-		)
-	}
-
-	for _, addon := range addons {
-		if _, ok := index[addon.OrderId]; ok {
-			details[index[addon.OrderId]].Addons = append(
-				details[index[addon.OrderId]].Addons,
-				addon,
-			)
-		}
 	}
 }
 
@@ -621,18 +587,6 @@ func GetFleetHistory(c *gin.Context) {
 			&history.Id, &history.FleetServiceId, &history.ReservationId,
 			&history.Price, &history.StartTime, &history.EndTime,
 			&history.Rating, &history.Note,
-		); err != nil {
-			return
-		}
-
-		if history.Services, err = getFleetReservationService(
-			history.FleetServiceId,
-		); err != nil {
-			return
-		}
-
-		if history.Addons, err = getFleetReservationAddon(
-			history.FleetServiceId,
 		); err != nil {
 			return
 		}
@@ -767,6 +721,54 @@ func getFleetReservationAddon(fleetServiceId int32) (
 	}
 
 	return addons, nil
+}
+
+func getFleetReservationDetail(fleetServiceId int32) (
+	details  []modules.FleetReservationDetail, err error,
+) {
+	index := make(map[int32]int)
+	var (
+		addons   []modules.FleetReservationAddon
+		services []modules.FleetReservationService
+	)
+
+	if services, err = getFleetReservationService(
+		fleetServiceId,
+	); err != nil {
+		return
+	}
+
+	if addons, err = getFleetReservationAddon(
+		fleetServiceId,
+	); err != nil {
+		return
+	}
+
+	for _, service := range services {
+		if _, ok := index[service.OrderId]; !ok {
+			index[service.OrderId] = len(details)
+			detail := modules.FleetReservationDetail{}
+			detail.CarCount = service.CarCount
+
+			details = append(details, detail)
+		}
+
+		details[index[service.OrderId]].Services = append(
+			details[index[service.OrderId]].Services,
+			service,
+		)
+	}
+
+	for _, addon := range addons {
+		if _, ok := index[addon.OrderId]; ok {
+			details[index[addon.OrderId]].Addons = append(
+				details[index[addon.OrderId]].Addons,
+				addon,
+			)
+		}
+	}
+
+	return details, nil
 }
 
 func getFleetServiceByFleetUser(userId int32, condition string) (

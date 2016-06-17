@@ -95,8 +95,6 @@ type FleetHistory struct {
 	ReservationId  string                    `json:"reservation_id"`
 	StartTime      string                    `json:"start_time"`
 	EndTime        string                    `json:"end_time"`
-	Services       []FleetReservationService `json:"services"`
-	Addons         []FleetReservationAddon   `json:"addons"`
 }
 
 type GetFleetUserRequest struct {
