@@ -186,7 +186,7 @@ func PromotePrice(c *gin.Context) {
 	}
 
 	query := `
-		update fleet_service set estimated_price = ?
+		update fleet_service set estimated_price = ?, status= "RESERVED"
 		where id = ? and status = "WAITING"
 	`
 
