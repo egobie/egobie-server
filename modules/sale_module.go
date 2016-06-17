@@ -32,6 +32,13 @@ type NewFLeetUser struct {
 }
 
 type AllFleetUser struct {
-	Total int32                   `json:"total"`
+	Total int32           `json:"total"`
 	Users []FleetUserInfo `json:"users"`
+}
+
+type PriceRequest struct {
+	BaseRequest
+
+	Id    int32   `json:"fleet_service_id"`
+	Price float32 `json:"price"`
 }

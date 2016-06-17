@@ -160,3 +160,35 @@ func AllFleetOrder(c *gin.Context) {
 		c.JSON(http.StatusOK, fleetServices)
 	}
 }
+
+func PromotePrice(c *gin.Context) {
+	request := modules.PriceRequest{}
+	var (
+		data []byte
+		err error
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	query := `
+		update fleet_service set estimated_price = ?
+		where id = ? and status = "WAITING"
+	`
+
+	_, err = config.DB.Exec(query, request.Price, request.Id)
+}

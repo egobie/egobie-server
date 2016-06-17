@@ -13,4 +13,6 @@ func initSaleRoutes() {
 	saleRouter.POST("/fleet/order", controllers.AllFleetOrder)
 
 	saleRouter.POST("/fleet/order/detail", controllers.GetFleetReservationDetail)
+
+	saleRouter.POST("/fleet/price", controllers.PromotePrice)
 }
