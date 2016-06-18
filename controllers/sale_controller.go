@@ -154,8 +154,7 @@ func AllFleetOrder(c *gin.Context) {
 	}
 
 	if fleetServices, err := getFleetServiceBySaleUser(
-		request.UserId,
-		"status = 'WAITING' or status = 'RESERVED' or status = 'IN_PROGRESS'",
+		request.UserId, "status = 'WAITING'",
 	); err == nil {
 		c.JSON(http.StatusOK, fleetServices)
 	}
