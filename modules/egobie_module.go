@@ -1,6 +1,15 @@
 package modules
 
+import (
+	"gopkg.in/guregu/null.v3"
+)
+
 type Task struct {
+	UserTasks  []UserTask  `json:"user_tasks"`
+	FleetTasks []FleetTask `json:"fleet_tasks"`
+}
+
+type UserTask struct {
 	Id         int32           `json:"id"`
 	Status     string          `json:"status"`
 	Start      string          `json:"start"`
@@ -21,6 +30,21 @@ type Task struct {
 	Addons     []SimpleAddon   `json:"addons"`
 }
 
+type FleetTask struct {
+	Id        int32       `json:"id"`
+	Status    string      `json:"status"`
+	Start     string      `json:"start"`
+	FleetName string      `json:"fleet_name"`
+	FirstName string      `json:"first"`
+	LastName  string      `json:"last"`
+	Phone     string      `json:"phone"`
+	State     string      `json:"state"`
+	Zip       string      `json:"zip"`
+	City      string      `json:"city"`
+	Street    string      `json:"street"`
+	Note      null.String `json:"note"`
+}
+
 type TaskRequest struct {
 	BaseRequest
 }
@@ -37,9 +61,7 @@ type TaskRequest struct {
 type ChangeServiceStatus struct {
 	BaseRequest
 
-	CarId     int32 `json:"car_id"`
 	ServiceId int32 `json:"service_id"`
-	PaymentId int32 `json:"payment_id"`
 }
 
 type TaskInfo struct {

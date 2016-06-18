@@ -880,3 +880,14 @@ func calculateFleetOrderTimeAndTypes(
 
 	return
 }
+
+func createFleetHistory(tx *sql.Tx, serviceId int32) (err error) {
+	query := `
+		insert into fleet_history (fleet_service_id)
+		values (?)
+	`
+
+	_, err = tx.Exec(query, serviceId)
+
+	return
+}

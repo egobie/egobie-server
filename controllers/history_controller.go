@@ -152,7 +152,7 @@ func Rating(c *gin.Context) {
 	go rateService(request.UserId)
 }
 
-func createHistory(tx *sql.Tx, userId, serviceId int32) (err error) {
+func createUserHistory(tx *sql.Tx, userId, serviceId int32) (err error) {
 	query := `
 		insert into user_history (user_id, user_service_id, car_plate, car_state, car_year, car_color, car_maker, car_model, payment_holder, payment_number, payment_type, payment_price)
 		select us.user_id, us.id, uc.plate, uc.state, uc.year, uc.color, cma.title, cmo.title, up.account_name, up.account_number, up.account_type, us.estimated_price
