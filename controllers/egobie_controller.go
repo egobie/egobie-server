@@ -48,19 +48,6 @@ func GetTask(c *gin.Context) {
 }
 
 func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
-	query := `
-		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
-				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
-				u.home_address_city, u.home_address_street, uc.plate, uc.state,
-				uc.color, cma.title, cmo.title
-		from user_service us
-		inner join user u on u.id = us.user_id
-		inner join user_car uc on uc.id = us.user_car_id
-		inner join car_maker cma on cma.id = uc.car_maker_id
-		inner join car_model cmo on cmo.id = uc.car_model_id
-		where us.status != "CANCEL" and us.assignee = ?
-		order by us.reserved_start_timestamp
-	`
 //	query := `
 //		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 //				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
@@ -71,11 +58,24 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 //		inner join user_car uc on uc.id = us.user_car_id
 //		inner join car_maker cma on cma.id = uc.car_maker_id
 //		inner join car_model cmo on cmo.id = uc.car_model_id
-//		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
-//			select id from opening
-//			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
-//		) order by us.reserved_start_timestamp
+//		where us.status != "CANCEL" and us.assignee = ?
+//		order by us.reserved_start_timestamp
 //	`
+	query := `
+		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
+				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
+				u.home_address_city, u.home_address_street, uc.plate, uc.state,
+				uc.color, cma.title, cmo.title
+		from user_service us
+		inner join user u on u.id = us.user_id
+		inner join user_car uc on uc.id = us.user_car_id
+		inner join car_maker cma on cma.id = uc.car_maker_id
+		inner join car_model cmo on cmo.id = uc.car_model_id
+		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
+			select id from opening
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
+		) order by us.reserved_start_timestamp
+	`
 	index := make(map[int32]int32)
 	var (
 		rows         *sql.Rows
@@ -130,16 +130,6 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 }
 
 func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
-	query := `
-		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
-				u.first_name, u.last_name, u.phone_number, u.work_address_state,
-				u.work_address_city, u.work_address_street, u.work_address_zip
-		from fleet_service fs
-		inner join fleet f on f.user_id = fs.user_id
-		inner join user u on u.id = f.user_id
-		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ?
-		order by fs.reserved_start_timestamp
-	`
 //	query := `
 //		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
 //				u.first_name, u.last_name, u.phone_number, u.work_address_state,
@@ -147,11 +137,21 @@ func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
 //		from fleet_service fs
 //		inner join fleet f on f.user_id = fs.user_id
 //		inner join user u on u.id = f.user_id
-//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ? and fs.opening_id in (
-//			select id from opening
-//			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
-//		) order by fs.reserved_start_timestamp
+//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ?
+//		order by fs.reserved_start_timestamp
 //	`
+	query := `
+		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
+				u.first_name, u.last_name, u.phone_number, u.work_address_state,
+				u.work_address_city, u.work_address_street, u.work_address_zip
+		from fleet_service fs
+		inner join fleet f on f.user_id = fs.user_id
+		inner join user u on u.id = f.user_id
+		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ? and fs.opening_id in (
+			select id from opening
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
+		) order by fs.reserved_start_timestamp
+	`
 	var (
 		rows *sql.Rows
 	)
