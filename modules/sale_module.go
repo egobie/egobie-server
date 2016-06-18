@@ -42,3 +42,9 @@ type PriceRequest struct {
 	Id    int32   `json:"fleet_service_id"`
 	Price float32 `json:"price"`
 }
+
+type SendEmailRequest struct {
+	BaseRequest
+
+	FleetUserId int32 `json:"fleet_user_id"`
+}

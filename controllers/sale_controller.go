@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -100,6 +101,60 @@ func NewFleetUser(c *gin.Context) {
 	}
 }
 
+func ResendEmail(c *gin.Context) {
+	request := modules.SendEmailRequest{}
+	temp := struct {
+		Setup int32
+		Name  string
+		Token string
+		Email string
+	}{}
+	var (
+		data []byte
+		err  error
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	query := `
+		select f.setup, f.token, u.first_name, u.email
+		from fleet f
+		inner join user u on u.id = f.user_id
+		where u.id = ?
+	`
+
+	if err = config.DB.QueryRow(query, request.FleetUserId).Scan(
+		&temp.Setup, &temp.Token, &temp.Name, &temp.Email,
+	); err != nil {
+		return
+	}
+
+	if (temp.Setup == 1) {
+		err = errors.New("Fleet user had been activated");
+		return
+	}
+
+	go sendNewFleetUserEmail(
+		temp.Email, temp.Name, temp.Token,
+	)
+}
+
 func AllFleetUser(c *gin.Context) {
 	request := modules.GetFleetUserRequest{}
 	var (
@@ -164,7 +219,7 @@ func PromotePrice(c *gin.Context) {
 	request := modules.PriceRequest{}
 	var (
 		data []byte
-		err error
+		err  error
 	)
 
 	defer func() {

@@ -8,6 +8,8 @@ func initSaleRoutes() {
 
 	saleRouter.POST("/fleet/new", controllers.NewFleetUser)
 
+	saleRouter.POST("/fleet/resend", controllers.ResendEmail);
+
 	saleRouter.POST("/fleet/all", controllers.AllFleetUser)
 
 	saleRouter.POST("/fleet/order", controllers.AllFleetOrder)

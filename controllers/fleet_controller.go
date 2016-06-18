@@ -87,7 +87,6 @@ func getFleetUsersBySaleUserId(saleUserId int32, page int32) (
 		}
 
 		info.Token = ""
-		info.UserId = 0
 
 		all.Users = append(all.Users, info)
 	}
