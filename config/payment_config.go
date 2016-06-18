@@ -33,7 +33,8 @@ func init() {
 	*/
 
 	BT = braintree.New(
-		braintree.Production,
+//		braintree.Production,
+		braintree.Sandbox,
 		merchantId,
 		publicKey,
 		privateKey,

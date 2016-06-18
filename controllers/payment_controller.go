@@ -407,6 +407,7 @@ func validatePayment(firstName, lastName, account, code, month, year string) (er
 	})
 
 	if err != nil {
+		fmt.Println("Invalid card number - ", err.Error())
 		err = errors.New("Invalid card number")
 	}
 

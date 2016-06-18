@@ -16,8 +16,8 @@ func GetHistory(c *gin.Context) {
 	size := 6
 	query := `
 		select uh.id, uh.rating, uh.note, uh.car_plate, uh.car_state, uh.car_maker,
-				uh.car_model, uh.car_year, uh.car_color, uh.payment_holder, us.id,
-				uh.payment_number, uh.payment_type, uh.payment_price,
+				uh.car_model, uh.car_year, uh.car_color, uh.payment_holder,
+				uh.payment_number, uh.payment_type, uh.payment_price, us.id,
 				us.reservation_id, us.start_timestamp, us.end_timestamp
 		from user_history uh
 		inner join user_service us on us.id = uh.user_service_id and us.status = 'DONE'
