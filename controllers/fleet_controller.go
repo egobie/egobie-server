@@ -858,8 +858,8 @@ func calculateFleetOrderTimeAndTypes(
 			}
 		}
 
-		// TODO totalTime += tempTime * order.CarCount
-		totalTime += tempTime
+		totalTime += tempTime * order.CarCount
+		// TEST totalTime += tempTime
 
 		// Addon
 		tempTime = 0
@@ -870,8 +870,8 @@ func calculateFleetOrderTimeAndTypes(
 			}
 		}
 
-		// TODO totalTime += tempTime * addon.CarCount
-		totalTime += tempTime
+		totalTime += tempTime * order.CarCount
+		// TEST totalTime += tempTime
 	}
 
 	types = calculateOrderTypes(wash, oil)
