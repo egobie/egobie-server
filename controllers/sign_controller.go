@@ -402,6 +402,11 @@ func ResetPasswordStep2(c *gin.Context) {
 		return
 	}
 
+	if (len(request.Token) < 5 || len(request.Token) > 10) {
+		err = errors.New("Invalid request")
+		return
+	}
+
 	query := `
 		select user_id from reset_password
 		where user_id = ? and token = ?
@@ -514,7 +519,7 @@ func ResetPasswordResend(c *gin.Context) {
 	query := `
 		select u.email, u.first_name, r.token from user u
 		inner join reset_password r on r.user_id = u.id
-		where r.user_id = ? and r.username = ?
+		where r.user_id = ? and u.username = ?
 	`
 	if err = config.DB.QueryRow(query, request.UserId, request.Username).Scan(
 		&email, &name, &token,
