@@ -12,8 +12,7 @@ import (
 
 func sendPlaceOrderEmail(
 	address, name, reservationNumber, startTime string,
-	services []string, addons []string,
-	cost float32) {
+	services []string, addons []string, cost float32) {
 
 	message := "Hello " + name + ",\n" +
 		"\n" +
@@ -46,14 +45,59 @@ func sendPlaceOrderEmail(
 		"If we show up at the door and no one is around, we will charge 100% of the appointment cost " +
 		"as no-show fee.\n" +
 		"\n" +
+		"Thank you for using eGobie Car Services\n"
+
+	sendEmail(
+		address, "[New Residential Reservation] Thanks for using eGobie",
+		message, true,
+	)
+}
+
+func sendNewFleetUserEmail(address, name, token string) {
+	message := "Hello " + name + ",\n" +
+		"\n" +
+		"Thank you for using eGobie Car Services. " +
+		"Please use following email address and token to sign up eGobie fleet app:\n" +
+		"\n" +
+		"Email Address: " + address + "\n" +
+		"Sign-Up Token: " + token + "\n" +
+		"\n" +
 		"Thank you for using eGobie car services\n"
 
+	sendEmail(
+		address, "[New Fleet Service User] Thanks for using eGobie",
+		message, true,
+	)
+}
+
+func sendResetPasswordEmail(address, name, token string) {
+	message := "Hello " + name + ",\n" +
+		"\n" +
+		"Thank you for using eGobie Car Services. " +
+		"Please use following token to reset your eGobie password:\n" +
+		"\n" +
+		"Token: " + token + "\n" +
+		"\n" +
+		"Thank you for using eGobie car services\n"
+
+	sendEmail(
+		address, "Reset your eGobie password", message, false,
+	)
+}
+
+func sendEmail(address, subject, body string, sendToCEO bool) {
 	email := &modules.EmailTemplate{
 		config.EmailSender,
 		address,
-		"Thanks for using eGobie",
-		message,
+		subject,
+		body,
 	}
+	addrs := []string {address}
+
+	if sendToCEO {
+		addrs = append(addrs, config.EmailCEO)
+	}
+
 	content := "From: eGobie Car Services <{{.From}}>\n" +
 		"To: {{.To}}\n" +
 		"Subject: {{.Subject}}\n" +
@@ -67,20 +111,20 @@ func sendPlaceOrderEmail(
 	)
 
 	if t, err = template.New("template").Parse(content); err != nil {
-		fmt.Println("Error - Parse - ", err.Error())
+		fmt.Println("Error - Parse Template - ", err.Error())
 	}
 
 	if err = t.Execute(&doc, email); err != nil {
-		fmt.Println("Error - Execute - ", err.Error())
+		fmt.Println("Error - Execute Template - ", err.Error())
 	}
 
 	if err = smtp.SendMail(
 		config.EmailAddress,
 		config.Email,
 		config.EmailSender,
-		[]string{address},
+		addrs,
 		doc.Bytes(),
 	); err != nil {
-		fmt.Println("Error - Email - PlaceOrder: ", err.Error())
+		fmt.Println("Error - Send Email - ", err.Error())
 	}
 }

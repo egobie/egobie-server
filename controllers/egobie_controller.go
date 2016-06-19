@@ -14,6 +14,53 @@ import (
 )
 
 func GetTask(c *gin.Context) {
+	request := modules.TaskRequest{}
+	var (
+		data  []byte
+		err   error
+		task modules.Task
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, task)
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if task.UserTasks, err = getUserTask(request.UserId); err != nil {
+		return
+	}
+
+	if task.FleetTasks, err = getFleetTask(request.UserId); err != nil {
+		return
+	}
+}
+
+func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
+//	query := `
+//		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
+//				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
+//				u.home_address_city, u.home_address_street, uc.plate, uc.state,
+//				uc.color, cma.title, cmo.title
+//		from user_service us
+//		inner join user u on u.id = us.user_id
+//		inner join user_car uc on uc.id = us.user_car_id
+//		inner join car_maker cma on cma.id = uc.car_maker_id
+//		inner join car_model cmo on cmo.id = uc.car_model_id
+//		where us.status != "CANCEL" and us.assignee = ?
+//		order by us.reserved_start_timestamp
+//	`
 	query := `
 		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
@@ -29,42 +76,23 @@ func GetTask(c *gin.Context) {
 			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by us.reserved_start_timestamp
 	`
-
-	request := modules.TaskRequest{}
 	index := make(map[int32]int32)
 	var (
-		rows1        *sql.Rows
-		data         []byte
-		err          error
+		rows         *sql.Rows
 		userServices []int32
-		tasks        []modules.Task
 		taskServices []modules.SimpleService
 		taskAddons   []modules.SimpleAddon
 	)
 
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+	if rows, err = config.DB.Query(query, userId); err != nil {
 		return
 	}
+	defer rows.Close()
 
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
+	for rows.Next() {
+		task := modules.UserTask{}
 
-	if rows1, err = config.DB.Query(query, request.UserId); err != nil {
-		return
-	}
-
-	for rows1.Next() {
-		task := modules.Task{}
-
-		if err = rows1.Scan(
+		if err = rows.Scan(
 			&task.Id, &task.Status, &task.Start, &task.FirstName, &task.MiddleName,
 			&task.LastName, &task.Phone, &task.State, &task.Zip, &task.City,
 			&task.Street, &task.Plate, &task.CarState, &task.Color, &task.Maker,
@@ -98,11 +126,59 @@ func GetTask(c *gin.Context) {
 		)
 	}
 
-	c.JSON(http.StatusOK, tasks)
+	return tasks, nil
 }
 
-func MakeServiceDone(c *gin.Context) {
-	if err := changeServiceStatus(c, "DONE"); err != nil {
+func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
+//	query := `
+//		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
+//				u.first_name, u.last_name, u.phone_number, u.work_address_state,
+//				u.work_address_city, u.work_address_street, u.work_address_zip
+//		from fleet_service fs
+//		inner join fleet f on f.user_id = fs.user_id
+//		inner join user u on u.id = f.user_id
+//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ?
+//		order by fs.reserved_start_timestamp
+//	`
+	query := `
+		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
+				u.first_name, u.last_name, u.phone_number, u.work_address_state,
+				u.work_address_city, u.work_address_street, u.work_address_zip
+		from fleet_service fs
+		inner join fleet f on f.user_id = fs.user_id
+		inner join user u on u.id = f.user_id
+		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ? and fs.opening_id in (
+			select id from opening
+			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
+		) order by fs.reserved_start_timestamp
+	`
+	var (
+		rows *sql.Rows
+	)
+
+	if rows, err = config.DB.Query(query, userId); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		task := modules.FleetTask{}
+		if err = rows.Scan(
+			&task.Id, &task.FleetName, &task.Note, &task.Status,
+			&task.Start, &task.FirstName, &task.LastName, &task.Phone,
+			&task.State, &task.City, &task.Street, &task.Zip,
+		); err != nil {
+			return
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
+}
+
+func MakeUserServiceDone(c *gin.Context) {
+	if err := changeUserServiceStatus(c, "DONE"); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -111,8 +187,8 @@ func MakeServiceDone(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
-func MakeServiceReserved(c *gin.Context) {
-	if err := changeServiceStatus(c, "RESERVED"); err != nil {
+func MakeUserServiceReserved(c *gin.Context) {
+	if err := changeUserServiceStatus(c, "RESERVED"); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -121,8 +197,8 @@ func MakeServiceReserved(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
-func MakeServiceInProgress(c *gin.Context) {
-	if err := changeServiceStatus(c, "IN_PROGRESS"); err != nil {
+func MakeUserServiceInProgress(c *gin.Context) {
+	if err := changeUserServiceStatus(c, "IN_PROGRESS"); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		c.Abort()
 		return
@@ -131,7 +207,7 @@ func MakeServiceInProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
-func changeServiceStatus(c *gin.Context, status string) (err error) {
+func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 	query := `
 		update user_service set status = ?
 	`
@@ -211,7 +287,7 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 			return
 		}
 
-		if err = createHistory(
+		if err = createUserHistory(
 			tx, taskInfo.UserId, request.ServiceId,
 		); err != nil {
 			return
@@ -222,6 +298,96 @@ func changeServiceStatus(c *gin.Context, status string) (err error) {
 		); err != nil {
 			return
 		}
+	}
+
+	return
+}
+
+func MakeFleetServiceDone(c *gin.Context) {
+	if err := changeFleetServiceStatus(c, "DONE"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func MakeFleetServiceReserved(c *gin.Context) {
+	if err := changeFleetServiceStatus(c, "RESERVED"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func MakeFleetServiceInProgress(c *gin.Context) {
+	if err := changeFleetServiceStatus(c, "IN_PROGRESS"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func changeFleetServiceStatus(c *gin.Context, status string) (err error) {
+	query := `
+		update fleet_service set status = ?
+	`
+
+	request := modules.ChangeServiceStatus{}
+	var (
+		data []byte
+		tx   *sql.Tx
+	)
+
+	if status == "IN_PROGRESS" {
+		query += `
+			, start_timestamp = CURRENT_TIMESTAMP()
+		`
+	} else if status == "DONE" {
+		query += `
+			, end_timestamp = CURRENT_TIMESTAMP()
+		`
+	} else if status == "RESERVED" {
+		query += ", start_timestamp = NULL, end_timestamp = NULL"
+	}
+
+	query += " where id = ?"
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				fmt.Println("Error - Commit - ", err1.Error())
+			}
+		}
+	}()
+
+	if _, err = tx.Exec(query, status, request.ServiceId); err != nil {
+		return
+	}
+
+	if status == "DONE" {
+		err = createFleetHistory(tx, request.ServiceId)
 	}
 
 	return

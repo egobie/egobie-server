@@ -10,9 +10,9 @@ package modules
 **/
 type History struct {
 	Id            int32           `json:"id"`
+	UserServiceId int32           `json:"user_service_id"`
 	Rating        float32         `json:"rating"`
 	Note          string          `json:"note"`
-	UserServiceId int32           `json:"user_service_id"`
 	ReservationId string          `json:"reservation_id"`
 	AccountName   string          `json:"account_name"`
 	AccountNumber string          `json:"account_number"`

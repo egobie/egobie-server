@@ -1,8 +1,8 @@
 package config
 
 import (
-	"os"
 	"fmt"
+	"os"
 
 	"github.com/lionelbarrow/braintree-go"
 )
@@ -15,27 +15,32 @@ const (
 var BT *braintree.Braintree
 
 func init() {
-	os.Getenv("");
+	os.Getenv("")
 
 	merchantId := os.Getenv("EGOBIE_MERCHANT_ID")
 	publicKey := os.Getenv("EGOBIE_PUBLIC_KEY")
 	privateKey := os.Getenv("EGOBIE_PRIVATE_KEY")
+	braintreeEnv := os.Getenv("EGOBIE_BRAINTREE_ENV")
 
-	if merchantId == "" || publicKey == "" || privateKey == "" {
+	if merchantId == "" || publicKey == "" ||
+		privateKey == "" || braintreeEnv == "" {
 		fmt.Println("Merchant not Configured properly")
 		os.Exit(1)
 	}
 
 	/*
-	fmt.Println("merchantId - ", merchantId)
-	fmt.Println("publicKey - ", publicKey)
-	fmt.Println("privateKey - ", privateKey)
+		fmt.Println("merchantId - ", merchantId)
+		fmt.Println("publicKey - ", publicKey)
+		fmt.Println("privateKey - ", privateKey)
+		fmt.Println("braintreeEnv - ", braintreeEnv)
 	*/
 
 	BT = braintree.New(
-		braintree.Production,
+		braintree.Environment(braintreeEnv),
 		merchantId,
 		publicKey,
 		privateKey,
 	)
+
+	fmt.Println(BT.Environment)
 }

@@ -158,12 +158,12 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 
 INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 (5, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
-(5, "Engine Cleaning", "Multi-layer", 50, 30),
+(5, "Engine Cleaning", "", 50, 30),
 (5, "Hand Wax", "", 35, 60),
 (5, "Headlight Reconditioning", "", 65, 60),
 (5, "Hot Carpet Extraction", "", 15, 30),
-(5, "Paint Protectant", "", 50, 60),
-(5, "Wax & Polish", "", 75, 60);
+(5, "Paint Protectant", "Multi-layer", 50, 60),
+(5, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (5, "Paint Protection", 0),
