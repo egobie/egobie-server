@@ -61,6 +61,8 @@ func getUserToken(userType, password string) string {
 
 	} else if modules.IsBusiness(userType) {
 		return password[:modules.USER_BUSINESS_TOKEN]
+	} else if modules.IsSale(userType) {
+		return password[:modules.USER_SALE_TOKEN]
 	}
 
 	return ""

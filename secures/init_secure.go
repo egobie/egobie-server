@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	mr "math/rand"
+	"time"
 )
 
 const (
@@ -16,6 +18,8 @@ const (
 	CREDIT_CVV_KEY = "PBoR6BdFdtJTaaGP51PSzlWvkYl7Qc5l"
 	DEBIT_KEY      = "Luo1XtcQWQopSl451wALrp4Iblw2LuuX"
 	DEBIT_PIN_KEY  = "eP9535CDBuFqvGZXOQSR5vxaIXB0Ww2O"
+
+	LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 func encrypt(content, secret string) (code string, err error) {
@@ -73,4 +77,17 @@ func decrypt(content, secret string) (text string, err error) {
 	}
 
 	return string(data), nil
+}
+
+func RandString(n int) string {
+	mr.Seed(time.Now().UTC().UnixNano())
+
+	size := len(LETTERS)
+	str := make([]byte, n)
+
+	for i := range str {
+		str[i] = LETTERS[mr.Intn(size)]
+	}
+
+	return string(str)
 }

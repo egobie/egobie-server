@@ -13,5 +13,15 @@ func initSignRoutes() {
 
 	router.POST("/signin", controllers.SignIn)
 
+	router.POST("/signup/fleet", controllers.SignUpFleet)
+
+	router.POST("/reset/step1", controllers.ResetPasswordStep1)
+
+	router.POST("/reset/step2", controllers.ResetPasswordStep2)
+
+	router.POST("/reset/step3", controllers.ResetPasswordStep3)
+
+	router.POST("/reset/resend", controllers.ResetPasswordResend)
+
 	router.GET("/secure/:code", controllers.Secure)
 }

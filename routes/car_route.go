@@ -5,13 +5,11 @@ import (
 )
 
 func initCarRoutes() {
-	carRouter.POST("/maker", controllers.GetCarMaker)
+	carRouter.POST("", controllers.GetCarById)
+
+	carRouter.POST("/maker", controllers.GetCarMake)
 
 	carRouter.POST("/model", controllers.GetCarModel)
-
-//	carRouter.GET("/model/:makerId", controllers.GetCarModelForMaker)
-
-	carRouter.POST("", controllers.GetCarById)
 
 	carRouter.POST("/user", controllers.GetCarForUser)
 

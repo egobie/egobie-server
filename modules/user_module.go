@@ -4,26 +4,39 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-type User struct {
-	Id                int32       `json:"id"`
-	Type              string      `json:"type"`
-	Username          string      `json:"username"`
-	Password          string      `json:"password"`
-	Coupon            string      `json:"coupon"`
-	Discount          int32       `json:"discount"`
-	Email             null.String `json:"email"`
-	PhoneNumber       null.String `json:"phone_number"`
-	FirstName         null.String `json:"first_name"`
-	LastName          null.String `json:"last_name"`
-	MiddleName        null.String `json:"middle_name"`
+type UserContact struct {
+	FirstName   null.String `json:"first_name"`
+	LastName    null.String `json:"last_name"`
+	MiddleName  null.String `json:"middle_name"`
+	Email       null.String `json:"email"`
+	PhoneNumber null.String `json:"phone_number"`
+}
+
+type UserHomeAddress struct {
 	HomeAddressState  null.String `json:"home_address_state"`
 	HomeAddressZip    null.String `json:"home_address_zip"`
 	HomeAddressCity   null.String `json:"home_address_city"`
 	HomeAddressStreet null.String `json:"home_address_street"`
+}
+
+type UserWorkAddress struct {
 	WorkAddressState  null.String `json:"work_address_state"`
 	WorkAddressZip    null.String `json:"work_address_zip"`
 	WorkAddressCity   null.String `json:"work_address_city"`
 	WorkAddressStreet null.String `json:"work_address_street"`
+}
+
+type User struct {
+	Id       int32  `json:"id"`
+	Type     string `json:"type"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Coupon   string `json:"coupon"`
+	Discount int32  `json:"discount"`
+
+	UserContact
+	UserHomeAddress
+	UserWorkAddress
 }
 
 /**
@@ -110,22 +123,35 @@ type Feedback struct {
 }
 
 const USER_EGOBIE_TOKEN int32 = 4
+const USER_SALE_TOKEN int32 = 4
 const USER_RESIDENTIAL_TOKEN int32 = 6
 const USER_FLEET_TOKEN int32 = 8
 const USER_BUSINESS_TOKEN int32 = 10
 
+const USER_BUSINESS string = "BUSINESS"
+const USER_RESIDENTIAL string = "RESIDENTIAL"
+const USER_EGOBIE string = "EGOBIE"
+const USER_FLEET string = "FLEET"
+const USER_SALE string = "SALE"
+
+type CheckUserFunc func(string) bool
+
 func IsResidential(userType string) bool {
-	return userType == "RESIDENTIAL"
+	return userType == USER_RESIDENTIAL
 }
 
 func IsBusiness(userType string) bool {
-	return userType == "BUSINESS"
+	return userType == USER_BUSINESS
 }
 
 func IsEgobie(userType string) bool {
-	return userType == "EGOBIE"
+	return userType == USER_EGOBIE
 }
 
 func IsFleet(userType string) bool {
-	return userType == "FLEET"
+	return userType == USER_FLEET
+}
+
+func IsSale(userType string) bool {
+	return userType == USER_SALE
 }

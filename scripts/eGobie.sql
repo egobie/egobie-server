@@ -10,7 +10,7 @@ USE egobie;
 
 CREATE TABLE user (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'FLEET'),
+    type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'SALE', 'FLEET'),
     first_name VARCHAR(32) NULL DEFAULT '',
     last_name VARCHAR(32) NULL DEFAULT '',
     middle_name VARCHAR(32) NULL DEFAULT '',
@@ -57,7 +57,8 @@ CREATE TABLE service (
     description VARCHAR(1024) NOT NULL,
     note VARCHAR(128) NOT NULL DEFAULT '',
     estimated_price FLOAT NOT NULL,
-    estimated_time INT NOT NULL,
+    estimated_time INT NOT NULL DEFAULT 0,
+    estimated_time_fleet INT NOT NULL DEFAULT 0,
     demand INT NOT NULL DEFAULT 0,
     reading INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -171,7 +172,8 @@ CREATE TABLE user_service_list (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     service_id INT NOT NULL,
     user_service_id INT NOT NULL,
-    FOREIGN KEY (service_id) REFERENCES service(id)
+    FOREIGN KEY (service_id) REFERENCES service(id),
+    FOREIGN KEY (user_service_id) REFERENCES user_service(id)
 );
 
 CREATE TABLE user_service_addon_list (
@@ -179,7 +181,8 @@ CREATE TABLE user_service_addon_list (
     service_addon_id INT NOT NULL,
     user_service_id INT NOT NULL,
     amount INT NOT NULL,
-    FOREIGN KEY (service_addon_id) REFERENCES service_addon(id)
+    FOREIGN KEY (service_addon_id) REFERENCES service_addon(id),
+    FOREIGN KEY (user_service_id) REFERENCES user_service(id)
 );
 
 CREATE TABLE user_history (
