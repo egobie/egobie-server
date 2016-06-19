@@ -571,6 +571,11 @@ func PlaceOrder(c *gin.Context) {
 		price = price * 1.07
 	}
 
+	if types == "BOTH" {
+		// Additional discount if user choose both service
+		price = price * 0.9
+	}
+
 	price = float32(int(price*100)) / 100
 	gap = calculateGap(time)
 
