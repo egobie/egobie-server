@@ -90,6 +90,12 @@ CREATE TABLE fleet_history (
     FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
 );
 
+CREATE TABLE reset_password (
+    user_id INT NOT NULL UNIQUE KEY,
+    token VARCHAR(6) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
 DELIMITER $$
 CREATE TRIGGER INSERT_FLEET_TOKEN BEFORE INSERT ON fleet FOR EACH ROW
 BEGIN

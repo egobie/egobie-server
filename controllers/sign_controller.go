@@ -170,14 +170,14 @@ func SignUpFleet(c *gin.Context) {
 	request := modules.SignUpFleet{}
 	pattern := "^([A-Z0-9]{5})$"
 	user := modules.FleetUser{}
-	temp := struct{
-		UserId     int32
-		FleetId    int32
-		SetUp      int32
-		Name       string
+	temp := struct {
+		UserId  int32
+		FleetId int32
+		SetUp   int32
+		Name    string
 	}{}
 	var (
-		tx *sql.Tx
+		tx         *sql.Tx
 		enPassword string
 		body       []byte
 		err        error
@@ -302,17 +302,224 @@ func SignIn(c *gin.Context) {
 
 	user.Password = getUserToken(user.Type, user.Password)
 
-	if (user.Type == modules.USER_FLEET) {
+	if user.Type == modules.USER_FLEET {
 		var ui modules.FleetUserBasicInfo
 
 		if ui, err = getFleetUserBasicInfo(user.Id); err == nil {
 			c.JSON(http.StatusOK, modules.FleetUser{
-				User: user,
+				User:               user,
 				FleetUserBasicInfo: ui,
 			})
 		}
 	} else {
 		c.JSON(http.StatusOK, user)
+	}
+}
+
+func ResetPasswordStep1(c *gin.Context) {
+	request := modules.ResetPasswordStep1{}
+	var (
+		data   []byte
+		err    error
+		userId int32
+		email  string
+		token  string
+		name   string
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		go sendResetPasswordEmail(email, name, token)
+
+		c.JSON(http.StatusOK, struct {
+			UserId   int32  `json:"user_id"`
+			Username string `json:"username"`
+		}{
+			UserId:   userId,
+			Username: request.Username,
+		})
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	query := `
+		select id, email, first_name from user where username = ?
+	`
+	if err = config.DB.QueryRow(query, request.Username).Scan(
+		&userId, &email, &name,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.New("User not found")
+		}
+
+		return
+	}
+
+	token = secures.RandString(5)
+
+	query = `
+		insert into reset_password (user_id, token) values (?, ?)
+		on duplicate key update token = ?
+	`
+	if _, err = config.DB.Exec(query, userId, token, token); err != nil {
+		return
+	}
+}
+
+func ResetPasswordStep2(c *gin.Context) {
+	request := modules.ResetPasswordStep2{}
+	var (
+		data   []byte
+		err    error
+		userId int32
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	query := `
+		select user_id from reset_password
+		where user_id = ? and token = ?
+	`
+	if err = config.DB.QueryRow(query, request.UserId, request.Token).Scan(
+		&userId,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = errors.New("Invalid request")
+		}
+
+		return
+	}
+}
+
+func ResetPasswordStep3(c *gin.Context) {
+	request := modules.ResetPasswordStep3{}
+	var (
+		data       []byte
+		err        error
+		tx         *sql.Tx
+		enPassword string
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if enPassword, err = secures.EncryptPassword(request.Password); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Roll back - ", err1.Error())
+			}
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	query := `
+		update user set password = ?
+		where id = ? and id in (
+			select r.user_id from reset_password r
+			where r.user_id = ? and r.token = ?
+		)
+	`
+	if _, err = tx.Exec(
+		query, enPassword, request.UserId, request.UserId, request.Token,
+	); err != nil {
+		return
+	}
+
+	query = `
+		delete from reset_password where user_id = ? and token = ?
+	`
+	if _, err = tx.Exec(query, request.UserId, request.Token); err != nil {
+		return
+	}
+}
+
+func ResetPasswordResend(c *gin.Context) {
+	request := modules.ResetPasswordResend{}
+	var (
+		data  []byte
+		err   error
+		email string
+		name  string
+		token string
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
+
+		go sendResetPasswordEmail(email, name, token)
+		c.JSON(http.StatusOK, "OK")
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	query := `
+		select u.email, u.first_name, r.token from user u
+		inner join reset_password r on r.user_id = u.id
+		where r.user_id = ? and r.username = ?
+	`
+	if err = config.DB.QueryRow(query, request.UserId, request.Username).Scan(
+		&email, &name, &token,
+	); err != nil {
+		return
 	}
 }
 

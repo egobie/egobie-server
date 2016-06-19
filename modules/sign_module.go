@@ -51,3 +51,23 @@ type SignIn struct {
 type Check struct {
 	Value string `json:"value"`
 }
+
+type ResetPasswordStep1 struct {
+	Username string `json:"username"`
+}
+
+type ResetPasswordStep2 struct {
+	UserId int32  `json:"user_id"`
+	Token  string `json:"token"`
+}
+
+type ResetPasswordStep3 struct {
+	UserId   int32  `json:"user_id"`
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+type ResetPasswordResend struct {
+	UserId   int32  `json:"user_id"`
+	Username string `json:"username"`
+}

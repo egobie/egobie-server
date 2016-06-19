@@ -48,7 +48,8 @@ func sendPlaceOrderEmail(
 		"Thank you for using eGobie Car Services\n"
 
 	sendEmail(
-		address, "[New Residential Reservation] Thanks for using eGobie", message,
+		address, "[New Residential Reservation] Thanks for using eGobie",
+		message, true,
 	)
 }
 
@@ -64,17 +65,39 @@ func sendNewFleetUserEmail(address, name, token string) {
 		"Thank you for using eGobie car services\n"
 
 	sendEmail(
-		address, "[New Fleet Service User] Thanks for using eGobie", message,
+		address, "[New Fleet Service User] Thanks for using eGobie",
+		message, true,
 	)
 }
 
-func sendEmail(address, subject, body string) {
+func sendResetPasswordEmail(address, name, token string) {
+	message := "Hello " + name + ",\n" +
+		"\n" +
+		"Thank you for using eGobie Car Services. " +
+		"Please use following token to reset your eGobie password:\n" +
+		"\n" +
+		"Token: " + token + "\n" +
+		"\n" +
+		"Thank you for using eGobie car services\n"
+
+	sendEmail(
+		address, "Reset your eGobie password", message, false,
+	)
+}
+
+func sendEmail(address, subject, body string, sendToCEO bool) {
 	email := &modules.EmailTemplate{
 		config.EmailSender,
 		address,
 		subject,
 		body,
 	}
+	addrs := []string {address}
+
+	if sendToCEO {
+		addrs = append(addrs, config.EmailCEO)
+	}
+
 	content := "From: eGobie Car Services <{{.From}}>\n" +
 		"To: {{.To}}\n" +
 		"Subject: {{.Subject}}\n" +
@@ -99,7 +122,7 @@ func sendEmail(address, subject, body string) {
 		config.EmailAddress,
 		config.Email,
 		config.EmailSender,
-		[]string{address, config.EmailCEO},
+		addrs,
 		doc.Bytes(),
 	); err != nil {
 		fmt.Println("Error - Send Email - ", err.Error())
