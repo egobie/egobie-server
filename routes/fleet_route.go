@@ -33,4 +33,14 @@ func initFleetRoutes() {
 	fleetRouter.POST("/demand", controllers.ServiceDemand)
 
 	fleetRouter.POST("/demand/addon", controllers.AddonDemand)
+
+	fleetRouter.POST("/update/password", controllers.UpdatePassword)
+
+	fleetRouter.POST("/update/user", controllers.UpdateUser)
+
+	fleetRouter.POST("/update/home", controllers.UpdateHome)
+
+	fleetRouter.POST("/update/work", controllers.UpdateWork)
+
+	fleetRouter.POST("/feedback", controllers.Feedback)
 }
