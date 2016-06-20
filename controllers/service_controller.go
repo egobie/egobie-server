@@ -301,10 +301,8 @@ func OnDemand(c *gin.Context) {
 }
 
 func getCurrentPeriod() int32 {
-	newYork, _ := time.LoadLocation("America/New_York")
-
 	//	t, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-	t := time.Now().In(newYork)
+	t := time.Now().In(config.NEW_YORK)
 
 	now := t.Add(30 * time.Minute)
 	hour := now.Hour()
@@ -323,13 +321,11 @@ func getCurrentPeriod() int32 {
 }
 
 func timeDiffInMins(str string) int32 {
-	newYork, _ := time.LoadLocation("America/New_York")
-
 	//	now, _ := time.Parse("2006-01-02T15:04:05.000Z", "2016-05-16T10:21:26.371Z")
-	now := time.Now().In(newYork)
+	now := time.Now().In(config.NEW_YORK)
 
 	if t, err := time.ParseInLocation(
-		"2006-01-02T15:04:05.000Z", str, newYork,
+		"2006-01-02T15:04:05.000Z", str, config.NEW_YORK,
 	); err != nil {
 		return -1
 	} else {
@@ -423,6 +419,18 @@ func loadOpening(query, types string, args ...interface{}) (
 				openings[len(openings)-1].Day = temp.Day
 			}
 
+			if isWeekend(temp.Day) {
+				// Weekend - 10:00 A.M. to 7:00 P.M.
+				if temp.Period <= 4 || temp.Period >= 23 {
+					continue
+				}
+			} else {
+				// Weekday - 12:00 P.M. to 9:00 P.M.
+				if temp.Period <= 8 {
+					continue
+				}
+			}
+
 			openings[len(openings)-1].Range = append(
 				openings[len(openings)-1].Range,
 				modules.Period{
@@ -435,6 +443,18 @@ func loadOpening(query, types string, args ...interface{}) (
 	}
 
 	return openings, nil
+}
+
+func isWeekend(day string) bool {
+	if t, err := time.ParseInLocation(
+		"2006-01-02T15:04:05.000Z", day + "T12:34:56.000Z", config.NEW_YORK,
+	); err != nil {
+		return false;
+	} else {
+		weekDay := int(t.Weekday())
+
+		return weekDay == 0 || weekDay == 6
+	}
 }
 
 func filterOpening(gap int32, openings []modules.Opening) (

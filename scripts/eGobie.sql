@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS car_model (
   FOREIGN KEY (car_maker_id) REFERENCES car_maker(id)
 );
 
--- 8.am - 20.pm
+-- 8.am - 21.pm
 CREATE TABLE opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,
@@ -229,10 +229,91 @@ CREATE TABLE user_opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,
     user_id INT NOT NULL,
-    user_schedule INT NOT NULL DEFAULT 16777215,
+    user_schedule INT NOT NULL DEFAULT 67108863,
     mixed INT NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)
 );
 
+CREATE TABLE fleet (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(5) NOT NULL DEFAULT '',
+    name VARCHAR(128) NOT NULL DEFAULT '',
+    setup INT NOT NULL DEFAULT 0,
+    user_id INT NOT NULL,
+    sale_user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (sale_user_id) REFERENCES user(id)
+);
+
+CREATE TABLE fleet_service (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    reservation_id VARCHAR(8) NOT NULL DEFAULT '',
+    user_id INT NOT NULL,
+    report_id INT NULL,
+    gap INT NOT NULL DEFAULT 0,
+    types VARCHAR(32) NOT NULL,
+    estimated_time INT NOT NULL,
+    estimated_price FLOAT NOT NULL DEFAULT 0.0,
+    note VARCHAR(2048) NOT NULL DEFAULT '',
+    status ENUM('WAITING', 'RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    opening_id INT NOT NULL,
+    assignee INT NOT NULL DEFAULT -1,
+    reserved_start_timestamp TIMESTAMP NULL,
+    start_timestamp TIMESTAMP NULL,
+    end_timestamp TIMESTAMP NULL,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (opening_id) REFERENCES opening(id),
+    INDEX(status)
+);
+
+CREATE TABLE fleet_service_list (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fleet_service_id INT NOT NULL,
+    order_id INT NOT NULL,
+    car_count INT NOT NULL,
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
+);
+
+CREATE TABLE fleet_service_list_id (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    fleet_service_list_id INT NOT NULL,
+    FOREIGN KEY (service_id) REFERENCES service(id),
+    FOREIGN KEY (fleet_service_list_id) REFERENCES fleet_service_list(id)
+);
+
+CREATE TABLE fleet_service_addon_list (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fleet_service_id INT NOT NULL,
+    order_id INT NOT NULL,
+    car_count INT NOT NULL,
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
+);
+
+CREATE TABLE fleet_service_addon_list_id (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_addon_id INT NOT NULL,
+    fleet_service_addon_list_id INT NOT NULL,
+    amount INT NOT NULL,
+    FOREIGN KEY (service_addon_id) REFERENCES service_addon(id),
+    FOREIGN KEY (fleet_service_addon_list_id) REFERENCES fleet_service_addon_list(id)
+);
+
+CREATE TABLE fleet_history (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    rating FLOAT NOT NULL DEFAULT 0,
+    fleet_service_id INT NOT NULL,
+    report_id INT NULL,
+    note VARCHAR(2048) NOT NULL DEFAULT '',
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
+);
+
+CREATE TABLE reset_password (
+    user_id INT NOT NULL UNIQUE KEY,
+    token VARCHAR(6) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
