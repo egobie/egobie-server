@@ -1,19 +1,3 @@
-ALTER TABLE user_service_list ADD FOREIGN KEY (user_service_id) REFERENCES user_service(id);
-ALTER TABLE user_service_addon_list ADD FOREIGN KEY (user_service_id) REFERENCES user_service(id);
-
-ALTER TABLE service ADD COLUMN estimated_time_fleet INT NOT NULL DEFAULT 0;
-
-DROP TABLE IF EXISTS fleet_service_addon_list_id;
-DROP TABLE IF EXISTS fleet_service_addon_list;
-DROP TABLE IF EXISTS fleet_service_list_id;
-DROP TABLE IF EXISTS fleet_service_list;
-DROP TABLE IF EXISTS fleet_history;
-DROP TABLE IF EXISTS fleet_service;
-DROP TABLE IF EXISTS fleet;
-DROP TRIGGER IF EXISTS INSERT_FLEET_TOKEN;
-DROP TRIGGER IF EXISTS INSERT_FLEET_RESERVATIOM_ID;
-DELETE FROM user WHERE type in ('FLEET', 'SALE');
-
 CREATE TABLE fleet (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     token VARCHAR(5) NOT NULL DEFAULT '',
