@@ -28,6 +28,8 @@ CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count_wash INT,
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 22, opening_count_wash, opening_count_oil);
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 23, opening_count_wash, opening_count_oil);
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 24, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 25, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 26, opening_count_wash, opening_count_oil);
 
     INSERT INTO user_opening (day, user_id)
     SELECT opening_date, u.id FROM user u WHERE u.type = 'EGOBIE';
@@ -1769,3 +1771,48 @@ CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 1, 1);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 1, 1);
 
 UPDATE user_opening SET mixed = 1 WHERE user_id = 2;
+
+DELIMITER $$
+CREATE TRIGGER INSERT_FLEET_TOKEN BEFORE INSERT ON fleet FOR EACH ROW
+BEGIN
+    DECLARE id INT DEFAULT 0;
+
+    SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
+    WHERE TABLE_NAME = 'fleet' and TABLE_SCHEMA = database();
+
+    SET NEW.token = UPPER(SUBSTRING(SHA2(id, 256), 32, 5));
+END $$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER INSERT_FLEET_RESERVATIOM_ID BEFORE INSERT ON fleet_service FOR EACH ROW
+BEGIN
+    DECLARE id INT DEFAULT 0;
+
+    SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
+    WHERE TABLE_NAME = 'fleet_service' and TABLE_SCHEMA = database();
+
+    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 32, 8));
+END $$
+DELIMITER ;
+
+ALTER TABLE user CHANGE type type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'SALE', 'FLEET');
+
+INSERT INTO user (type, username, password, email, phone_number) VALUES
+('SALE', 's', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'b@egobie.com', '2019120383');
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(0, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(0, "Engine Cleaning", "", 50, 30),
+(0, "Hand Wax", "", 35, 60),
+(0, "Headlight Reconditioning", "", 65, 60),
+(0, "Hot Carpet Extraction", "", 15, 30),
+(0, "Paint Protectant", "Multi-layer", 50, 60),
+(0, "Wax & Polish", "Multi-layer", 75, 60),
+(0, "Change Cabine Air Filter", "", 45, 0),
+(0, "Change Engine Air Filter",  "", 45, 0),
+(0, "Change Serpentine Belts",  "", 150, 0);
+
+INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
+(0, 'Extra Conventional Oil', 'per quart', 4, 30, 'quart'),
+(0, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
