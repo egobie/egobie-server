@@ -16,7 +16,7 @@ CREATE TABLE user (
     middle_name VARCHAR(32) NULL DEFAULT '',
     username VARCHAR(16) NOT NULL DEFAULT '' UNIQUE KEY,
     email VARCHAR(64) NOT NULL DEFAULT '' UNIQUE KEY,
-    phone_number VARCHAR(10) NOT NULL DEFAULT '',
+    phone_number VARCHAR(16) NOT NULL DEFAULT '',
     password VARCHAR(128) NOT NULL,
     home_address_state VARCHAR(2) NULL DEFAULT '',
     home_address_zip VARCHAR(8) NULL DEFAULT '',
