@@ -125,12 +125,16 @@ func authorizeSaleUser(c *gin.Context) {
 }
 
 func authorizeFleetUser(c *gin.Context) {
-	if err := authorizeUser(
-		c, modules.USER_FLEET_TOKEN, modules.IsFleet,
-	); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		c.Abort()
-		return
+	url := c.Request.RequestURI
+
+	if (url != "/fleet/update/password" && url != "/fleet/update/user") {
+		if err := authorizeUser(
+			c, modules.USER_FLEET_TOKEN, modules.IsFleet,
+		); err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+			return
+		}
 	}
 
 	c.Next()
