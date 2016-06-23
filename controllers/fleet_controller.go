@@ -391,7 +391,7 @@ func cancelFleet(c *gin.Context, force bool) {
 		return
 	}
 
-	if !force && temp.Status != "WAITING" {
+	if !force && temp.Status != "WAITING" && temp.Status != "NOT_ASSIGNED" && temp.Status != "REJECT_PRICE" {
 		err = errors.New("CANNOT")
 		return
 	}
@@ -496,7 +496,7 @@ func GetFleetReservation(c *gin.Context) {
 
 	if fleetServices, err := getFleetServiceByFleetUser(
 		request.UserId,
-		"status = 'WAITING' or status = 'RESERVED' or status = 'IN_PROGRESS'",
+		"status = 'WAITING' or status = 'NOT_ASSIGNED' or status = 'RESERVED' or status = 'IN_PROGRESS'",
 	); err == nil {
 		c.JSON(http.StatusOK, fleetServices)
 	}
