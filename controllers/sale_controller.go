@@ -209,7 +209,7 @@ func AllFleetOrder(c *gin.Context) {
 	}
 
 	if fleetServices, err := getFleetServiceBySaleUser(
-		request.UserId, "status = 'WAITING'",
+		request.UserId, "status = 'WAITING' or status = 'NOT_ASSIGNED'",
 	); err == nil {
 		c.JSON(http.StatusOK, fleetServices)
 	}
@@ -240,8 +240,11 @@ func PromotePrice(c *gin.Context) {
 	}
 
 	query := `
-		update fleet_service set estimated_price = ?, status= "RESERVED"
-		where id = ? and status = "WAITING"
+		update fleet_service set estimated_price = ?, status= CASE
+				WHEN status = "WAITING" THEN "RESERVED"
+				ELSE "NOT_ASSIGNED"
+			END
+		where id = ? and (status = "WAITING" or status = "NOT_ASSIGNED")
 	`
 
 	_, err = config.DB.Exec(query, request.Price, request.Id)
