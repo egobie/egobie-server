@@ -150,6 +150,7 @@ func PlaceFleetOrder(c *gin.Context) {
 		gap            int32
 		reserved       string
 		types          string
+		status         string
 		fleetServiceId int64
 	)
 
@@ -205,8 +206,10 @@ func PlaceFleetOrder(c *gin.Context) {
 		); err != nil {
 			return
 		}
+		status = "WAITING"
 	} else {
 		assignee = -1
+		status = "NOT_ASSIGNED"
 		reserved = request.Day + " " + request.Hour
 	}
 
@@ -218,7 +221,7 @@ func PlaceFleetOrder(c *gin.Context) {
 
 	if result, err = tx.Exec(
 		query, request.UserId, request.Opening, reserved,
-		gap, assignee, time, "WAITING", types,
+		gap, assignee, time, status, types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
@@ -875,7 +878,6 @@ func calculateFleetOrderTimeAndTypes(
 	}
 
 	types = calculateOrderTypes(wash, oil)
-	fmt.Println("Types - ", types)
 
 	return
 }
