@@ -55,6 +55,7 @@ type FleetService struct {
 	Note             null.String `json:"note"`
 	StartTime        null.String `json:"start_time"`
 	EndTime          null.String `json:"end_time"`
+	Assigned         bool        `json:"assigned"`
 }
 
 type FleetReservationRequest struct {
@@ -87,14 +88,14 @@ type FleetReservationAddon struct {
 }
 
 type FleetHistory struct {
-	Id             int32                     `json:"id"`
-	FleetServiceId int32                     `json:"fleet_service_id"`
-	Price          float32                   `json:"price"`
-	Rating         float32                   `json:"rating"`
-	Note           string                    `json:"note"`
-	ReservationId  string                    `json:"reservation_id"`
-	StartTime      string                    `json:"start_time"`
-	EndTime        string                    `json:"end_time"`
+	Id             int32   `json:"id"`
+	FleetServiceId int32   `json:"fleet_service_id"`
+	Price          float32 `json:"price"`
+	Rating         float32 `json:"rating"`
+	Note           string  `json:"note"`
+	ReservationId  string  `json:"reservation_id"`
+	StartTime      string  `json:"start_time"`
+	EndTime        string  `json:"end_time"`
 }
 
 type GetFleetUserRequest struct {

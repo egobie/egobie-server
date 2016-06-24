@@ -257,7 +257,7 @@ CREATE TABLE fleet_service (
     estimated_time INT NOT NULL,
     estimated_price FLOAT NOT NULL DEFAULT 0.0,
     note VARCHAR(2048) NOT NULL DEFAULT '',
-    status ENUM('WAITING', 'RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    status ENUM('WAITING', 'NOT_ASSIGNED', 'REJECT_PRICE', 'RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     opening_id INT NOT NULL,
     assignee INT NOT NULL DEFAULT -1,
     reserved_start_timestamp TIMESTAMP NULL,
