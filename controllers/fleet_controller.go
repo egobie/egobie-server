@@ -150,6 +150,7 @@ func PlaceFleetOrder(c *gin.Context) {
 		gap            int32
 		reserved       string
 		types          string
+		status         string
 		fleetServiceId int64
 	)
 
@@ -205,8 +206,10 @@ func PlaceFleetOrder(c *gin.Context) {
 		); err != nil {
 			return
 		}
+		status = "WAITING"
 	} else {
 		assignee = -1
+		status = "NOT_ASSIGNED"
 		reserved = request.Day + " " + request.Hour
 	}
 
@@ -218,7 +221,7 @@ func PlaceFleetOrder(c *gin.Context) {
 
 	if result, err = tx.Exec(
 		query, request.UserId, request.Opening, reserved,
-		gap, assignee, time, "WAITING", types,
+		gap, assignee, time, status, types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
@@ -391,7 +394,7 @@ func cancelFleet(c *gin.Context, force bool) {
 		return
 	}
 
-	if !force && temp.Status != "WAITING" {
+	if !force && temp.Status != "WAITING" && temp.Status != "NOT_ASSIGNED" && temp.Status != "REJECT_PRICE" {
 		err = errors.New("CANNOT")
 		return
 	}
@@ -496,7 +499,7 @@ func GetFleetReservation(c *gin.Context) {
 
 	if fleetServices, err := getFleetServiceByFleetUser(
 		request.UserId,
-		"status = 'WAITING' or status = 'RESERVED' or status = 'IN_PROGRESS'",
+		"status = 'WAITING' or status = 'NOT_ASSIGNED' or status = 'RESERVED' or status = 'IN_PROGRESS'",
 	); err == nil {
 		c.JSON(http.StatusOK, fleetServices)
 	}
@@ -505,9 +508,9 @@ func GetFleetReservation(c *gin.Context) {
 func GetFleetReservationDetail(c *gin.Context) {
 	request := modules.FleetReservationRequest{}
 	var (
-		err      error
-		data     []byte
-		details  []modules.FleetReservationDetail
+		err     error
+		data    []byte
+		details []modules.FleetReservationDetail
 	)
 
 	defer func() {
@@ -723,7 +726,7 @@ func getFleetReservationAddon(fleetServiceId int32) (
 }
 
 func getFleetReservationDetail(fleetServiceId int32) (
-	details  []modules.FleetReservationDetail, err error,
+	details []modules.FleetReservationDetail, err error,
 ) {
 	index := make(map[int32]int)
 	var (
@@ -781,7 +784,7 @@ func getFleetServiceByFleetUser(userId int32, condition string) (
 				fs.note, fs.status, fs.create_timestamp
 		from fleet_service fs
 		where fs.user_id = ? and (
-	` + condition + ") order by fs.create_timestamp DESC", userId,
+	`+condition+") order by fs.create_timestamp DESC", userId,
 	)
 }
 
@@ -797,7 +800,7 @@ func getFleetServiceBySaleUser(userId int32, condition string) (
 		from fleet_service fs
 		inner join fleet f on f.user_id = fs.user_id
 		where f.sale_user_id = ? and (
-	` + condition + ") order by fs.create_timestamp DESC", userId,
+	`+condition+") order by fs.create_timestamp DESC", userId,
 	)
 }
 
@@ -875,7 +878,6 @@ func calculateFleetOrderTimeAndTypes(
 	}
 
 	types = calculateOrderTypes(wash, oil)
-	fmt.Println("Types - ", types)
 
 	return
 }
@@ -889,4 +891,31 @@ func createFleetHistory(tx *sql.Tx, serviceId int32) (err error) {
 	_, err = tx.Exec(query, serviceId)
 
 	return
+}
+
+func Test(c *gin.Context) {
+	request := struct {
+		Body string `json:"body"`
+	}{}
+	var (
+		data []byte
+		err  error
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	fmt.Println("Body -", request.Body)
 }

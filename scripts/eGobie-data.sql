@@ -1758,6 +1758,9 @@ INSERT INTO user_service_addon_list (service_addon_id, user_service_id, amount) 
 
 */
 
+INSERT INTO opening (id, day, period, count_wash, count_oil, demand)
+VALUES (-1, '1988-08-23', -1, 0, 0, 0);
+
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 0 DAY), 1, 1);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 1 DAY), 1, 1);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 2 DAY), 1, 1);
