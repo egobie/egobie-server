@@ -262,7 +262,7 @@ INSERT INTO service_addon (service_id, name, price, time) VALUES
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
 -- Basic Oil & Filter
 (10, 'Basic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
-"(Basic) Brand Name Conventional Oil",
+"(Basic) Synthetic Blend Oil",
 "(Basic) Oil Filter"
 ]', 45, 30);
 
@@ -288,13 +288,13 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 (10, "Change Serpentine Belts",  150);
 
 INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
-(10, 'Extra Conventional Oil', 'per quart', 4, 30, 'quart');
+(10, 'Extra Synthetic Blend Oil', 'per quart', 4, 30, 'quart');
 
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
 (11, 'Full Synthetic', 'OIL_CHANGE', 'Change Oil', 'Up to 5 quarts', '[
 "(Full) Brand Name Synthetic Oil",
-"(Full) Filter"
+"(Full) Oil Filter"
 ]', 75, 30);
 
 -- INSERT INTO service_addon (service_id, name, note, price, time) VALUES
@@ -1817,5 +1817,5 @@ INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 (0, "Change Serpentine Belts",  "", 150, 0);
 
 INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
-(0, 'Extra Conventional Oil', 'per quart', 4, 30, 'quart'),
+(0, 'Extra Synthetic Blend Oil', 'per quart', 4, 30, 'quart'),
 (0, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
