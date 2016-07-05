@@ -53,6 +53,23 @@ func sendPlaceOrderEmail(
 	)
 }
 
+func sendNewResidentialUserEmail(address, name string) {
+	message := "Hello " + name + ",\n" +
+		"\n" +
+		"Thank you for using eGobie Car Services. " +
+		"Please use following email address and token to sign up eGobie fleet app:\n" +
+		"\n" +
+//		"Email Address: " + address + "\n" +
+//		"Sign-Up Token: " + token + "\n" +
+		"\n" +
+		"Thank you for using eGobie car services\n"
+
+	sendEmail(
+		address, "[New User] Thanks for using eGobie",
+		message, true,
+	)
+}
+
 func sendNewFleetUserEmail(address, name, token string) {
 	message := "Hello " + name + ",\n" +
 		"\n" +

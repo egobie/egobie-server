@@ -1819,3 +1819,9 @@ INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
 (0, 'Extra Synthetic Blend Oil', 'per quart', 4, 30, 'quart'),
 (0, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
+
+INSERT INTO discount (id, type, discount) VALUES
+(1, "RESIDENTIAL", 10),
+(2, "RESIDENTIAL_FIRST", 50),
+(3, "FLEET", 10),
+(4, "FLEET_FIRST", 50);
