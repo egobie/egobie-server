@@ -1824,4 +1824,5 @@ INSERT INTO discount (id, type, discount) VALUES
 (1, "RESIDENTIAL", 10),
 (2, "RESIDENTIAL_FIRST", 50),
 (3, "FLEET", 10),
-(4, "FLEET_FIRST", 50);
+(4, "FLEET_FIRST", 50),
+(5, "OIL_WASH", 10);
