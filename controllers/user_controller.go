@@ -7,6 +7,7 @@ import (
 	"errors"
 	"database/sql"
 
+	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 	"github.com/egobie/egobie-server/secures"
@@ -120,6 +121,10 @@ func GetUser(c *gin.Context) {
 	user.Password = ""
 
 	c.JSON(http.StatusOK, user)
+}
+
+func GetDiscount(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.DISCOUNT_MAP)
 }
 
 func UpdateUser(c *gin.Context) {
