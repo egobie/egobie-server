@@ -447,9 +447,9 @@ func loadOpening(query, types string, args ...interface{}) (
 
 func isWeekend(day string) bool {
 	if t, err := time.ParseInLocation(
-		"2006-01-02T15:04:05.000Z", day + "T12:34:56.000Z", config.NEW_YORK,
+		"2006-01-02T15:04:05.000Z", day+"T12:34:56.000Z", config.NEW_YORK,
 	); err != nil {
-		return false;
+		return false
 	} else {
 		weekDay := int(t.Weekday())
 
@@ -585,15 +585,17 @@ func PlaceOrder(c *gin.Context) {
 		request.Services, request.Addons,
 	)
 
-	if user.Discount > 0 {
-		price = price * 1.07 * 0.9
-	} else {
-		price = price * 1.07
+	price *= 1.07
+
+	if user.FirstTime > 0 {
+		price *= calculateDiscount("RESIDENTIAL_FIRST")
+	} else if user.Discount > 0 {
+		price *= calculateDiscount("RESIDENTIAL")
 	}
 
 	if types == "BOTH" {
 		// Additional discount if user choose both service
-		price = price * 0.9
+		price *= calculateDiscount("OIL_WASH")
 	}
 
 	price = float32(int(price*100)) / 100
@@ -1418,6 +1420,10 @@ func getSimpleAddon(userServices []int32) (addons []modules.SimpleAddon, err err
 	}
 
 	return
+}
+
+func calculateDiscount(discount string) float32 {
+	return 1 - float32(cache.DISCOUNT_MAP[discount])/100.0
 }
 
 func calculateGap(time int32) (gap int32) {

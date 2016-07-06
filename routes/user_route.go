@@ -8,6 +8,8 @@ func initUserRoutes() {
 
 	userRouter.POST("", controllers.GetUser)
 
+	userRouter.POST("/discount", controllers.GetDiscount)
+
 	userRouter.POST("/update/password", controllers.UpdatePassword)
 
 	userRouter.POST("/update/user", controllers.UpdateUser)

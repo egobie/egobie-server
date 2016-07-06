@@ -29,7 +29,8 @@ CREATE TABLE user (
     sign INT NOT NULL DEFAULT 0,
     coupon VARCHAR(5) NOT NULL DEFAULT '',
     referred VARCHAR(5) NOT NULL DEFAULT '',
-    discount INT NOT NULL DEFAULT 0,
+    discount INT NOT NULL DEFAULT 1,
+    first_time INT NOT NULL DEFAULT 1,
     invitation INT NOT NULL DEFAULT 0,
     sign_up DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sign_in DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -316,4 +317,10 @@ CREATE TABLE reset_password (
     user_id INT NOT NULL UNIQUE KEY,
     token VARCHAR(6) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
+CREATE TABLE discount (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(32) NOT NULL,
+    discount INT NOT NULL
 );
