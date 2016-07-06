@@ -220,7 +220,7 @@ func OnDemand(c *gin.Context) {
 	curr := getCurrentPeriod()
 
 	if curr < 0 {
-		c.JSON(http.StatusBadRequest, "WE WILL START OUR SERVICE at 9th, July 2016.")
+		c.JSON(http.StatusBadRequest, "WE WILL START OUR SERVICE at July 9th, 2016.")
 		c.Abort()
 		return
 	}
