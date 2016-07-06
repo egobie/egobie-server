@@ -220,7 +220,7 @@ func OnDemand(c *gin.Context) {
 	curr := getCurrentPeriod()
 
 	if curr < 0 {
-		c.JSON(http.StatusBadRequest, "NO")
+		c.JSON(http.StatusBadRequest, "WE WILL START OUR SERVICE at 9th, July 2016.")
 		c.Abort()
 		return
 	}
@@ -294,7 +294,7 @@ func OnDemand(c *gin.Context) {
 
 			c.JSON(http.StatusOK, temp)
 		} else {
-			c.JSON(http.StatusBadRequest, "NO")
+			c.JSON(http.StatusBadRequest, "Not Available (WE SUPPORT ON-DEMAND REQUEST FROM 12:00 P.M. to 21:00 P.M. WEEKDAY, or FROM 10:00 A.M. to 19:00 P.M. WEEKEND ONLY)")
 			c.Abort()
 		}
 	}
