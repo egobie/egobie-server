@@ -595,7 +595,7 @@ func PlaceOrder(c *gin.Context) {
 
 	if types == "BOTH" {
 		// Additional discount if user choose both service
-		price = price * calculateDiscount("OIL_WASH")
+		price *= calculateDiscount("OIL_WASH")
 	}
 
 	price = float32(int(price*100)) / 100
