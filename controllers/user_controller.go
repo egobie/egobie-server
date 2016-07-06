@@ -7,6 +7,7 @@ import (
 	"errors"
 	"database/sql"
 
+	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 	"github.com/egobie/egobie-server/secures"
@@ -16,7 +17,7 @@ import (
 
 func getUser(condition string, args ...interface{}) (user modules.User, err error) {
 	query := `
-		select id, type, username, password,
+		select id, type, username, password, first_time,
 			email, phone_number, coupon, discount,
 			first_name, last_name, middle_name,
 			home_address_state, home_address_zip,
@@ -27,7 +28,7 @@ func getUser(condition string, args ...interface{}) (user modules.User, err erro
 	`
 
 	if err = config.DB.QueryRow(query+" "+condition, args...).Scan(
-		&user.Id, &user.Type, &user.Username, &user.Password,
+		&user.Id, &user.Type, &user.Username, &user.Password, &user.FirstTime,
 		&user.Email, &user.PhoneNumber, &user.Coupon, &user.Discount,
 		&user.FirstName, &user.LastName, &user.MiddleName,
 		&user.HomeAddressState, &user.HomeAddressZip,
@@ -120,6 +121,10 @@ func GetUser(c *gin.Context) {
 	user.Password = ""
 
 	c.JSON(http.StatusOK, user)
+}
+
+func GetDiscount(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.DISCOUNT_MAP)
 }
 
 func UpdateUser(c *gin.Context) {
@@ -310,12 +315,18 @@ func Feedback(c *gin.Context) {
 
 func useDiscount(tx *sql.Tx, userId int32) (err error) {
 	query := `
-		update user set discount = discount - 1 where id = ? and discount > 0
+		update user set discount = CASE
+				WHEN discount > 0 and first_time <= 0 THEN discount - 1
+				ELSE discount
+			END, first_time = CASE
+				WHEN first_time > 0 THEN first_time - 1
+				ELSE 0
+			END
+		where id = ?
 	`
 
 	_, err = tx.Exec(query, userId)
 
 	return;
 }
-
 

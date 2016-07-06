@@ -27,12 +27,13 @@ type UserWorkAddress struct {
 }
 
 type User struct {
-	Id       int32  `json:"id"`
-	Type     string `json:"type"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Coupon   string `json:"coupon"`
-	Discount int32  `json:"discount"`
+	Id        int32  `json:"id"`
+	Type      string `json:"type"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Coupon    string `json:"coupon"`
+	Discount  int32  `json:"discount"`
+	FirstTime int32  `json:"first_time"`
 
 	UserContact
 	UserHomeAddress
