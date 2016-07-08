@@ -100,7 +100,10 @@ func SignUp(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
+			return
 		}
+
+		go sendNewResidentialUserEmail(request.Email);
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {

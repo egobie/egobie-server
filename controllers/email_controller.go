@@ -49,24 +49,29 @@ func sendPlaceOrderEmail(
 
 	sendEmail(
 		address, "[New Residential Reservation] Thanks for using eGobie",
-		message, true,
+		message, false, true,
 	)
 }
 
-func sendNewResidentialUserEmail(address, name string) {
-	message := "Hello " + name + ",\n" +
-		"\n" +
-		"Thank you for using eGobie Car Services. " +
-		"Please use following email address and token to sign up eGobie fleet app:\n" +
-		"\n" +
-//		"Email Address: " + address + "\n" +
-//		"Sign-Up Token: " + token + "\n" +
-		"\n" +
-		"Thank you for using eGobie car services\n"
+func sendNewResidentialUserEmail(address string) {
+	message := `
+		<html><body>
+		<p style="font-size: 17px">Welcome to eGobie!  We hope you will enjoy our services and help us spread the word if you are satisfied. </p>
+		<ul style="font-size: 13px; margin-bottom: 20px">
+			<li style="margin-bottom: 5px">As a promotion, we will take <u><b>50% off your first service order</b></u>, automatically taken out during reservation.  We want you to try out our service with a peace of mind.</li>
+			<li style="margin-bottom: 5px">If you order both oil change and car wash service, you will receive another 10% discount!</li>
+			<li style="margin-bottom: 5px">Combining the 2 offers, you can receive up to 55% (cumulative) discount off your first order!</li>
+		</ul>
+		<p style="font-size: 17px">Want an Extra 10% Off Starting on the Second Order?</p>
+		<p style="font-size: 13px; margin-bottom: 30px">Check the <u><b>Get Your Gift</b></u> Section on your App - Share "Your Code" with your friends via text or Social Media and Get another <u><b>10% Off</b></u> when they use your code to register an eGobie account! (Limit 1 certificate per order.  10% discount will be automatically deducted starting from your second order)</p>
+		<p style="font-size: 13px">Welcome to eGobie, we bring you time, quality, and convenience.</p>
+		<p style="font-size: 13px">eGobie Team<p>
+		</body></html>
+	`
 
 	sendEmail(
-		address, "[New User] Thanks for using eGobie",
-		message, true,
+		address, "Up to 55% off for First Time eGobie Users!",
+		message, true, true,
 	)
 }
 
@@ -83,7 +88,7 @@ func sendNewFleetUserEmail(address, name, token string) {
 
 	sendEmail(
 		address, "[New Fleet Service User] Thanks for using eGobie",
-		message, true,
+		message, false, true,
 	)
 }
 
@@ -98,11 +103,11 @@ func sendResetPasswordEmail(address, name, token string) {
 		"Thank you for using eGobie car services\n"
 
 	sendEmail(
-		address, "Reset your eGobie password", message, false,
+		address, "Reset your eGobie password", message, false, false,
 	)
 }
 
-func sendEmail(address, subject, body string, sendToCEO bool) {
+func sendEmail(address, subject, body string, html, sendToCEO bool) {
 	email := &modules.EmailTemplate{
 		config.EmailSender,
 		address,
@@ -117,9 +122,13 @@ func sendEmail(address, subject, body string, sendToCEO bool) {
 
 	content := "From: eGobie Car Services <{{.From}}>\n" +
 		"To: {{.To}}\n" +
-		"Subject: {{.Subject}}\n" +
-		"\n" +
-		"{{.Body}}"
+		"Subject: {{.Subject}}\n"
+
+	if html {
+		content += "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n"
+	}
+
+	content += "\n{{.Body}}"
 
 	var (
 		t *template.Template
