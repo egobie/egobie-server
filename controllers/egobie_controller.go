@@ -207,6 +207,16 @@ func MakeUserServiceInProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
+func MakeUserServiceCancelled(c *gin.Context) {
+	if err := changeUserServiceStatus(c, "CANCEL"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
 func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 	query := `
 		update user_service set status = ?
@@ -234,6 +244,8 @@ func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 		`
 	} else if status == "RESERVED" {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
+	} else if status == "CANCEL" {
+		query += ", assignee = -1"
 	}
 
 	query += " where id = ? and user_id = ?"
