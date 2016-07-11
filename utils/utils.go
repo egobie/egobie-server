@@ -20,10 +20,22 @@ func ToStringList(ints []int32) string {
 }
 
 func FormatPhone(phone string) string {
+	return formatNumber(phone)
+}
+
+func FormatCardNumber(card string) string {
+	return formatNumber(card)
+}
+
+func FormatZipcode(zip string) string {
+	return formatNumber(zip)
+}
+
+func formatNumber(num string) string {
 	var buf bytes.Buffer
 	var char string
 
-	for _, c := range phone {
+	for _, c := range num {
 		char = string(c)
 		if "0" <= char && char <= "9" {
 			buf.WriteString(char)

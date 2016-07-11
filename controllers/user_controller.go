@@ -79,8 +79,8 @@ func updateAddress(body []byte, setClause string) (err error) {
 	}
 
 	if _, err = config.DB.Exec(query,
-		request.State, request.Zip, request.City, request.Street,
-		request.UserId, request.UserToken+"%",
+		request.State, utils.FormatZipcode(request.Zip), request.City,
+		request.Street, request.UserId, request.UserToken+"%",
 	); err != nil {
 		return
 	}
