@@ -107,7 +107,7 @@ INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 
 INSERT INTO service_addon (service_id, name, price) VALUES
 (2, "Interior Wipe-down with Protectants", 0),
-(2, "Paint Protection", 0),
+(2, "Hand Wax", 0),
 (2, "Windshield Protectant", 0);
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
@@ -115,7 +115,6 @@ INSERT INTO service (id, name, type, description, note, items, estimated_price, 
 "Full Exterior Hand Wash",
 "Interior Vacuum",
 "Interior Wipe-down with Protectants",
-"Paint Protection",
 "Tire Shine & Rim Cleaning",
 "Total Interior Wipe-down",
 "Trunk Vacuum",
@@ -168,13 +167,12 @@ INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 (5, "Wax & Polish", "Multi-layer", 75, 60);
 
 INSERT INTO service_addon (service_id, name, price) VALUES
-(5, "Paint Protection", 0),
+(5, "Hand Wax", 0),
 (5, "Windshield Protectant", 0);
 
 INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
 (6, 'Prestige', 'CAR_WASH', 'Wash Car', 'Exterior Only', '[
 "Full Exterior Hand Wash",
-"Paint Protection",
 "Tire Shine & Rim Cleaning",
 "Undercarriage Rinse",
 "Windshield Protectant"
@@ -1826,3 +1824,6 @@ INSERT INTO discount (id, type, discount) VALUES
 (3, "FLEET", 10),
 (4, "FLEET_FIRST", 50),
 (5, "OIL_WASH", 10);
+
+INSERT INTO service_addon (service_id, name, note, price) VALUES (3, "Paint Protectant", "Multi-layer", 0);
+INSERT INTO service_addon (service_id, name, note, price) VALUES (6, "Paint Protectant", "Multi-layer", 0);

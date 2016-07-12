@@ -75,6 +75,7 @@ func cacheService() {
 		select id, service_id, name, note,
 			price, time, max, unit
 		from service_addon
+		where name != 'Engine Cleaning' and name != 'Headlight Reconditioning'
 	`); err != nil {
 		return
 	}
@@ -87,6 +88,10 @@ func cacheService() {
 			&addOn.Price, &addOn.Time, &addOn.Max, &addOn.Unit,
 		); err != nil {
 			return
+		}
+
+		if invalidAddon(&addOn) {
+			continue
 		}
 
 		ADDONS_MAP[addOn.Id] = addOn
@@ -117,4 +122,22 @@ func cacheService() {
 	for _, service := range SERVICES_ARRAY {
 		SERVICES_MAP[service.Id] = service
 	}
+}
+
+func invalidAddon(addOn *modules.AddOn) bool {
+	if addOn.Name == "Engine Cleaning" || addOn.Name == "Headlight Reconditioning" {
+		return true
+	}
+
+	if addOn.Price > 0 {
+		if addOn.Name == "Hand Wax" && (addOn.ServiceId == 2 || addOn.ServiceId == 5) {
+			return true
+		}
+
+		if addOn.Name == "Paint Protectant" && (addOn.ServiceId == 3 || addOn.ServiceId == 6) {
+			return true
+		}
+	}
+
+	return false
 }
