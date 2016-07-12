@@ -11,6 +11,7 @@ import (
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 	"github.com/egobie/egobie-server/secures"
+	"github.com/egobie/egobie-server/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -78,8 +79,8 @@ func updateAddress(body []byte, setClause string) (err error) {
 	}
 
 	if _, err = config.DB.Exec(query,
-		request.State, request.Zip, request.City, request.Street,
-		request.UserId, request.UserToken+"%",
+		request.State, utils.FormatZipcode(request.Zip), request.City,
+		request.Street, request.UserId, request.UserToken+"%",
 	); err != nil {
 		return
 	}
@@ -157,7 +158,7 @@ func UpdateUser(c *gin.Context) {
 
 	if _, err = config.DB.Exec(query,
 		request.FirstName, request.LastName, request.MiddleName, request.Email,
-		request.PhoneNumber, request.UserId, request.UserToken+"%",
+		utils.FormatPhone(request.PhoneNumber), request.UserId, request.UserToken+"%",
 	); err != nil {
 		return
 	}
