@@ -1827,3 +1827,20 @@ INSERT INTO discount (id, type, discount) VALUES
 
 INSERT INTO service_addon (service_id, name, note, price) VALUES (3, "Paint Protectant", "Multi-layer", 0);
 INSERT INTO service_addon (service_id, name, note, price) VALUES (6, "Paint Protectant", "Multi-layer", 0);
+
+-- ------------------------------ --
+-- REMOVE AFTER MIGRATION - START --
+-- ------------------------------ --
+
+ALTER TABLE user_opening CHANGE mixed task VARCHAR(32) NOT NULL;
+
+ALTER TABLE user_service DROP COLUMN assignee;
+
+ALTER TABLE fleet_service DROP COLUMN assignee;
+
+UPDATE user_opening SET task = 'OIL_CHANGE' WHERE user_id = 2;
+UPDATE user_opening SET task = 'CAR_WASH' WHERE user_id = 3;
+
+-- ------------------------------ --
+-- REMOVE AFTER MIGRATION - END   --
+-- ------------------------------ --

@@ -145,7 +145,6 @@ func PlaceFleetOrder(c *gin.Context) {
 		result         sql.Result
 		data           []byte
 		err            error
-		assignee       int32
 		time           int32
 		gap            int32
 		reserved       string
@@ -201,44 +200,44 @@ func PlaceFleetOrder(c *gin.Context) {
 			return
 		}
 
-		if assignee, err = assignService(
-			tx, request.Opening, gap, types,
-		); err != nil {
-			return
-		}
 		status = "WAITING"
 	} else {
-		assignee = -1
-		status = "NOT_ASSIGNED"
 		reserved = request.Day + " " + request.Hour
+		status = "NOT_ASSIGNED"
 	}
 
 	query := `
 		insert into fleet_service (user_id, opening_id, reserved_start_timestamp,
-			gap, assignee, estimated_time, status, types
-		) values (?, ?, ?, ?, ?, ?, ?, ?)
+			gap, estimated_time, status, types
+		) values (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(
 		query, request.UserId, request.Opening, reserved,
-		gap, assignee, time, status, types,
+		gap, time, status, types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
 		return
 	}
 
-	// Insert fleet orders
-	for _, order := range request.Orders {
-		if err = insertFleetServiceList(
-			tx, int32(fleetServiceId), order,
+	fleet_service_id := int32(fleetServiceId)
+
+	if request.Opening != -1 {
+		if err = assignService(
+			tx, fleet_service_id, request.Opening, gap, types,
 		); err != nil {
 			return
 		}
+	}
 
-		if err = insertFleetAddonList(
-			tx, int32(fleetServiceId), order,
-		); err != nil {
+	// Insert fleet orders
+	for _, order := range request.Orders {
+		if err = insertFleetServiceList(tx, fleet_service_id, order); err != nil {
+			return
+		}
+
+		if err = insertFleetAddonList(tx, fleet_service_id, order); err != nil {
 			return
 		}
 	}

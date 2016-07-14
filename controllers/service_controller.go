@@ -520,7 +520,6 @@ func PlaceOrder(c *gin.Context) {
 		gap               int32
 		insertedId        int64
 		reserved          string
-		assignee          int32
 		reservationNumber string
 		types             string
 		services          []string
@@ -647,12 +646,6 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if assignee, err = assignService(
-		tx, request.Opening, gap, types,
-	); err != nil {
-		return
-	}
-
 	if reserved, err = calculateReservedTime(tx, request.Opening); err != nil {
 		return
 	}
@@ -660,14 +653,14 @@ func PlaceOrder(c *gin.Context) {
 	insertUserService := `
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
-			reserved_start_timestamp, gap, assignee,
-			estimated_time, estimated_price, status, types
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			reserved_start_timestamp, gap, estimated_time, estimated_price,
+			status, types
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertUserService,
 		user.Id, car.Id, payment.Id, request.Opening, reserved,
-		gap, assignee, time, price, "RESERVED", types,
+		gap, time, price, "RESERVED", types,
 	); err != nil {
 		return
 	}
@@ -677,6 +670,12 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	user_service_id := int32(insertedId)
+
+	if err = assignService(
+		tx, user_service_id, request.Opening, gap, types,
+	); err != nil {
+		return
+	}
 
 	if err = tx.QueryRow(`
 		select reservation_id from user_service where id = ?`, user_service_id,
@@ -851,7 +850,6 @@ func cancel(c *gin.Context, force bool) {
 		PaymentId int32
 		Opening   int32
 		Gap       int32
-		Assignee  int32
 		Types     string
 	}{}
 
@@ -893,7 +891,7 @@ func cancel(c *gin.Context, force bool) {
 	}()
 
 	query := `
-		select user_car_id, user_payment_id, opening_id, gap, assignee, types
+		select user_car_id, user_payment_id, opening_id, gap, types
 		from user_service
 		where id = ? and user_id = ? and status = 'RESERVED'
 	`
@@ -907,8 +905,7 @@ func cancel(c *gin.Context, force bool) {
 	if err = tx.QueryRow(
 		query, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening,
-		&temp.Gap, &temp.Assignee, &temp.Types,
+		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Types,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = nil
@@ -919,7 +916,7 @@ func cancel(c *gin.Context, force bool) {
 	}
 
 	query = `
-		update user_service set status = 'CANCEL', assignee = -1
+		update user_service set status = 'CANCEL'
 		where id = ? and user_id = ?
 	`
 	if _, err = tx.Exec(
@@ -943,7 +940,7 @@ func cancel(c *gin.Context, force bool) {
 	}
 
 	if err = revokeUserOpening(
-		tx, temp.Opening, temp.Gap, temp.Assignee,
+		tx, request.Id, temp.Opening, temp.Gap,
 	); err != nil {
 		return
 	}
@@ -1203,11 +1200,20 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int32, err error) {
+func assignService(
+	tx *sql.Tx,
+	userServiceId, openingId, gap int32,
+	types string,
+) (err error) {
 	query := "select day, period from opening where id = ?"
+	vans := 1
+
 	var (
-		day    string
-		period int32
+		day       string
+		period    int32
+		rows      *sql.Rows
+		worker   int32
+		assignees []int32
 	)
 
 	if err = tx.QueryRow(
@@ -1216,7 +1222,7 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 		return
 	}
 
-	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+	mask := calculateMask(gap, period)
 
 	query = `
 		select user_id from user_opening
@@ -1224,30 +1230,64 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 	`
 
 	if types == modules.SERVICE_CAR_WASH {
-		query += " and mixed = 0"
+		vans = 1
+		query += " and task = 'CAR_WASH'"
+	} else if types == modules.SERVICE_OIL_CHANGE {
+		vans = 1
+		query += " and task = 'OIL_CHANGE'"
 	} else {
-		query += " and mixed = 1"
+		vans = 2
+		query += " and (task = 'CAR_WASH' or task = 'OIL_CHANGE')"
 	}
 
-	if err = tx.QueryRow(
+	query += " group by task"
+
+	if rows, err = tx.Query(
 		query, day, mask, mask,
-	).Scan(&assignee); err != nil {
+	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("No service provider available")
 		}
 
 		return
 	}
+	defer rows.Close()
 
-	_, err = tx.Exec(`
-		update user_opening set user_schedule = user_schedule ^ ?
-		where user_id = ? and day = ?
-	`, mask, assignee, day)
+	for rows.Next() {
+		if err = rows.Scan(&worker); err != nil {
+			return
+		}
+
+		assignees = append(assignees, worker)
+	}
+
+	if len(assignees) != vans {
+		err = errors.New("No service provider available")
+		return
+	}
+
+	if _, err = tx.Exec(`
+			update user_opening set user_schedule = user_schedule ^ ?
+			where day = ? and user_id in (
+		` + utils.ToStringList(assignees) + ")", mask, day,
+	); err != nil {
+		return
+	}
+
+	for _, assignee := range assignees {
+		if _, err = tx.Exec(`
+				insert into user_service_assignee_list (user_id, user_service_id, status)
+				values (?, ?, ?)
+			`, assignee, userServiceId, "RESERVED",
+		); err != nil {
+			return
+		}
+	}
 
 	return
 }
 
-func revokeUserOpening(tx *sql.Tx, openingId, gap, assignee int32) (err error) {
+func revokeUserOpening(tx *sql.Tx, userServiceId, openingId, gap int32) (err error) {
 	var (
 		day    string
 		period int32
@@ -1260,12 +1300,26 @@ func revokeUserOpening(tx *sql.Tx, openingId, gap, assignee int32) (err error) {
 		return
 	}
 
-	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+	mask := calculateMask(gap, period)
 
 	if _, err = tx.Exec(`
-		update user_opening set user_schedule = user_schedule ^ ?
-		where user_id = ? and day = ?`,
-		mask, assignee, day,
+			update user_opening set user_schedule = user_schedule ^ ?
+			where day = ? and user_id in (
+				select user_id from user_service_assignee_list
+				where user_service_id = ?
+			)
+		`, mask, day, userServiceId,
+	); err != nil {
+		return
+	}
+
+	if _, err = tx.Exec(`
+			update user_service_assignee_list set status = 'CANCEL'
+			where user_service_id = ? and user_id in (
+				select user_id from user_service_assignee_list
+				where user_service_id = ?
+			)
+		`, userServiceId, userServiceId,
 	); err != nil {
 		return
 	}
@@ -1497,4 +1551,8 @@ func calculateOrderTypes(wash, oil bool) (types string) {
 	}
 
 	return
+}
+
+func calculateMask(gap, period int32) int32 {
+	return ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
 }

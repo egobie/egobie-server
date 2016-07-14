@@ -160,7 +160,6 @@ CREATE TABLE user_service (
     note VARCHAR(2048) NOT NULL DEFAULT '',
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     opening_id INT NOT NULL,
-    assignee INT NOT NULL DEFAULT -1,
     reserved_start_timestamp TIMESTAMP NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
@@ -231,7 +230,7 @@ CREATE TABLE user_opening (
     day DATE NOT NULL,
     user_id INT NOT NULL,
     user_schedule INT NOT NULL DEFAULT 67108863,
-    mixed INT NOT NULL DEFAULT 0,
+    task VARCHAR(32) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)
@@ -328,8 +327,9 @@ CREATE TABLE discount (
 CREATE TABLE user_service_assignee_list (
     user_id INT NOT NULL,
     user_service_id INT NOT NULL,
-    task VARCHAR(32) NOT NULL,
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    start_timestamp TIMESTAMP NULL,
+    end_timestamp TIMESTAMP NULL,
     UNIQUE KEY (user_id, user_service_id),
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (user_service_id) REFERENCES user_service(id) 
