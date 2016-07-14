@@ -853,9 +853,9 @@ func calculateFleetOrderTimeAndTypes(
 			if s, ok := cache.SERVICES_MAP[id]; ok {
 				tempTime += s.Time
 
-				if s.Type == "CAR_WASH" {
+				if s.Type == modules.SERVICE_CAR_WASH {
 					wash = true
-				} else if s.Type == "OIL_CHANGE" {
+				} else if s.Type == modules.SERVICE_OIL_CHANGE {
 					oil = true
 				}
 			}

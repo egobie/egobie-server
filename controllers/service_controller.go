@@ -393,10 +393,12 @@ func loadOpening(query, types string, args ...interface{}) (
 		preDay string
 	)
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		query += " and count_wash > 0 order by day, period"
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		query += " and count_oil > 0 order by day, period"
+	} else {
+		query += " and count_wash > 0 and count_oil > 0 order by day, period"
 	}
 
 	if rows, err = config.DB.Query(query, args...); err != nil {
@@ -594,7 +596,7 @@ func PlaceOrder(c *gin.Context) {
 		price *= calculateDiscount("RESIDENTIAL")
 	}
 
-	if types == "BOTH" {
+	if types == modules.SERVICE_BOTH {
 		// Additional discount if user choose both service
 		price *= calculateDiscount("OIL_WASH")
 	}
@@ -760,9 +762,9 @@ func getServicesTimeAndPriceAndTypes(ids []int32) (
 			time += s.Time
 			price += s.Price
 
-			if s.Type == "CAR_WASH" {
+			if s.Type == modules.SERVICE_CAR_WASH {
 				wash = true
-			} else if s.Type == "OIL_CHANGE" {
+			} else if s.Type == modules.SERVICE_OIL_CHANGE {
 				oil = true
 			}
 
@@ -810,9 +812,9 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 			time1 += s.Time
 			price1 += s.Price
 
-			if s.Type == "CAR_WASH" {
+			if s.Type == modules.SERVICE_CAR_WASH {
 				wash = true
-			} else if s.Type == "OIL_CHANGE" {
+			} else if s.Type == modules.SERVICE_OIL_CHANGE {
 				oil = true
 			}
 		}
@@ -1221,7 +1223,7 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 		where day = ? and user_schedule & ? = ?
 	`
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		query += " and mixed = 0"
 	} else {
 		query += " and mixed = 1"
@@ -1279,15 +1281,20 @@ func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 		updateOpening string
 	)
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		updateOpening = `
 			update opening set count_wash = count_wash - 1
 			where id >= ? and id < ? and count_wash > 0
 		`
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		updateOpening = `
 			update opening set count_oil = count_oil - 1
 			where id >= ? and id < ? and count_oil > 0
+		`
+	} else {
+		updateOpening = `
+			update opening set count_wash = count_wash - 1, count_oil = count_oil - 1
+			where id >= ? and id < ? and count_wash > 0 and count_oil > 0
 		`
 	}
 
@@ -1310,14 +1317,19 @@ func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 func releaseOpening(tx *sql.Tx, id, gap int32, types string) (err error) {
 	var query string
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		query = `
 			update opening set count_wash = count_wash + 1
 			where id >= ? and id < ?
 		`
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		query = `
 			update opening set count_oil = count_oil + 1
+			where id >= ? and id < ?
+		`
+	} else {
+		query = `
+			update opening set count_wash = count_wash + 1, count_oil = count_oil + 1
 			where id >= ? and id < ?
 		`
 	}
@@ -1475,13 +1487,13 @@ func calculateHowLong(mins int32) (int32, string) {
 func calculateOrderTypes(wash, oil bool) (types string) {
 	switch {
 	case wash && oil:
-		types = "BOTH"
+		types = modules.SERVICE_BOTH
 	case wash:
-		types = "CAR_WASH"
+		types = modules.SERVICE_CAR_WASH
 	case oil:
-		types = "OIL_CHANGE"
+		types = modules.SERVICE_OIL_CHANGE
 	default:
-		types = "BOTH"
+		types = modules.SERVICE_BOTH
 	}
 
 	return

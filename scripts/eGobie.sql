@@ -324,3 +324,13 @@ CREATE TABLE discount (
     type VARCHAR(32) NOT NULL,
     discount INT NOT NULL
 );
+
+CREATE TABLE user_service_assignee_list (
+    user_id INT NOT NULL,
+    user_service_id INT NOT NULL,
+    task VARCHAR(32) NOT NULL,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    UNIQUE KEY (user_id, user_service_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (user_service_id) REFERENCES user_service(id) 
+);
