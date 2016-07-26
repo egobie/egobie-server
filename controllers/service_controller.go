@@ -672,7 +672,7 @@ func PlaceOrder(c *gin.Context) {
 	user_service_id := int32(insertedId)
 
 	if err = assignService(
-		tx, user_service_id, request.Opening, gap, types,
+		tx, user_service_id, request.Opening, gap, types, "USER_SERVICE",
 	); err != nil {
 		return
 	}
@@ -940,7 +940,7 @@ func cancel(c *gin.Context, force bool) {
 	}
 
 	if err = revokeUserOpening(
-		tx, request.Id, temp.Opening, temp.Gap,
+		tx, request.Id, temp.Opening, temp.Gap, "USER_SERVICE",
 	); err != nil {
 		return
 	}
@@ -1203,7 +1203,7 @@ func updateServiceDemand(ids []int32) {
 func assignService(
 	tx *sql.Tx,
 	userServiceId, openingId, gap int32,
-	types string,
+	types, serviceType string,
 ) (err error) {
 	query := "select day, period from opening where id = ?"
 	vans := 1
@@ -1274,20 +1274,36 @@ func assignService(
 		return
 	}
 
-	for _, assignee := range assignees {
-		if _, err = tx.Exec(`
-				insert into user_service_assignee_list (user_id, user_service_id, status)
-				values (?, ?, ?)
-			`, assignee, userServiceId, "RESERVED",
-		); err != nil {
-			return
+	if serviceType == "USER_SERVICE" {
+		for _, assignee := range assignees {
+			if _, err = tx.Exec(`
+					insert into user_service_assignee_list (user_id, user_service_id, status)
+					values (?, ?, ?)
+				`, assignee, userServiceId, "RESERVED",
+			); err != nil {
+				return
+			}
+		}
+	} else {
+		for _, assignee := range assignees {
+			if _, err = tx.Exec(`
+					insert into fleet_service_assignee_list (user_id, fleet_service_id, status)
+					values (?, ?, ?)
+				`, assignee, userServiceId, "RESERVED",
+			); err != nil {
+				return
+			}
 		}
 	}
 
 	return
 }
 
-func revokeUserOpening(tx *sql.Tx, userServiceId, openingId, gap int32) (err error) {
+func revokeUserOpening(
+	tx *sql.Tx,
+	userServiceId, openingId, gap int32,
+	serviceType string,
+) (err error) {
 	var (
 		day    string
 		period int32
@@ -1302,26 +1318,28 @@ func revokeUserOpening(tx *sql.Tx, userServiceId, openingId, gap int32) (err err
 
 	mask := calculateMask(gap, period)
 
-	if _, err = tx.Exec(`
-			update user_opening set user_schedule = user_schedule ^ ?
-			where day = ? and user_id in (
-				select user_id from user_service_assignee_list
-				where user_service_id = ?
-			)
-		`, mask, day, userServiceId,
-	); err != nil {
-		return
-	}
-
-	if _, err = tx.Exec(`
-			update user_service_assignee_list set status = 'CANCEL'
-			where user_service_id = ? and user_id in (
-				select user_id from user_service_assignee_list
-				where user_service_id = ?
-			)
-		`, userServiceId, userServiceId,
-	); err != nil {
-		return
+	if serviceType == "USER_SERVICE" {
+		if _, err = tx.Exec(`
+				update user_opening set user_schedule = user_schedule ^ ?
+				where day = ? and user_id in (
+					select user_id from user_service_assignee_list
+					where user_service_id = ?
+				)
+			`, mask, day, userServiceId,
+		); err != nil {
+			return
+		}
+	} else {
+		if _, err = tx.Exec(`
+				update user_opening set user_schedule = user_schedule ^ ?
+				where day = ? and user_id in (
+					select user_id from fleet_service_assignee_list
+					where fleet_service_id = ?
+				)
+			`, mask, day, userServiceId,
+		); err != nil {
+			return
+		}
 	}
 
 	return

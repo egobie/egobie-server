@@ -334,3 +334,14 @@ CREATE TABLE user_service_assignee_list (
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (user_service_id) REFERENCES user_service(id) 
 );
+
+CREATE TABLE fleet_service_assignee_list (
+    user_id INT NOT NULL,
+    fleet_service_id INT NOT NULL,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    start_timestamp TIMESTAMP NULL,
+    end_timestamp TIMESTAMP NULL,
+    UNIQUE KEY (user_id, fleet_service_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id) 
+);

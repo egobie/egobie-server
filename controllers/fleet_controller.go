@@ -225,7 +225,7 @@ func PlaceFleetOrder(c *gin.Context) {
 
 	if request.Opening != -1 {
 		if err = assignService(
-			tx, fleet_service_id, request.Opening, gap, types,
+			tx, fleet_service_id, request.Opening, gap, types, "FLEET_SERVICE",
 		); err != nil {
 			return
 		}
@@ -384,8 +384,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	if err = tx.QueryRow(
 		query, request.Id, request.UserId,
 	).Scan(
-		&temp.Opening, &temp.Gap, &temp.Assignee,
-		&temp.Types, &temp.Status,
+		&temp.Opening, &temp.Gap, &temp.Assignee, &temp.Types, &temp.Status,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("Reservation not found")
@@ -399,7 +398,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	}
 
 	query = `
-		update fleet_service set status = 'CANCEL', assignee = -1
+		update fleet_service set status = 'CANCEL'
 		where id = ? and user_id = ?
 	`
 	if _, err = tx.Exec(
@@ -417,7 +416,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	}
 
 	if err = revokeUserOpening(
-		tx, temp.Opening, temp.Gap, temp.Assignee,
+		tx, temp.Opening, temp.Gap, temp.Assignee, "FLEET_SERVICE",
 	); err != nil {
 		return
 	}
