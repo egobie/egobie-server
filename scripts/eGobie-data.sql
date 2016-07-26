@@ -1842,6 +1842,8 @@ ALTER TABLE fleet_service DROP COLUMN assignee;
 UPDATE user_opening SET task = 'OIL_CHANGE' WHERE user_id = 2;
 UPDATE user_opening SET task = 'CAR_WASH' WHERE user_id = 3;
 
+INSERT INTO coupon (coupon, discount) VALUES ('EGOBIE', 20);
+
 -- ------------------------------ --
 -- REMOVE AFTER MIGRATION - END   --
 -- ------------------------------ --

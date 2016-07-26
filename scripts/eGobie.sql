@@ -343,5 +343,24 @@ CREATE TABLE fleet_service_assignee_list (
     end_timestamp TIMESTAMP NULL,
     UNIQUE KEY (user_id, fleet_service_id),
     FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id) 
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
+);
+
+CREATE TABLE coupon (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    coupon VARCHAR(6) NOT NULL,
+    discount INT NOT NULL,
+    expired INT NOT NULL DEFAULT 0,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (coupon)
+);
+
+CREATE TABLE user_coupon (
+    user_id INT NOT NULL,
+    coupon_id INT NOT NULL,
+    used INT NOT NULL DEFAULT 0,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (user_id, coupon_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (coupon_id) REFERENCES coupon(id)
 );
