@@ -65,6 +65,7 @@ type ChangeServiceStatus struct {
 }
 
 type TaskInfo struct {
+	Status        string
 	UserId        int32
 	UserCarId     int32
 	UserPaymentId int32

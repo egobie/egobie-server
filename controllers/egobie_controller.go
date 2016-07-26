@@ -62,7 +62,7 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 //		order by us.reserved_start_timestamp
 //	`
 	query := `
-		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
+		select us.id, usal.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
 				u.home_address_city, u.home_address_street, uc.plate, uc.state,
 				uc.color, cma.title, cmo.title
@@ -71,7 +71,8 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 		inner join user_car uc on uc.id = us.user_car_id
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
-		where us.status != "CANCEL" and us.assignee = ? and us.opening_id in (
+		inner join user_service_assignee_list usal on usal.user_service_id = us.id
+		where us.status != "CANCEL" and usal.user_id = ? and us.opening_id in (
 			select id from opening
 			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by us.reserved_start_timestamp
@@ -219,36 +220,55 @@ func MakeUserServiceCancelled(c *gin.Context) {
 
 func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 	query := `
+		update user_service_assignee_list set status = ?
+	`
+	queryUserService := `
 		update user_service set status = ?
 	`
 	selectQuery := `
-		select user_id, user_car_id, user_payment_id
+		select status, user_id, user_car_id, user_payment_id
 		from user_service
 		where id = ?
 	`
 
 	request := modules.ChangeServiceStatus{}
 	taskInfo := modules.TaskInfo{}
+	args := []interface{}{
+		status, request.ServiceId,
+	}
+
 	var (
 		data []byte
 		tx   *sql.Tx
+
 	)
 
+
 	if status == "IN_PROGRESS" {
-		query += `
+		query += ", start_timestamp = CURRENT_TIMESTAMP()"
+		queryUserService += `
 			, start_timestamp = CURRENT_TIMESTAMP()
+			where id = ? and status = 'RESERVED'
 		`
 	} else if status == "DONE" {
-		query += `
+		query += ", end_timestamp = CURRENT_TIMESTAMP()"
+		queryUserService += `
 			, end_timestamp = CURRENT_TIMESTAMP()
+			where id = ? and status = 'IN_PROGRESS' and not exists(
+				select user_id from user_service_assignee_list ul
+				where ul.user_service_id = ? and ul.status != 'DONE'
+			)
 		`
+		args = append(args, request.ServiceId)
 	} else if status == "RESERVED" {
 		query += ", start_timestamp = NULL, end_timestamp = NULL"
-	} else if status == "CANCEL" {
-		query += ", assignee = -1"
+		queryUserService += `
+			, start_timestamp = NULL, end_timestamp = NULL
+			where id = ?
+		`
 	}
 
-	query += " where id = ? and user_id = ?"
+	query += " where user_service_id = ? and user_id = ?"
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
 		return
@@ -274,19 +294,24 @@ func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 		}
 	}()
 
-	if err = tx.QueryRow(selectQuery, request.ServiceId).Scan(
-		&taskInfo.UserId, &taskInfo.UserCarId, &taskInfo.UserPaymentId,
-	); err != nil {
-		return
-	}
-
 	if _, err = tx.Exec(
-		query, status, request.ServiceId, taskInfo.UserId,
+		query, status, request.ServiceId, request.UserId,
 	); err != nil {
 		return
 	}
 
-	if status == "DONE" {
+	if _, err = tx.Exec(queryUserService, args...); err != nil {
+		return
+	}
+
+	if err = tx.QueryRow(selectQuery, request.ServiceId).Scan(
+		&taskInfo.Status, &taskInfo.UserId, &taskInfo.UserCarId,
+		&taskInfo.UserPaymentId,
+	); err != nil {
+		return
+	}
+
+	if taskInfo.Status == "DONE" {
 		if err = unlockCar(
 			tx, taskInfo.UserCarId, taskInfo.UserId,
 		); err != nil {

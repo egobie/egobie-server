@@ -230,7 +230,7 @@ CREATE TABLE user_opening (
     day DATE NOT NULL,
     user_id INT NOT NULL,
     user_schedule INT NOT NULL DEFAULT 67108863,
-    task VARCHAR(32) NOT NULL,
+    task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN',
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)
