@@ -142,13 +142,14 @@ func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
 //		order by fs.reserved_start_timestamp
 //	`
 	query := `
-		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
+		select fs.id, f.name, fs.note, fsal.status, fs.reserved_start_timestamp,
 				u.first_name, u.last_name, u.phone_number, u.work_address_state,
 				u.work_address_city, u.work_address_street, u.work_address_zip
 		from fleet_service fs
 		inner join fleet f on f.user_id = fs.user_id
 		inner join user u on u.id = f.user_id
-		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ? and fs.opening_id in (
+		inner join fleet_service_assignee_list fsal on fsal.fleet_service_id = fs.id
+		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fsal.user_id = ? and fs.opening_id in (
 			select id from opening
 			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by fs.reserved_start_timestamp
