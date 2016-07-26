@@ -58,7 +58,8 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 //		inner join user_car uc on uc.id = us.user_car_id
 //		inner join car_maker cma on cma.id = uc.car_maker_id
 //		inner join car_model cmo on cmo.id = uc.car_model_id
-//		where us.status != "CANCEL" and us.assignee = ?
+//		inner join user_service_assignee_list usal on usal.user_service_id = us.id
+//		where us.status != "CANCEL" and usal.user_id = ?
 //		order by us.reserved_start_timestamp
 //	`
 	query := `
@@ -132,13 +133,14 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 
 func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
 //	query := `
-//		select fs.id, f.name, fs.note, fs.status, fs.reserved_start_timestamp,
+//		select fs.id, f.name, fs.note, fsal.status, fs.reserved_start_timestamp,
 //				u.first_name, u.last_name, u.phone_number, u.work_address_state,
 //				u.work_address_city, u.work_address_street, u.work_address_zip
 //		from fleet_service fs
 //		inner join fleet f on f.user_id = fs.user_id
 //		inner join user u on u.id = f.user_id
-//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fs.assignee = ?
+//		inner join fleet_service_assignee_list fsal on fsal.fleet_service_id = fs.id
+//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fsal.user_id = ?
 //		order by fs.reserved_start_timestamp
 //	`
 	query := `
