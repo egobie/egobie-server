@@ -836,14 +836,18 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 }
 
 func CancelOrder(c *gin.Context) {
-	cancel(c, false)
+	cancel(c, false, false)
 }
 
 func ForceCancelOrder(c *gin.Context) {
-	cancel(c, true)
+	cancel(c, true, false)
 }
 
-func cancel(c *gin.Context, force bool) {
+func FreeCancelOrder(c *gin.Context) {
+	cancel(c, true, true)
+}
+
+func cancel(c *gin.Context, force, free bool) {
 	request := modules.CancelRequest{}
 	temp := struct {
 		CarId     int32
@@ -925,7 +929,9 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
-	go cancelReservation(request.UserId)
+	if !free {
+		go cancelReservation(request.UserId)
+	}
 
 	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
 		return
@@ -945,7 +951,7 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
-	if force {
+	if force && !free {
 		if err = processPayment(
 			tx, request.Id, temp.PaymentId, request.UserId, 0.5,
 		); err != nil {
