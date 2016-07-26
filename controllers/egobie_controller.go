@@ -74,7 +74,7 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 		inner join user_service_assignee_list usal on usal.user_service_id = us.id
 		where us.status != "CANCEL" and usal.user_id = ? and us.opening_id in (
 			select id from opening
-			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
+			where day >= DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by us.reserved_start_timestamp
 	`
 	index := make(map[int32]int32)
@@ -151,7 +151,7 @@ func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
 		inner join fleet_service_assignee_list fsal on fsal.fleet_service_id = fs.id
 		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fsal.user_id = ? and fs.opening_id in (
 			select id from opening
-			where day = DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
+			where day >= DATE_FORMAT(CURDATE(), '%Y-%m-%d') and (count_wash < 1 or count_oil < 1)
 		) order by fs.reserved_start_timestamp
 	`
 	var (
