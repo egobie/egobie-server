@@ -540,3 +540,7 @@ func Secure(c *gin.Context) {
 		c.JSON(http.StatusOK, code)
 	}
 }
+
+func Test(c *gin.Context) {
+	SendCancelMessage("2019120383")
+}

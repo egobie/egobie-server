@@ -43,6 +43,4 @@ func initFleetRoutes() {
 	fleetRouter.POST("/update/work", controllers.UpdateWork)
 
 	fleetRouter.POST("/feedback", controllers.Feedback)
-
-//	fleetRouter.POST("/test", controllers.Test)
 }

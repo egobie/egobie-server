@@ -890,30 +890,3 @@ func createFleetHistory(tx *sql.Tx, serviceId int32) (err error) {
 
 	return
 }
-
-func Test(c *gin.Context) {
-	request := struct {
-		Body string `json:"body"`
-	}{}
-	var (
-		data []byte
-		err  error
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
-
-	fmt.Println("Body -", request.Body)
-}
