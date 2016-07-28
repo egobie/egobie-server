@@ -587,7 +587,9 @@ func PlaceOrder(c *gin.Context) {
 		request.Services, request.Addons,
 	)
 
-	price *= 1.07
+	couponId, coupon := getUserCoupon(tx, request.UserId)
+
+	price *= (1.07 * coupon)
 
 	if user.FirstTime > 0 {
 		price *= calculateDiscount("RESIDENTIAL_FIRST")
@@ -610,7 +612,7 @@ func PlaceOrder(c *gin.Context) {
 	defer func() {
 		if err != nil {
 			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error -Rollback - ", err1.Error())
+				fmt.Println("Error - Rollback - ", err1.Error())
 			}
 
 			c.JSON(http.StatusBadRequest, err.Error())
@@ -638,6 +640,12 @@ func PlaceOrder(c *gin.Context) {
 
 	if err = useDiscount(tx, user.Id); err != nil {
 		return
+	}
+
+	if couponId > 0 {
+		if err = useCoupon(tx, user.Id, couponId); err != nil {
+			return
+		}
 	}
 
 	if err = holdOpening(
@@ -833,6 +841,29 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 	types = calculateOrderTypes(wash, oil)
 
 	return
+}
+
+func getUserCoupon(tx *sql.Tx, userId int32) (int32, float32) {
+	query := `
+		select coupon_id, discount
+		from user_coupon uc
+		inner join coupon c on c.id = uc.coupon_id
+		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+	`
+	var (
+		discount int32
+		couponId int32
+	)
+
+	if err := tx.QueryRow(query, userId).Scan(&couponId, &discount); err != nil {
+		return -1, 1
+	}
+
+	if discount == 100 {
+		return couponId, 0
+	}
+
+	return couponId, 1 - float32(discount)/100.0
 }
 
 func CancelOrder(c *gin.Context) {
@@ -1218,7 +1249,7 @@ func assignService(
 		day       string
 		period    int32
 		rows      *sql.Rows
-		worker   int32
+		worker    int32
 		assignees []int32
 	)
 
@@ -1275,7 +1306,7 @@ func assignService(
 	if _, err = tx.Exec(`
 			update user_opening set user_schedule = user_schedule ^ ?
 			where day = ? and user_id in (
-		` + utils.ToStringList(assignees) + ")", mask, day,
+		`+utils.ToStringList(assignees)+")", mask, day,
 	); err != nil {
 		return
 	}

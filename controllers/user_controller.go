@@ -291,7 +291,7 @@ func ApplyCoupon(c *gin.Context) {
 		err    error
 		body   []byte
 		coupon cache.Coupon
-		ok bool
+		ok     bool
 	)
 
 	defer func() {
@@ -381,6 +381,17 @@ func useDiscount(tx *sql.Tx, userId int32) (err error) {
 	`
 
 	_, err = tx.Exec(query, userId)
+
+	return
+}
+
+func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
+	query := `
+		update user_coupon set used = 1
+		where user_id = ? and coupon_id = ?
+	`
+
+	_, err = tx.Exec(query, userId, couponId)
 
 	return
 }
