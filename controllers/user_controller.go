@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
-	"errors"
-	"database/sql"
 
 	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
@@ -280,6 +280,60 @@ func UpdateWork(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
+func ApplyCoupon(c *gin.Context) {
+	query := `
+		select coupon_id from user_coupon
+		where user_id = ? and (used = 0 or coupon_id = ?)
+	`
+	request := modules.ApplyCouponRequest{}
+	var (
+		temp   int32
+		err    error
+		body   []byte
+		coupon cache.Coupon
+		ok bool
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if coupon, ok = cache.COUPON_CACHE[request.Coupon]; !ok {
+		err = errors.New("Invalid Coupon Code")
+		return
+	}
+
+	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
+
+	if err != sql.ErrNoRows {
+		return
+	} else if err == nil {
+		err = errors.New("You already have a coupon activated")
+		return
+	}
+
+	query = `
+		insert into user_coupon (user_id, coupon_id) values (?, ?)
+	`
+
+	if _, err = config.DB.Exec(query, request.UserId, coupon.Id); err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
 func Feedback(c *gin.Context) {
 	query := `
 		insert into user_feedback (user_id, title, feedback) values (?, ?, ?)
@@ -328,6 +382,5 @@ func useDiscount(tx *sql.Tx, userId int32) (err error) {
 
 	_, err = tx.Exec(query, userId)
 
-	return;
+	return
 }
-

@@ -19,4 +19,6 @@ func initUserRoutes() {
 	userRouter.POST("/update/work", controllers.UpdateWork)
 
 	userRouter.POST("/feedback", controllers.Feedback)
+
+	userRouter.POST("/coupon/apply", controllers.ApplyCoupon)
 }

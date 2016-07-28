@@ -116,6 +116,18 @@ type UpdateAddress struct {
 	Street string `json:"street"`
 }
 
+type ApplyCouponRequest struct {
+	BaseRequest
+
+	Coupon string `json:"code"`
+}
+
+type UserCoupon struct {
+	UserId   int32
+	CouponId int32
+	Used     int32
+}
+
 type Feedback struct {
 	BaseRequest
 
