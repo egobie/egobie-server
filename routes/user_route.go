@@ -20,5 +20,7 @@ func initUserRoutes() {
 
 	userRouter.POST("/feedback", controllers.Feedback)
 
+	userRouter.POST("/coupon", controllers.GetCoupon)
+
 	userRouter.POST("/coupon/apply", controllers.ApplyCoupon)
 }

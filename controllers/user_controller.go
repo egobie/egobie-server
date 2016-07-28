@@ -280,10 +280,47 @@ func UpdateWork(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
+func GetCoupon(c *gin.Context) {
+	query := `
+		select discount from coupon c
+		inner join user_coupon uc on uc.coupon_id = c.id
+		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		order by create_timestamp
+	`
+	request := modules.BaseRequest{}
+	var (
+		discount int32
+		err      error
+		body     []byte
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if err = config.DB.QueryRow(query, request.UserId).Scan(&discount); err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, discount)
+}
+
 func ApplyCoupon(c *gin.Context) {
 	query := `
 		select coupon_id from user_coupon
 		where user_id = ? and (used = 0 or coupon_id = ?)
+		order by create_timestamp
 	`
 	request := modules.ApplyCouponRequest{}
 	var (

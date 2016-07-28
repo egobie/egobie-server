@@ -849,6 +849,7 @@ func getUserCoupon(tx *sql.Tx, userId int32) (int32, float32) {
 		from user_coupon uc
 		inner join coupon c on c.id = uc.coupon_id
 		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		order by uc.create_timestamp
 	`
 	var (
 		discount int32
