@@ -589,12 +589,16 @@ func PlaceOrder(c *gin.Context) {
 
 	couponId, coupon := getUserCoupon(tx, request.UserId)
 
-	price *= (1.07 * coupon)
+	price *= 1.07
 
 	if user.FirstTime > 0 {
 		price *= calculateDiscount("RESIDENTIAL_FIRST")
-	} else if user.Discount > 0 {
-		price *= calculateDiscount("RESIDENTIAL")
+	} else {
+		price *= coupon
+
+		if user.Discount > 0 {
+			price *= calculateDiscount("RESIDENTIAL")
+		}
 	}
 
 	if types == modules.SERVICE_BOTH {
@@ -642,7 +646,7 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if couponId > 0 {
+	if user.FirstTime <= 0 && couponId > 0 {
 		if err = useCoupon(tx, user.Id, couponId); err != nil {
 			return
 		}
@@ -848,7 +852,7 @@ func getUserCoupon(tx *sql.Tx, userId int32) (int32, float32) {
 		select coupon_id, discount
 		from user_coupon uc
 		inner join coupon c on c.id = uc.coupon_id
-		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		where uc.user_id = ? and uc.used = 0
 		order by uc.create_timestamp
 	`
 	var (
