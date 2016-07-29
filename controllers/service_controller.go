@@ -587,14 +587,16 @@ func PlaceOrder(c *gin.Context) {
 		request.Services, request.Addons,
 	)
 
-	couponId, coupon := getUserCoupon(tx, request.UserId)
+	couponId, coupon := getUserCoupon(request.UserId)
 
 	price *= 1.07
 
 	if user.FirstTime > 0 {
 		price *= calculateDiscount("RESIDENTIAL_FIRST")
 	} else {
-		price *= coupon
+		if (couponId > 0) {
+			price *= coupon
+		}
 
 		if user.Discount > 0 {
 			price *= calculateDiscount("RESIDENTIAL")
@@ -847,7 +849,7 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 	return
 }
 
-func getUserCoupon(tx *sql.Tx, userId int32) (int32, float32) {
+func getUserCoupon(userId int32) (int32, float32) {
 	query := `
 		select coupon_id, discount
 		from user_coupon uc
@@ -855,20 +857,22 @@ func getUserCoupon(tx *sql.Tx, userId int32) (int32, float32) {
 		where uc.user_id = ? and uc.used = 0
 		order by uc.create_timestamp
 	`
-	var (
-		discount int32
-		couponId int32
-	)
+	temp := struct{
+		CouponId int32
+		Discount int32
+	}{}
 
-	if err := tx.QueryRow(query, userId).Scan(&couponId, &discount); err != nil {
+	if err := config.DB.QueryRow(query, userId).Scan(
+		&temp.CouponId, &temp.Discount,
+	); err != nil {
 		return -1, 1
 	}
 
-	if discount == 100 {
-		return couponId, 0
+	if temp.Discount == 100 {
+		return temp.CouponId, 0
 	}
 
-	return couponId, 1 - float32(discount)/100.0
+	return temp.CouponId, 1 - float32(temp.Discount)/100.0
 }
 
 func CancelOrder(c *gin.Context) {

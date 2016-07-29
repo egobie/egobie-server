@@ -359,7 +359,12 @@ func ApplyCoupon(c *gin.Context) {
 	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
 
 	if err == nil {
-		err = errors.New("You already have a coupon activated")
+		if temp == coupon.Id {
+			err = errors.New("The coupon had been used")
+		} else {
+			err = errors.New("You already have a coupon activated")
+		}
+
 		return
 	} else if err != sql.ErrNoRows {
 		return
