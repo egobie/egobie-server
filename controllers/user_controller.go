@@ -285,7 +285,7 @@ func GetCoupon(c *gin.Context) {
 		select discount from coupon c
 		inner join user_coupon uc on uc.coupon_id = c.id
 		where c.expired = 0 and uc.user_id = ? and uc.used = 0
-		order by create_timestamp
+		order by uc.create_timestamp
 	`
 	request := modules.BaseRequest{}
 	var (
@@ -310,7 +310,12 @@ func GetCoupon(c *gin.Context) {
 	}
 
 	if err = config.DB.QueryRow(query, request.UserId).Scan(&discount); err != nil {
-		return
+		if err == sql.ErrNoRows {
+			discount = 0;
+			err = nil
+		} else {
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, discount)
@@ -353,10 +358,10 @@ func ApplyCoupon(c *gin.Context) {
 
 	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
 
-	if err != sql.ErrNoRows {
-		return
-	} else if err == nil {
+	if err == nil {
 		err = errors.New("You already have a coupon activated")
+		return
+	} else if err != sql.ErrNoRows {
 		return
 	}
 
