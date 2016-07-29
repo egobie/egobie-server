@@ -1833,6 +1833,8 @@ INSERT INTO service_addon (service_id, name, note, price) VALUES (6, "Paint Prot
 -- REMOVE AFTER MIGRATION - START --
 -- ------------------------------ --
 
+ALTER TABLE user MODIFY COLUMN discount INT NOT NULL DEFAULT 0;
+
 ALTER TABLE user_opening CHANGE mixed task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN';
 
 ALTER TABLE user_service DROP COLUMN assignee;
