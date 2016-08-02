@@ -236,16 +236,27 @@ func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 
 	request := modules.ChangeServiceStatus{}
 	taskInfo := modules.TaskInfo{}
-	args := []interface{}{
-		status, request.ServiceId,
-	}
 
 	var (
 		data []byte
 		tx   *sql.Tx
-
 	)
 
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	args := []interface{}{
+		status, request.ServiceId,
+	}
 
 	if status == "IN_PROGRESS" {
 		query += ", start_timestamp = CURRENT_TIMESTAMP()"
@@ -272,18 +283,6 @@ func changeUserServiceStatus(c *gin.Context, status string) (err error) {
 	}
 
 	query += " where user_service_id = ? and user_id = ?"
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
-
-	if tx, err = config.DB.Begin(); err != nil {
-		return
-	}
 
 	defer func() {
 		if err != nil {
