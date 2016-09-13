@@ -81,8 +81,8 @@ func CheckUsername(c *gin.Context) {
 
 func SignUp(c *gin.Context) {
 	query := `
-		insert into user (type, username, password, email, phone_number, referred)
-		values ('RESIDENTIAL', ?, ?, ?, ?, ?)
+		insert into user (type, username, password, email, phone_number, referred, discount)
+		values ('RESIDENTIAL', ?, ?, ?, ?, ?, ?)
 	`
 	request := modules.SignUp{}
 	pattern := "^([A-Z0-9]{5})$"
@@ -94,6 +94,7 @@ func SignUp(c *gin.Context) {
 		err          error
 		referred     string
 		matched      bool
+		discount     int32
 	)
 
 	defer func() {
@@ -103,7 +104,7 @@ func SignUp(c *gin.Context) {
 			return
 		}
 
-		go sendNewResidentialUserEmail(request.Email);
+		go sendNewResidentialUserEmail(request.Email)
 	}()
 
 	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -124,13 +125,15 @@ func SignUp(c *gin.Context) {
 		pattern, request.Coupon,
 	); matched {
 		referred = request.Coupon
+		discount = 1
 	} else {
 		referred = ""
+		discount = 0
 	}
 
 	if result, err = config.DB.Exec(
 		query, request.Username, enPassword, request.Email,
-		request.PhoneNumber, referred,
+		request.PhoneNumber, referred, discount,
 	); err != nil {
 		if isDuplicateEntryError(err) {
 			err = errors.New("user already exists!")
@@ -153,7 +156,7 @@ func SignUp(c *gin.Context) {
 	go updateUserSignIn(int32(lastInsertId))
 
 	if matched {
-		go updateUserCoupon(request.Coupon)
+		updateUserCoupon(request.Coupon)
 	}
 }
 
@@ -405,7 +408,7 @@ func ResetPasswordStep2(c *gin.Context) {
 		return
 	}
 
-	if (len(request.Token) < 5 || len(request.Token) > 10) {
+	if len(request.Token) < 5 || len(request.Token) > 10 {
 		err = errors.New("Invalid request")
 		return
 	}
@@ -539,4 +542,8 @@ func Secure(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, code)
 	}
+}
+
+func Test(c *gin.Context) {
+	SendCancelMessage("2019120383")
 }

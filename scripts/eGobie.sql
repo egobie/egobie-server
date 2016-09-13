@@ -29,7 +29,7 @@ CREATE TABLE user (
     sign INT NOT NULL DEFAULT 0,
     coupon VARCHAR(5) NOT NULL DEFAULT '',
     referred VARCHAR(5) NOT NULL DEFAULT '',
-    discount INT NOT NULL DEFAULT 1,
+    discount INT NOT NULL DEFAULT 0,
     first_time INT NOT NULL DEFAULT 1,
     invitation INT NOT NULL DEFAULT 0,
     sign_up DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -160,7 +160,6 @@ CREATE TABLE user_service (
     note VARCHAR(2048) NOT NULL DEFAULT '',
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     opening_id INT NOT NULL,
-    assignee INT NOT NULL DEFAULT -1,
     reserved_start_timestamp TIMESTAMP NULL,
     start_timestamp TIMESTAMP NULL,
     end_timestamp TIMESTAMP NULL,
@@ -231,7 +230,7 @@ CREATE TABLE user_opening (
     day DATE NOT NULL,
     user_id INT NOT NULL,
     user_schedule INT NOT NULL DEFAULT 67108863,
-    mixed INT NOT NULL DEFAULT 0,
+    task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN',
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),
     INDEX(user_id)
@@ -323,4 +322,45 @@ CREATE TABLE discount (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     type VARCHAR(32) NOT NULL,
     discount INT NOT NULL
+);
+
+CREATE TABLE user_service_assignee_list (
+    user_id INT NOT NULL,
+    user_service_id INT NOT NULL,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    start_timestamp TIMESTAMP NULL,
+    end_timestamp TIMESTAMP NULL,
+    UNIQUE KEY (user_id, user_service_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (user_service_id) REFERENCES user_service(id) 
+);
+
+CREATE TABLE fleet_service_assignee_list (
+    user_id INT NOT NULL,
+    fleet_service_id INT NOT NULL,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    start_timestamp TIMESTAMP NULL,
+    end_timestamp TIMESTAMP NULL,
+    UNIQUE KEY (user_id, fleet_service_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (fleet_service_id) REFERENCES fleet_service(id)
+);
+
+CREATE TABLE coupon (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    coupon VARCHAR(6) NOT NULL,
+    discount INT NOT NULL,
+    expired INT NOT NULL DEFAULT 0,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (coupon)
+);
+
+CREATE TABLE user_coupon (
+    user_id INT NOT NULL,
+    coupon_id INT NOT NULL,
+    used INT NOT NULL DEFAULT 0,
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY (user_id, coupon_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (coupon_id) REFERENCES coupon(id)
 );

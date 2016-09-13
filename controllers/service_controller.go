@@ -393,10 +393,12 @@ func loadOpening(query, types string, args ...interface{}) (
 		preDay string
 	)
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		query += " and count_wash > 0 order by day, period"
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		query += " and count_oil > 0 order by day, period"
+	} else {
+		query += " and count_wash > 0 and count_oil > 0 order by day, period"
 	}
 
 	if rows, err = config.DB.Query(query, args...); err != nil {
@@ -518,7 +520,6 @@ func PlaceOrder(c *gin.Context) {
 		gap               int32
 		insertedId        int64
 		reserved          string
-		assignee          int32
 		reservationNumber string
 		types             string
 		services          []string
@@ -586,15 +587,23 @@ func PlaceOrder(c *gin.Context) {
 		request.Services, request.Addons,
 	)
 
+	couponId, coupon := getUserCoupon(request.UserId)
+
 	price *= 1.07
 
 	if user.FirstTime > 0 {
 		price *= calculateDiscount("RESIDENTIAL_FIRST")
-	} else if user.Discount > 0 {
-		price *= calculateDiscount("RESIDENTIAL")
+	} else {
+		if (couponId > 0) {
+			price *= coupon
+		}
+
+		if user.Discount > 0 {
+			price *= calculateDiscount("RESIDENTIAL")
+		}
 	}
 
-	if types == "BOTH" {
+	if types == modules.SERVICE_BOTH {
 		// Additional discount if user choose both service
 		price *= calculateDiscount("OIL_WASH")
 	}
@@ -609,7 +618,7 @@ func PlaceOrder(c *gin.Context) {
 	defer func() {
 		if err != nil {
 			if err1 := tx.Rollback(); err1 != nil {
-				fmt.Println("Error -Rollback - ", err1.Error())
+				fmt.Println("Error - Rollback - ", err1.Error())
 			}
 
 			c.JSON(http.StatusBadRequest, err.Error())
@@ -639,14 +648,14 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	if err = holdOpening(
-		tx, request.Opening, request.Opening+gap, types,
-	); err != nil {
-		return
+	if user.FirstTime <= 0 && couponId > 0 {
+		if err = useCoupon(tx, user.Id, couponId); err != nil {
+			return
+		}
 	}
 
-	if assignee, err = assignService(
-		tx, request.Opening, gap, types,
+	if err = holdOpening(
+		tx, request.Opening, request.Opening+gap, types,
 	); err != nil {
 		return
 	}
@@ -658,14 +667,14 @@ func PlaceOrder(c *gin.Context) {
 	insertUserService := `
 		insert into user_service (
 			user_id, user_car_id, user_payment_id, opening_id,
-			reserved_start_timestamp, gap, assignee,
-			estimated_time, estimated_price, status, types
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			reserved_start_timestamp, gap, estimated_time, estimated_price,
+			status, types
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertUserService,
 		user.Id, car.Id, payment.Id, request.Opening, reserved,
-		gap, assignee, time, price, "RESERVED", types,
+		gap, time, price, "RESERVED", types,
 	); err != nil {
 		return
 	}
@@ -675,6 +684,12 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	user_service_id := int32(insertedId)
+
+	if err = assignService(
+		tx, user_service_id, request.Opening, gap, types, "USER_SERVICE",
+	); err != nil {
+		return
+	}
 
 	if err = tx.QueryRow(`
 		select reservation_id from user_service where id = ?`, user_service_id,
@@ -760,9 +775,9 @@ func getServicesTimeAndPriceAndTypes(ids []int32) (
 			time += s.Time
 			price += s.Price
 
-			if s.Type == "CAR_WASH" {
+			if s.Type == modules.SERVICE_CAR_WASH {
 				wash = true
-			} else if s.Type == "OIL_CHANGE" {
+			} else if s.Type == modules.SERVICE_OIL_CHANGE {
 				oil = true
 			}
 
@@ -810,9 +825,9 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 			time1 += s.Time
 			price1 += s.Price
 
-			if s.Type == "CAR_WASH" {
+			if s.Type == modules.SERVICE_CAR_WASH {
 				wash = true
-			} else if s.Type == "OIL_CHANGE" {
+			} else if s.Type == modules.SERVICE_OIL_CHANGE {
 				oil = true
 			}
 		}
@@ -834,22 +849,51 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 	return
 }
 
+func getUserCoupon(userId int32) (int32, float32) {
+	query := `
+		select coupon_id, discount
+		from user_coupon uc
+		inner join coupon c on c.id = uc.coupon_id
+		where uc.user_id = ? and uc.used = 0
+		order by uc.create_timestamp
+	`
+	temp := struct{
+		CouponId int32
+		Discount int32
+	}{}
+
+	if err := config.DB.QueryRow(query, userId).Scan(
+		&temp.CouponId, &temp.Discount,
+	); err != nil {
+		return -1, 1
+	}
+
+	if temp.Discount == 100 {
+		return temp.CouponId, 0
+	}
+
+	return temp.CouponId, 1 - float32(temp.Discount)/100.0
+}
+
 func CancelOrder(c *gin.Context) {
-	cancel(c, false)
+	cancel(c, false, false)
 }
 
 func ForceCancelOrder(c *gin.Context) {
-	cancel(c, true)
+	cancel(c, true, false)
 }
 
-func cancel(c *gin.Context, force bool) {
+func FreeCancelOrder(c *gin.Context) {
+	cancel(c, true, true)
+}
+
+func cancel(c *gin.Context, force, free bool) {
 	request := modules.CancelRequest{}
 	temp := struct {
 		CarId     int32
 		PaymentId int32
 		Opening   int32
 		Gap       int32
-		Assignee  int32
 		Types     string
 	}{}
 
@@ -891,7 +935,7 @@ func cancel(c *gin.Context, force bool) {
 	}()
 
 	query := `
-		select user_car_id, user_payment_id, opening_id, gap, assignee, types
+		select user_car_id, user_payment_id, opening_id, gap, types
 		from user_service
 		where id = ? and user_id = ? and status = 'RESERVED'
 	`
@@ -905,8 +949,7 @@ func cancel(c *gin.Context, force bool) {
 	if err = tx.QueryRow(
 		query, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening,
-		&temp.Gap, &temp.Assignee, &temp.Types,
+		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Types,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = nil
@@ -917,7 +960,7 @@ func cancel(c *gin.Context, force bool) {
 	}
 
 	query = `
-		update user_service set status = 'CANCEL', assignee = -1
+		update user_service set status = 'CANCEL'
 		where id = ? and user_id = ?
 	`
 	if _, err = tx.Exec(
@@ -926,7 +969,9 @@ func cancel(c *gin.Context, force bool) {
 		return
 	}
 
-	go cancelReservation(request.UserId)
+	if !free {
+		go cancelReservation(request.UserId)
+	}
 
 	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
 		return
@@ -941,12 +986,12 @@ func cancel(c *gin.Context, force bool) {
 	}
 
 	if err = revokeUserOpening(
-		tx, temp.Opening, temp.Gap, temp.Assignee,
+		tx, request.Id, temp.Opening, temp.Gap, "USER_SERVICE",
 	); err != nil {
 		return
 	}
 
-	if force {
+	if force && !free {
 		if err = processPayment(
 			tx, request.Id, temp.PaymentId, request.UserId, 0.5,
 		); err != nil {
@@ -1201,11 +1246,20 @@ func updateServiceDemand(ids []int32) {
 	}
 }
 
-func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int32, err error) {
+func assignService(
+	tx *sql.Tx,
+	userServiceId, openingId, gap int32,
+	types, serviceType string,
+) (err error) {
 	query := "select day, period from opening where id = ?"
+	vans := 1
+
 	var (
-		day    string
-		period int32
+		day       string
+		period    int32
+		rows      *sql.Rows
+		worker    int32
+		assignees []int32
 	)
 
 	if err = tx.QueryRow(
@@ -1214,38 +1268,88 @@ func assignService(tx *sql.Tx, openingId, gap int32, types string) (assignee int
 		return
 	}
 
-	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+	mask := calculateMask(gap, period)
 
 	query = `
 		select user_id from user_opening
 		where day = ? and user_schedule & ? = ?
 	`
 
-	if types == "CAR_WASH" {
-		query += " and mixed = 0"
+	if types == modules.SERVICE_CAR_WASH {
+		vans = 1
+		query += " and task = 'CAR_WASH'"
+	} else if types == modules.SERVICE_OIL_CHANGE {
+		vans = 1
+		query += " and task = 'OIL_CHANGE'"
 	} else {
-		query += " and mixed = 1"
+		vans = 2
+		query += " and (task = 'CAR_WASH' or task = 'OIL_CHANGE')"
 	}
 
-	if err = tx.QueryRow(
+	query += " group by task"
+
+	if rows, err = tx.Query(
 		query, day, mask, mask,
-	).Scan(&assignee); err != nil {
+	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("No service provider available")
 		}
 
 		return
 	}
+	defer rows.Close()
 
-	_, err = tx.Exec(`
-		update user_opening set user_schedule = user_schedule ^ ?
-		where user_id = ? and day = ?
-	`, mask, assignee, day)
+	for rows.Next() {
+		if err = rows.Scan(&worker); err != nil {
+			return
+		}
+
+		assignees = append(assignees, worker)
+	}
+
+	if len(assignees) != vans {
+		err = errors.New("No service provider available")
+		return
+	}
+
+	if _, err = tx.Exec(`
+			update user_opening set user_schedule = user_schedule ^ ?
+			where day = ? and user_id in (
+		`+utils.ToStringList(assignees)+")", mask, day,
+	); err != nil {
+		return
+	}
+
+	if serviceType == "USER_SERVICE" {
+		for _, assignee := range assignees {
+			if _, err = tx.Exec(`
+					insert into user_service_assignee_list (user_id, user_service_id, status)
+					values (?, ?, ?)
+				`, assignee, userServiceId, "RESERVED",
+			); err != nil {
+				return
+			}
+		}
+	} else {
+		for _, assignee := range assignees {
+			if _, err = tx.Exec(`
+					insert into fleet_service_assignee_list (user_id, fleet_service_id, status)
+					values (?, ?, ?)
+				`, assignee, userServiceId, "RESERVED",
+			); err != nil {
+				return
+			}
+		}
+	}
 
 	return
 }
 
-func revokeUserOpening(tx *sql.Tx, openingId, gap, assignee int32) (err error) {
+func revokeUserOpening(
+	tx *sql.Tx,
+	userServiceId, openingId, gap int32,
+	serviceType string,
+) (err error) {
 	var (
 		day    string
 		period int32
@@ -1258,14 +1362,30 @@ func revokeUserOpening(tx *sql.Tx, openingId, gap, assignee int32) (err error) {
 		return
 	}
 
-	mask := ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
+	mask := calculateMask(gap, period)
 
-	if _, err = tx.Exec(`
-		update user_opening set user_schedule = user_schedule ^ ?
-		where user_id = ? and day = ?`,
-		mask, assignee, day,
-	); err != nil {
-		return
+	if serviceType == "USER_SERVICE" {
+		if _, err = tx.Exec(`
+				update user_opening set user_schedule = user_schedule ^ ?
+				where day = ? and user_id in (
+					select user_id from user_service_assignee_list
+					where user_service_id = ?
+				)
+			`, mask, day, userServiceId,
+		); err != nil {
+			return
+		}
+	} else {
+		if _, err = tx.Exec(`
+				update user_opening set user_schedule = user_schedule ^ ?
+				where day = ? and user_id in (
+					select user_id from fleet_service_assignee_list
+					where fleet_service_id = ?
+				)
+			`, mask, day, userServiceId,
+		); err != nil {
+			return
+		}
 	}
 
 	return
@@ -1279,15 +1399,20 @@ func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 		updateOpening string
 	)
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		updateOpening = `
 			update opening set count_wash = count_wash - 1
 			where id >= ? and id < ? and count_wash > 0
 		`
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		updateOpening = `
 			update opening set count_oil = count_oil - 1
 			where id >= ? and id < ? and count_oil > 0
+		`
+	} else {
+		updateOpening = `
+			update opening set count_wash = count_wash - 1, count_oil = count_oil - 1
+			where id >= ? and id < ? and count_wash > 0 and count_oil > 0
 		`
 	}
 
@@ -1310,14 +1435,19 @@ func holdOpening(tx *sql.Tx, start, end int32, types string) (err error) {
 func releaseOpening(tx *sql.Tx, id, gap int32, types string) (err error) {
 	var query string
 
-	if types == "CAR_WASH" {
+	if types == modules.SERVICE_CAR_WASH {
 		query = `
 			update opening set count_wash = count_wash + 1
 			where id >= ? and id < ?
 		`
-	} else {
+	} else if types == modules.SERVICE_OIL_CHANGE {
 		query = `
 			update opening set count_oil = count_oil + 1
+			where id >= ? and id < ?
+		`
+	} else {
+		query = `
+			update opening set count_wash = count_wash + 1, count_oil = count_oil + 1
 			where id >= ? and id < ?
 		`
 	}
@@ -1475,14 +1605,18 @@ func calculateHowLong(mins int32) (int32, string) {
 func calculateOrderTypes(wash, oil bool) (types string) {
 	switch {
 	case wash && oil:
-		types = "BOTH"
+		types = modules.SERVICE_BOTH
 	case wash:
-		types = "CAR_WASH"
+		types = modules.SERVICE_CAR_WASH
 	case oil:
-		types = "OIL_CHANGE"
+		types = modules.SERVICE_OIL_CHANGE
 	default:
-		types = "BOTH"
+		types = modules.SERVICE_BOTH
 	}
 
 	return
+}
+
+func calculateMask(gap, period int32) int32 {
+	return ((int32(math.Pow(float64(2), float64(gap))) - 1) << uint32(period-1))
 }

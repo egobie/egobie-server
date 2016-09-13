@@ -24,6 +24,7 @@ type UserTask struct {
 	Plate      string          `json:"plate"`
 	CarState   string          `json:"car_state"`
 	Color      string          `json:"color"`
+	Year       string          `json:"year"`
 	Maker      string          `json:"maker"`
 	Model      string          `json:"model"`
 	Services   []SimpleService `json:"services"`
@@ -65,6 +66,7 @@ type ChangeServiceStatus struct {
 }
 
 type TaskInfo struct {
+	Status        string
 	UserId        int32
 	UserCarId     int32
 	UserPaymentId int32

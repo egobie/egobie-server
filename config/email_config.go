@@ -31,7 +31,7 @@ func init() {
 	if EmailUsername == "" || EmailPassword == "" || EmailPort == "" ||
 		EmailSender == "" || EmailHost == "" || EmailCEO == "" {
 		fmt.Println("Email not configured properly")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	Email = smtp.PlainAuth(

@@ -24,4 +24,6 @@ func initSignRoutes() {
 	router.POST("/reset/resend", controllers.ResetPasswordResend)
 
 	router.GET("/secure/:code", controllers.Secure)
+
+//	router.POST("/test", controllers.Test)
 }

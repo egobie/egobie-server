@@ -22,6 +22,8 @@ func initServiceRoutes() {
 
 	serviceRouter.POST("/cancel/force", controllers.ForceCancelOrder)
 
+	serviceRouter.POST("/cancel/free", controllers.FreeCancelOrder)
+
 	serviceRouter.POST("/add", controllers.AddService)
 
 	serviceRouter.POST("/demand/opening/:id", controllers.OpeningDemand)

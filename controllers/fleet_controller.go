@@ -145,7 +145,6 @@ func PlaceFleetOrder(c *gin.Context) {
 		result         sql.Result
 		data           []byte
 		err            error
-		assignee       int32
 		time           int32
 		gap            int32
 		reserved       string
@@ -201,44 +200,44 @@ func PlaceFleetOrder(c *gin.Context) {
 			return
 		}
 
-		if assignee, err = assignService(
-			tx, request.Opening, gap, types,
-		); err != nil {
-			return
-		}
 		status = "WAITING"
 	} else {
-		assignee = -1
-		status = "NOT_ASSIGNED"
 		reserved = request.Day + " " + request.Hour
+		status = "NOT_ASSIGNED"
 	}
 
 	query := `
 		insert into fleet_service (user_id, opening_id, reserved_start_timestamp,
-			gap, assignee, estimated_time, status, types
-		) values (?, ?, ?, ?, ?, ?, ?, ?)
+			gap, estimated_time, status, types
+		) values (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(
 		query, request.UserId, request.Opening, reserved,
-		gap, assignee, time, status, types,
+		gap, time, status, types,
 	); err != nil {
 		return
 	} else if fleetServiceId, err = result.LastInsertId(); err != nil {
 		return
 	}
 
-	// Insert fleet orders
-	for _, order := range request.Orders {
-		if err = insertFleetServiceList(
-			tx, int32(fleetServiceId), order,
+	fleet_service_id := int32(fleetServiceId)
+
+	if request.Opening != -1 {
+		if err = assignService(
+			tx, fleet_service_id, request.Opening, gap, types, "FLEET_SERVICE",
 		); err != nil {
 			return
 		}
+	}
 
-		if err = insertFleetAddonList(
-			tx, int32(fleetServiceId), order,
-		); err != nil {
+	// Insert fleet orders
+	for _, order := range request.Orders {
+		if err = insertFleetServiceList(tx, fleet_service_id, order); err != nil {
+			return
+		}
+
+		if err = insertFleetAddonList(tx, fleet_service_id, order); err != nil {
 			return
 		}
 	}
@@ -385,8 +384,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	if err = tx.QueryRow(
 		query, request.Id, request.UserId,
 	).Scan(
-		&temp.Opening, &temp.Gap, &temp.Assignee,
-		&temp.Types, &temp.Status,
+		&temp.Opening, &temp.Gap, &temp.Assignee, &temp.Types, &temp.Status,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("Reservation not found")
@@ -400,7 +398,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	}
 
 	query = `
-		update fleet_service set status = 'CANCEL', assignee = -1
+		update fleet_service set status = 'CANCEL'
 		where id = ? and user_id = ?
 	`
 	if _, err = tx.Exec(
@@ -418,7 +416,7 @@ func cancelFleet(c *gin.Context, force bool) {
 	}
 
 	if err = revokeUserOpening(
-		tx, temp.Opening, temp.Gap, temp.Assignee,
+		tx, temp.Opening, temp.Gap, temp.Assignee, "FLEET_SERVICE",
 	); err != nil {
 		return
 	}
@@ -853,9 +851,9 @@ func calculateFleetOrderTimeAndTypes(
 			if s, ok := cache.SERVICES_MAP[id]; ok {
 				tempTime += s.Time
 
-				if s.Type == "CAR_WASH" {
+				if s.Type == modules.SERVICE_CAR_WASH {
 					wash = true
-				} else if s.Type == "OIL_CHANGE" {
+				} else if s.Type == modules.SERVICE_OIL_CHANGE {
 					oil = true
 				}
 			}
@@ -891,31 +889,4 @@ func createFleetHistory(tx *sql.Tx, serviceId int32) (err error) {
 	_, err = tx.Exec(query, serviceId)
 
 	return
-}
-
-func Test(c *gin.Context) {
-	request := struct {
-		Body string `json:"body"`
-	}{}
-	var (
-		data []byte
-		err  error
-	)
-
-	defer func() {
-		if err != nil {
-			c.JSON(http.StatusBadRequest, err.Error())
-			c.Abort()
-		}
-	}()
-
-	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
-		return
-	}
-
-	if err = json.Unmarshal(data, &request); err != nil {
-		return
-	}
-
-	fmt.Println("Body -", request.Body)
 }
