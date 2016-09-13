@@ -52,7 +52,7 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 //		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 //				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
 //				u.home_address_city, u.home_address_street, uc.plate, uc.state,
-//				uc.color, cma.title, cmo.title
+//				uc.color, uc.year, cma.title, cmo.title
 //		from user_service us
 //		inner join user u on u.id = us.user_id
 //		inner join user_car uc on uc.id = us.user_car_id
@@ -66,7 +66,7 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 		select us.id, usal.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
 				u.home_address_city, u.home_address_street, uc.plate, uc.state,
-				uc.color, cma.title, cmo.title
+				uc.color, uc.year, cma.title, cmo.title
 		from user_service us
 		inner join user u on u.id = us.user_id
 		inner join user_car uc on uc.id = us.user_car_id
@@ -97,8 +97,8 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 		if err = rows.Scan(
 			&task.Id, &task.Status, &task.Start, &task.FirstName, &task.MiddleName,
 			&task.LastName, &task.Phone, &task.State, &task.Zip, &task.City,
-			&task.Street, &task.Plate, &task.CarState, &task.Color, &task.Maker,
-			&task.Model,
+			&task.Street, &task.Plate, &task.CarState, &task.Color, &task.Year,
+			&task.Maker, &task.Model,
 		); err != nil {
 			return
 		}

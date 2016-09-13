@@ -24,6 +24,7 @@ type UserTask struct {
 	Plate      string          `json:"plate"`
 	CarState   string          `json:"car_state"`
 	Color      string          `json:"color"`
+	Year       string          `json:"year"`
 	Maker      string          `json:"maker"`
 	Model      string          `json:"model"`
 	Services   []SimpleService `json:"services"`
