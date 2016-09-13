@@ -1771,7 +1771,8 @@ CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 8 DAY), 1, 1);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 9 DAY), 1, 1);
 CALL INSERT_OPENING(DATE_ADD(CURDATE(), INTERVAL 10 DAY), 1, 1);
 
-UPDATE user_opening SET mixed = 1 WHERE user_id = 2;
+UPDATE user_opening SET task = 'OIL_CHANGE' WHERE user_id = 2;
+UPDATE user_opening SET task = 'CAR_WASH' WHERE user_id = 3;
 
 DELIMITER $$
 CREATE TRIGGER INSERT_FLEET_TOKEN BEFORE INSERT ON fleet FOR EACH ROW
@@ -1827,3 +1828,24 @@ INSERT INTO discount (id, type, discount) VALUES
 
 INSERT INTO service_addon (service_id, name, note, price) VALUES (3, "Paint Protectant", "Multi-layer", 0);
 INSERT INTO service_addon (service_id, name, note, price) VALUES (6, "Paint Protectant", "Multi-layer", 0);
+
+-- ------------------------------ --
+-- REMOVE AFTER MIGRATION - START --
+-- ------------------------------ --
+
+ALTER TABLE user MODIFY COLUMN discount INT NOT NULL DEFAULT 0;
+
+ALTER TABLE user_opening CHANGE mixed task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN';
+
+ALTER TABLE user_service DROP COLUMN assignee;
+
+ALTER TABLE fleet_service DROP COLUMN assignee;
+
+UPDATE user_opening SET task = 'OIL_CHANGE' WHERE user_id = 2;
+UPDATE user_opening SET task = 'CAR_WASH' WHERE user_id = 3;
+
+INSERT INTO coupon (coupon, discount) VALUES ('EGOBIE', 20);
+
+-- ------------------------------ --
+-- REMOVE AFTER MIGRATION - END   --
+-- ------------------------------ --

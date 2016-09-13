@@ -30,7 +30,7 @@ func cacheDiscount() {
 	defer func() {
 		if err != nil {
 			fmt.Println("Error loading discount - ", err.Error())
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}()
 

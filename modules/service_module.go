@@ -4,6 +4,12 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
+const SERVICE_OIL_CHANGE string = "OIL_CHANGE"
+
+const SERVICE_CAR_WASH string = "CAR_WASH"
+
+const SERVICE_BOTH string = "BOTH"
+
 /**
 {
 	"id": 1,

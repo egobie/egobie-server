@@ -45,7 +45,7 @@ func cacheService() {
 	defer func() {
 		if err != nil {
 			fmt.Println("Failed to load services - ", err.Error())
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}()
 

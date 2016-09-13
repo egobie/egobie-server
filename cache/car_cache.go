@@ -35,7 +35,7 @@ func cacheCarMake() {
 	defer func() {
 		if err != nil {
 			fmt.Println("Failed to load car make - ", err.Error())
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}()
 
@@ -68,7 +68,7 @@ func cacheCarModel() {
 	defer func() {
 		if err != nil {
 			fmt.Println("Failed to load car model - ", err.Error())
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}()
 

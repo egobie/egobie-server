@@ -25,7 +25,7 @@ func init() {
 	if merchantId == "" || publicKey == "" ||
 		privateKey == "" || braintreeEnv == "" {
 		fmt.Println("Merchant not Configured properly")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	/*

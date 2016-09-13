@@ -1,11 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
-	"errors"
-	"database/sql"
 
 	"github.com/egobie/egobie-server/cache"
 	"github.com/egobie/egobie-server/config"
@@ -280,6 +280,107 @@ func UpdateWork(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 
+func GetCoupon(c *gin.Context) {
+	query := `
+		select discount from coupon c
+		inner join user_coupon uc on uc.coupon_id = c.id
+		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		order by uc.create_timestamp
+	`
+	request := modules.BaseRequest{}
+	var (
+		discount int32
+		err      error
+		body     []byte
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if err = config.DB.QueryRow(query, request.UserId).Scan(&discount); err != nil {
+		if err == sql.ErrNoRows {
+			discount = 0;
+			err = nil
+		} else {
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, discount)
+}
+
+func ApplyCoupon(c *gin.Context) {
+	query := `
+		select coupon_id from user_coupon
+		where user_id = ? and (used = 0 or coupon_id = ?)
+		order by create_timestamp
+	`
+	request := modules.ApplyCouponRequest{}
+	var (
+		temp   int32
+		err    error
+		body   []byte
+		coupon cache.Coupon
+		ok     bool
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if coupon, ok = cache.COUPON_CACHE[request.Coupon]; !ok {
+		err = errors.New("Invalid Coupon Code")
+		return
+	}
+
+	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
+
+	if err == nil {
+		if temp == coupon.Id {
+			err = errors.New("The coupon had been used")
+		} else {
+			err = errors.New("You already have a coupon activated")
+		}
+
+		return
+	} else if err != sql.ErrNoRows {
+		return
+	}
+
+	query = `
+		insert into user_coupon (user_id, coupon_id) values (?, ?)
+	`
+
+	if _, err = config.DB.Exec(query, request.UserId, coupon.Id); err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
 func Feedback(c *gin.Context) {
 	query := `
 		insert into user_feedback (user_id, title, feedback) values (?, ?, ?)
@@ -328,6 +429,16 @@ func useDiscount(tx *sql.Tx, userId int32) (err error) {
 
 	_, err = tx.Exec(query, userId)
 
-	return;
+	return
 }
 
+func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
+	query := `
+		update user_coupon set used = 1
+		where user_id = ? and coupon_id = ?
+	`
+
+	_, err = tx.Exec(query, userId, couponId)
+
+	return
+}
