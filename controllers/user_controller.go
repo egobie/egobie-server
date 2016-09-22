@@ -282,17 +282,24 @@ func UpdateWork(c *gin.Context) {
 
 func GetCoupon(c *gin.Context) {
 	query := `
-		select discount from coupon c
+		select c.id, c.discount, c.percent, uc.count from coupon c
 		inner join user_coupon uc on uc.coupon_id = c.id
-		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		where uc.user_id = ? and uc.count > 0 and uc.used = 0 and c.expired = 0
 		order by uc.create_timestamp
 	`
 	request := modules.BaseRequest{}
 	var (
-		discount int32
 		err      error
 		body     []byte
 	)
+
+	coupon := struct {
+		Id       int32   `json:"id"`
+		Discount float64 `json:"discount"`
+		Count    int32   `json:"count"`
+		Percent  int32   `json:"percent"`
+		Priority int32   `json:"priority"`
+	}{}
 
 	defer func() {
 		if err != nil {
@@ -309,16 +316,21 @@ func GetCoupon(c *gin.Context) {
 		return
 	}
 
-	if err = config.DB.QueryRow(query, request.UserId).Scan(&discount); err != nil {
+	if err = config.DB.QueryRow(query, request.UserId).Scan(
+		&coupon.Id, &coupon.Discount, &coupon.Percent, &coupon.Count,
+	); err != nil {
 		if err == sql.ErrNoRows {
-			discount = 0;
+			coupon.Id = -1
+			coupon.Discount = 0
 			err = nil
 		} else {
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, discount)
+	coupon.Priority = getCouponPriority(coupon.Id)
+
+	c.JSON(http.StatusOK, coupon)
 }
 
 func ApplyCoupon(c *gin.Context) {
@@ -441,4 +453,12 @@ func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
 	_, err = tx.Exec(query, userId, couponId)
 
 	return
+}
+
+func getCouponPriority(couponId int32) int32 {
+	if couponId <= 500 {
+		return 1
+	} else {
+		return 2
+	}
 }
