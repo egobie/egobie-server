@@ -406,10 +406,12 @@ func ApplyCoupon(c *gin.Context) {
 	}
 
 	query = `
-		insert into user_coupon (user_id, coupon_id) values (?, ?)
+		insert into user_coupon (user_id, coupon_id, count) values (?, ?, ?)
 	`
 
-	if _, err = tx.Exec(query, request.UserId, coupon.Id); err != nil {
+	count := getCouponCount(coupon.Id)
+
+	if _, err = tx.Exec(query, request.UserId, coupon.Id, count); err != nil {
 		return
 	}
 
@@ -495,6 +497,15 @@ func getCouponPriority(couponId int32) int32 {
 	}
 
 	return 2
+}
+
+func getCouponCount(couponId int32) int32 {
+	// For Groupon
+	if 450 < couponId && couponId <= 500 {
+		return 3
+	}
+
+	return 1
 }
 
 func isCouponOnce(couponId int32) bool {
