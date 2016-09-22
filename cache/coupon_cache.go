@@ -25,7 +25,7 @@ func init() {
 func cacheCoupon() {
 	query := `
 		select id, coupon, discount, percent from coupon
-		where expired = 0
+		where expired = 0 and applied = 0
 	`
 	var (
 		code string

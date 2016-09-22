@@ -417,7 +417,7 @@ func ApplyCoupon(c *gin.Context) {
 
 	if isCouponOnce(coupon.Id) {
 		query = `
-			update coupon set expired = 1 where coupon_id = ?
+			update coupon set applied = 1 where id = ?
 		`
 
 		if _, err = tx.Exec(query, coupon.Id); err != nil {

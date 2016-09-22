@@ -352,6 +352,7 @@ CREATE TABLE coupon (
     discount INT NOT NULL,
     percent INT NOT NULL DEFAULT 1,
     expired INT NOT NULL DEFAULT 0,
+    applied INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY (coupon)
 );

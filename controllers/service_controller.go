@@ -856,10 +856,10 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 
 func getUserCoupon(userId int32) (int32, float32) {
 	query := `
-		select c.coupon_id, c.discount, c.percent
+		select c.id, c.discount, c.percent
 		from user_coupon uc
 		inner join coupon c on c.id = uc.coupon_id
-		where uc.user_id = ? and uc.used = 0
+		where uc.user_id = ? and uc.count > 0 and c.expired = 0
 		order by uc.create_timestamp
 	`
 	temp := struct {
@@ -875,10 +875,6 @@ func getUserCoupon(userId int32) (int32, float32) {
 	}
 
 	if temp.Percent == 1 {
-		if temp.Discount == 100.0 {
-			return temp.CouponId, 0
-		}
-
 		return temp.CouponId, 1 - temp.Discount/100.0
 	}
 
