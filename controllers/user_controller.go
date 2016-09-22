@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -284,13 +285,13 @@ func GetCoupon(c *gin.Context) {
 	query := `
 		select c.id, c.discount, c.percent, uc.count from coupon c
 		inner join user_coupon uc on uc.coupon_id = c.id
-		where uc.user_id = ? and uc.count > 0 and uc.used = 0 and c.expired = 0
+		where uc.user_id = ? and uc.count > 0 and c.expired = 0
 		order by uc.create_timestamp
 	`
 	request := modules.BaseRequest{}
 	var (
-		err      error
-		body     []byte
+		err  error
+		body []byte
 	)
 
 	coupon := struct {
@@ -336,11 +337,12 @@ func GetCoupon(c *gin.Context) {
 func ApplyCoupon(c *gin.Context) {
 	query := `
 		select coupon_id from user_coupon
-		where user_id = ? and (used = 0 or coupon_id = ?)
+		where user_id = ? and (count > 0 or coupon_id = ?)
 		order by create_timestamp
 	`
 	request := modules.ApplyCouponRequest{}
 	var (
+		tx     *sql.Tx
 		temp   int32
 		err    error
 		body   []byte
@@ -368,6 +370,27 @@ func ApplyCoupon(c *gin.Context) {
 		return
 	}
 
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - roll back - ", err1.Error())
+			}
+
+			c.JSON(http.StatusBadRequest, err.Error())
+			err = nil
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				c.JSON(http.StatusBadRequest, err1.Error())
+			} else {
+				c.JSON(http.StatusOK, "OK")
+			}
+		}
+	}()
+
 	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
 
 	if err == nil {
@@ -386,11 +409,19 @@ func ApplyCoupon(c *gin.Context) {
 		insert into user_coupon (user_id, coupon_id) values (?, ?)
 	`
 
-	if _, err = config.DB.Exec(query, request.UserId, coupon.Id); err != nil {
+	if _, err = tx.Exec(query, request.UserId, coupon.Id); err != nil {
 		return
 	}
 
-	c.JSON(http.StatusOK, "OK")
+	if isCouponOnce(coupon.Id) {
+		query = `
+			update coupon set expired = 1 where coupon_id = ?
+		`
+
+		if _, err = tx.Exec(query, coupon.Id); err != nil {
+			return
+		}
+	}
 }
 
 func Feedback(c *gin.Context) {
@@ -446,8 +477,8 @@ func useDiscount(tx *sql.Tx, userId int32) (err error) {
 
 func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
 	query := `
-		update user_coupon set used = 1
-		where user_id = ? and coupon_id = ?
+		update user_coupon set count = count - 1
+		where user_id = ? and coupon_id = ? and count > 0
 	`
 
 	_, err = tx.Exec(query, userId, couponId)
@@ -456,9 +487,21 @@ func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
 }
 
 func getCouponPriority(couponId int32) int32 {
-	if couponId <= 500 {
+	if couponId <= 0 {
+		return -1
+	} else if couponId <= 500 {
+		// For Groupon
 		return 1
-	} else {
-		return 2
 	}
+
+	return 2
+}
+
+func isCouponOnce(couponId int32) bool {
+	// For Groupon
+	if 0 < couponId && couponId <= 500 {
+		return true
+	}
+
+	return false
 }

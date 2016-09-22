@@ -10,7 +10,8 @@ import (
 
 type Coupon struct {
 	Id       int32
-	Discount int32
+	Discount float32
+	Percent  int32
 }
 
 var COUPON_CACHE map[string]Coupon
@@ -23,7 +24,7 @@ func init() {
 
 func cacheCoupon() {
 	query := `
-		select id, coupon, discount from coupon
+		select id, coupon, discount, percent from coupon
 		where expired = 0
 	`
 	var (
@@ -39,7 +40,9 @@ func cacheCoupon() {
 
 	for rows.Next() {
 		coupon := Coupon{}
-		if err = rows.Scan(&coupon.Id, &code, &coupon.Discount); err != nil {
+		if err = rows.Scan(
+			&coupon.Id, &code, &coupon.Discount, &coupon.Percent,
+		); err != nil {
 			return
 		}
 		COUPON_CACHE[code] = coupon
