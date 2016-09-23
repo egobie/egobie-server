@@ -346,8 +346,7 @@ func ApplyCoupon(c *gin.Context) {
 		temp   int32
 		err    error
 		body   []byte
-		coupon cache.Coupon
-		ok     bool
+		coupon modules.Coupon
 	)
 
 	defer func() {
@@ -365,7 +364,11 @@ func ApplyCoupon(c *gin.Context) {
 		return
 	}
 
-	if coupon, ok = cache.COUPON_CACHE[request.Coupon]; !ok {
+	if coupon, err = getCoupon(request.Coupon); err != nil {
+		if err != sql.ErrNoRows {
+			fmt.Println("error when loading coupon info - ", request.Coupon)
+		}
+
 		err = errors.New("Invalid Coupon Code")
 		return
 	}
@@ -486,6 +489,19 @@ func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
 	_, err = tx.Exec(query, userId, couponId)
 
 	return
+}
+
+func getCoupon(code string) (coupon modules.Coupon, err error) {
+	query := `
+		select id, discount, percent from coupon
+		where coupon = ? and expired = 0 and applied = 0
+	`
+
+	err = config.DB.QueryRow(query, code).Scan(
+		&coupon.Id, &coupon.Discount, &coupon.Percent,
+	)
+
+	return coupon, err
 }
 
 func getCouponPriority(couponId int32) int32 {

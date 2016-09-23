@@ -1849,3 +1849,17 @@ INSERT INTO coupon (coupon, discount) VALUES ('EGOBIE', 20);
 -- ------------------------------ --
 -- REMOVE AFTER MIGRATION - END   --
 -- ------------------------------ --
+
+-- DROP PROCEDURE INSERT_COUPON
+-- ADD COUPON
+DELIMITER $$
+CREATE PROCEDURE INSERT_COUPON(IN count INT) BEGIN
+    DECLARE i INT DEFAULT 1;
+    SET i = 1;
+    WHILE i <= count DO
+        INSERT INTO coupon (coupon, discount, percent)
+        VALUES (UPPER(SUBSTRING(SHA2(i, 256), 23, 5)), 100, 0);
+        SET i = i + 1;
+    END WHILE;
+END $$
+DELIMITER ;
