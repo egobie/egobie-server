@@ -588,11 +588,9 @@ func PlaceOrder(c *gin.Context) {
 	)
 
 	couponId, coupon := getUserCoupon(request.UserId)
-	couponPriority := getCouponPriority(couponId)
+	couponServiceId := getCouponAppliedService(couponId)
 
-	price *= 1.07
-
-	if couponPriority == 1 {
+	if utils.Contains(request.Services, couponServiceId) {
 		if coupon > 1.0 {
 			price -= coupon
 
@@ -613,7 +611,7 @@ func PlaceOrder(c *gin.Context) {
 		price *= calculateDiscount("OIL_WASH")
 	}
 
-	price = float32(int(price*100)) / 100
+	price = float32(int(price*107)) / 100
 	gap = calculateGap(time)
 
 	if tx, err = config.DB.Begin(); err != nil {
@@ -649,7 +647,7 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}()
 
-	if couponPriority == 1 {
+	if utils.Contains(request.Services, couponServiceId) {
 		if err = useCoupon(tx, user.Id, couponId); err != nil {
 			return
 		}

@@ -19,6 +19,20 @@ func ToStringList(ints []int32) string {
 	return buffer.String()
 }
 
+func Contains(arr []int32, target int32) bool {
+	if len(arr) == 0 {
+		return false
+	}
+
+	for _, v := range arr {
+		if v == target {
+			return true
+		}
+	}
+
+	return false
+}
+
 func FormatPhone(phone string) string {
 	return formatNumber(phone)
 }
