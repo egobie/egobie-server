@@ -588,7 +588,7 @@ func PlaceOrder(c *gin.Context) {
 	)
 
 	couponId, coupon := getUserCoupon(request.UserId)
-	couponServiceId := getCouponAppliedService(couponId)
+	couponServiceId, _ := getCouponAppliedService(couponId)
 
 	if utils.Contains(request.Services, couponServiceId) {
 		if coupon > 1.0 {

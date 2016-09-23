@@ -295,11 +295,12 @@ func GetCoupon(c *gin.Context) {
 	)
 
 	coupon := struct {
-		Id        int32   `json:"id"`
-		Discount  float64 `json:"discount"`
-		Count     int32   `json:"count"`
-		Percent   int32   `json:"percent"`
-		ServiceId int32   `json:"service_id"`
+		Id          int32   `json:"id"`
+		Discount    float64 `json:"discount"`
+		Count       int32   `json:"count"`
+		Percent     int32   `json:"percent"`
+		ServiceId   int32   `json:"service_id"`
+		ServiceName string  `json:"service_name"`
 	}{}
 
 	defer func() {
@@ -329,7 +330,7 @@ func GetCoupon(c *gin.Context) {
 		}
 	}
 
-	coupon.ServiceId = getCouponAppliedService(coupon.Id)
+	coupon.ServiceId, coupon.ServiceName = getCouponAppliedService(coupon.Id)
 
 	c.JSON(http.StatusOK, coupon)
 }
@@ -504,21 +505,21 @@ func getCoupon(code string) (coupon modules.Coupon, err error) {
 	return coupon, err
 }
 
-func getCouponAppliedService(couponId int32) int32 {
+func getCouponAppliedService(couponId int32) (int32, string) {
 	if couponId <= 0 {
-		return -1
+		return -1, ""
 	} else if couponId <= 150 {
 		// For Groupon
-		return 10
+		return 10, cache.SERVICES_MAP[10].Name
 	} else if couponId <= 300 {
 		// For Groupon
-		return 11
+		return 11, cache.SERVICES_MAP[11].Name
 	} else if couponId <= 500 {
 		// For Groupon
-		return 3
+		return 3, cache.SERVICES_MAP[3].Name
 	}
 
-	return -1
+	return -1, ""
 }
 
 func getCouponCount(couponId int32) int32 {
