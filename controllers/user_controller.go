@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -282,17 +283,25 @@ func UpdateWork(c *gin.Context) {
 
 func GetCoupon(c *gin.Context) {
 	query := `
-		select discount from coupon c
+		select c.id, c.discount, c.percent, uc.count from coupon c
 		inner join user_coupon uc on uc.coupon_id = c.id
-		where c.expired = 0 and uc.user_id = ? and uc.used = 0
+		where uc.user_id = ? and uc.count > 0 and c.expired = 0
 		order by uc.create_timestamp
 	`
 	request := modules.BaseRequest{}
 	var (
-		discount int32
-		err      error
-		body     []byte
+		err  error
+		body []byte
 	)
+
+	coupon := struct {
+		Id          int32   `json:"id"`
+		Discount    float64 `json:"discount"`
+		Count       int32   `json:"count"`
+		Percent     int32   `json:"percent"`
+		ServiceId   int32   `json:"service_id"`
+		ServiceName string  `json:"service_name"`
+	}{}
 
 	defer func() {
 		if err != nil {
@@ -309,31 +318,36 @@ func GetCoupon(c *gin.Context) {
 		return
 	}
 
-	if err = config.DB.QueryRow(query, request.UserId).Scan(&discount); err != nil {
+	if err = config.DB.QueryRow(query, request.UserId).Scan(
+		&coupon.Id, &coupon.Discount, &coupon.Percent, &coupon.Count,
+	); err != nil {
 		if err == sql.ErrNoRows {
-			discount = 0;
+			coupon.Id = -1
+			coupon.Discount = 0
 			err = nil
 		} else {
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, discount)
+	coupon.ServiceId, coupon.ServiceName = getCouponAppliedService(coupon.Id)
+
+	c.JSON(http.StatusOK, coupon)
 }
 
 func ApplyCoupon(c *gin.Context) {
 	query := `
 		select coupon_id from user_coupon
-		where user_id = ? and (used = 0 or coupon_id = ?)
+		where user_id = ? and (count > 0 or coupon_id = ?)
 		order by create_timestamp
 	`
 	request := modules.ApplyCouponRequest{}
 	var (
+		tx     *sql.Tx
 		temp   int32
 		err    error
 		body   []byte
-		coupon cache.Coupon
-		ok     bool
+		coupon modules.Coupon
 	)
 
 	defer func() {
@@ -351,10 +365,35 @@ func ApplyCoupon(c *gin.Context) {
 		return
 	}
 
-	if coupon, ok = cache.COUPON_CACHE[request.Coupon]; !ok {
+	if coupon, err = getCoupon(request.Coupon); err != nil {
+		if err != sql.ErrNoRows {
+			fmt.Println("error when loading coupon info - ", request.Coupon)
+		}
+
 		err = errors.New("Invalid Coupon Code")
 		return
 	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - roll back - ", err1.Error())
+			}
+
+			c.JSON(http.StatusBadRequest, err.Error())
+			err = nil
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				c.JSON(http.StatusBadRequest, err1.Error())
+			} else {
+				c.JSON(http.StatusOK, "OK")
+			}
+		}
+	}()
 
 	err = config.DB.QueryRow(query, request.UserId, coupon.Id).Scan(&temp)
 
@@ -371,14 +410,24 @@ func ApplyCoupon(c *gin.Context) {
 	}
 
 	query = `
-		insert into user_coupon (user_id, coupon_id) values (?, ?)
+		insert into user_coupon (user_id, coupon_id, count) values (?, ?, ?)
 	`
 
-	if _, err = config.DB.Exec(query, request.UserId, coupon.Id); err != nil {
+	count := getCouponCount(coupon.Id)
+
+	if _, err = tx.Exec(query, request.UserId, coupon.Id, count); err != nil {
 		return
 	}
 
-	c.JSON(http.StatusOK, "OK")
+	if isCouponOnce(coupon.Id) {
+		query = `
+			update coupon set applied = 1 where id = ?
+		`
+
+		if _, err = tx.Exec(query, coupon.Id); err != nil {
+			return
+		}
+	}
 }
 
 func Feedback(c *gin.Context) {
@@ -434,11 +483,59 @@ func useDiscount(tx *sql.Tx, userId int32) (err error) {
 
 func useCoupon(tx *sql.Tx, userId, couponId int32) (err error) {
 	query := `
-		update user_coupon set used = 1
-		where user_id = ? and coupon_id = ?
+		update user_coupon set count = count - 1
+		where user_id = ? and coupon_id = ? and count > 0
 	`
 
 	_, err = tx.Exec(query, userId, couponId)
 
 	return
+}
+
+func getCoupon(code string) (coupon modules.Coupon, err error) {
+	query := `
+		select id, discount, percent from coupon
+		where coupon = ? and expired = 0 and applied = 0
+	`
+
+	err = config.DB.QueryRow(query, code).Scan(
+		&coupon.Id, &coupon.Discount, &coupon.Percent,
+	)
+
+	return coupon, err
+}
+
+func getCouponAppliedService(couponId int32) (int32, string) {
+	if couponId <= 0 {
+		return -1, ""
+	} else if couponId <= 150 {
+		// For Groupon
+		return 10, cache.SERVICES_MAP[10].Name
+	} else if couponId <= 300 {
+		// For Groupon
+		return 11, cache.SERVICES_MAP[11].Name
+	} else if couponId <= 500 {
+		// For Groupon
+		return 3, cache.SERVICES_MAP[3].Name
+	}
+
+	return -1, ""
+}
+
+func getCouponCount(couponId int32) int32 {
+	// For Groupon
+	if 450 < couponId && couponId <= 500 {
+		return 3
+	}
+
+	return 1
+}
+
+func isCouponOnce(couponId int32) bool {
+	// For Groupon
+	if 0 < couponId && couponId <= 500 {
+		return true
+	}
+
+	return false
 }

@@ -123,10 +123,10 @@ type ApplyCouponRequest struct {
 	Coupon string `json:"code"`
 }
 
-type UserCoupon struct {
-	UserId   int32
-	CouponId int32
-	Used     int32
+type Coupon struct {
+	Id       int32
+	Discount float32
+	Percent  int32
 }
 
 type Feedback struct {

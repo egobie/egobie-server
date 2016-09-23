@@ -588,19 +588,22 @@ func PlaceOrder(c *gin.Context) {
 	)
 
 	couponId, coupon := getUserCoupon(request.UserId)
+	couponServiceId, _ := getCouponAppliedService(couponId)
 
-	price *= 1.07
+	if utils.Contains(request.Services, couponServiceId) {
+		if coupon > 1.0 {
+			price -= coupon
 
-	if user.FirstTime > 0 {
-		price *= calculateDiscount("RESIDENTIAL_FIRST")
-	} else {
-		if (couponId > 0) {
+			if price <= 0 {
+				price = 0
+			}
+		} else {
 			price *= coupon
 		}
-
-		if user.Discount > 0 {
-			price *= calculateDiscount("RESIDENTIAL")
-		}
+	} else if user.FirstTime > 0 {
+		price *= calculateDiscount("RESIDENTIAL_FIRST")
+	} else if user.Discount > 0 {
+		price *= calculateDiscount("RESIDENTIAL")
 	}
 
 	if types == modules.SERVICE_BOTH {
@@ -608,7 +611,7 @@ func PlaceOrder(c *gin.Context) {
 		price *= calculateDiscount("OIL_WASH")
 	}
 
-	price = float32(int(price*100)) / 100
+	price = float32(int(price*107)) / 100
 	gap = calculateGap(time)
 
 	if tx, err = config.DB.Begin(); err != nil {
@@ -644,12 +647,12 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}()
 
-	if err = useDiscount(tx, user.Id); err != nil {
-		return
-	}
-
-	if user.FirstTime <= 0 && couponId > 0 {
+	if utils.Contains(request.Services, couponServiceId) {
 		if err = useCoupon(tx, user.Id, couponId); err != nil {
+			return
+		}
+	} else {
+		if err = useDiscount(tx, user.Id); err != nil {
 			return
 		}
 	}
@@ -851,28 +854,29 @@ func getTotalTimeAndPriceAndTypes(services, addons []int32) (time int32, price f
 
 func getUserCoupon(userId int32) (int32, float32) {
 	query := `
-		select coupon_id, discount
+		select c.id, c.discount, c.percent
 		from user_coupon uc
 		inner join coupon c on c.id = uc.coupon_id
-		where uc.user_id = ? and uc.used = 0
+		where uc.user_id = ? and uc.count > 0 and c.expired = 0
 		order by uc.create_timestamp
 	`
-	temp := struct{
+	temp := struct {
 		CouponId int32
-		Discount int32
+		Discount float32
+		Percent  int32
 	}{}
 
 	if err := config.DB.QueryRow(query, userId).Scan(
-		&temp.CouponId, &temp.Discount,
+		&temp.CouponId, &temp.Discount, &temp.Percent,
 	); err != nil {
 		return -1, 1
 	}
 
-	if temp.Discount == 100 {
-		return temp.CouponId, 0
+	if temp.Percent == 1 {
+		return temp.CouponId, 1 - temp.Discount/100.0
 	}
 
-	return temp.CouponId, 1 - float32(temp.Discount)/100.0
+	return temp.CouponId, temp.Discount
 }
 
 func CancelOrder(c *gin.Context) {
