@@ -43,7 +43,7 @@ func sendPlaceOrderEmail(
 		"We only process the payment after the service is done. We require you to cancel " +
 		"the service appointment 24 hours ahead, otherwise we will charge 50% of the appointment cost. " +
 		"If we show up at the door and no one is around, we will charge 100% of the appointment cost " +
-		"as no-show fee.\n" +
+		"as no-show fee. (Discount or coupons are not refunded if you cancel the reservation)\n" +
 		"\n" +
 		"Thank you for using eGobie Car Services\n"
 

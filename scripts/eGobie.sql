@@ -350,7 +350,9 @@ CREATE TABLE coupon (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     coupon VARCHAR(6) NOT NULL,
     discount INT NOT NULL,
+    percent INT NOT NULL DEFAULT 1,
     expired INT NOT NULL DEFAULT 0,
+    applied INT NOT NULL DEFAULT 0,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY (coupon)
 );
@@ -358,7 +360,7 @@ CREATE TABLE coupon (
 CREATE TABLE user_coupon (
     user_id INT NOT NULL,
     coupon_id INT NOT NULL,
-    used INT NOT NULL DEFAULT 0,
+    count INT NOT NULL DEFAULT 1,
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY (user_id, coupon_id),
     FOREIGN KEY (user_id) REFERENCES user(id),
