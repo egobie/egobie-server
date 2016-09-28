@@ -229,7 +229,7 @@ CREATE TABLE user_opening (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     day DATE NOT NULL,
     user_id INT NOT NULL,
-    user_schedule INT NOT NULL DEFAULT 67108863,
+    user_schedule INT NOT NULL DEFAULT 1073741823,
     task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN',
     FOREIGN KEY (user_id) REFERENCES user(id),
     UNIQUE KEY (day, user_id),

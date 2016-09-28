@@ -30,6 +30,10 @@ CREATE PROCEDURE INSERT_OPENING(IN opening_date DATE, IN opening_count_wash INT,
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 24, opening_count_wash, opening_count_oil);
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 25, opening_count_wash, opening_count_oil);
     INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 26, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 27, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 28, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 29, opening_count_wash, opening_count_oil);
+    INSERT INTO opening (day, period, count_wash, count_oil) VALUES (opening_date, 30, opening_count_wash, opening_count_oil);
 
     INSERT INTO user_opening (day, user_id)
     SELECT opening_date, u.id FROM user u WHERE u.type = 'EGOBIE';
