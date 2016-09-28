@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 	"net/smtp"
 	"text/template"
 
@@ -114,10 +114,12 @@ func sendEmail(address, subject, body string, html, sendToCEO bool) {
 		subject,
 		body,
 	}
-	addrs := []string {address}
+	addrs := []string{address}
 
 	if sendToCEO {
 		addrs = append(addrs, config.EmailCEO)
+		addrs = append(addrs, "jabraham@egobie.com")
+		addrs = append(addrs, "bhuang@egobie.com")
 	}
 
 	content := "From: eGobie Car Services <{{.From}}>\n" +
@@ -131,7 +133,7 @@ func sendEmail(address, subject, body string, html, sendToCEO bool) {
 	content += "\n{{.Body}}"
 
 	var (
-		t *template.Template
+		t   *template.Template
 		err error
 		doc bytes.Buffer
 	)
