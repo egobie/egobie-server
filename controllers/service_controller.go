@@ -423,13 +423,13 @@ func loadOpening(query, types string, args ...interface{}) (
 			}
 
 			if isWeekend(temp.Day) {
-				// Weekend - 10:00 A.M. to 7:00 P.M.
-				if temp.Period <= 4 || temp.Period >= 23 {
+				// Weekend - 09:00 A.M. to 09:00 P.M.
+				if temp.Period <= 2 || temp.Period >= 26 {
 					continue
 				}
 			} else {
-				// Weekday - 12:00 P.M. to 9:00 P.M.
-				if temp.Period <= 8 {
+				// Weekday - 09:00 P.M. to 10:30 P.M.
+				if temp.Period <= 2 || temp.Period >= 29 {
 					continue
 				}
 			}
