@@ -387,12 +387,12 @@ func UpdatePayment(c *gin.Context) {
 
 func validatePayment(firstName, lastName, account, code, month, year string) (err error) {
 	/*
-	fmt.Println("First -", firstName, "-")
-	fmt.Println("Last -", lastName, "-")
-	fmt.Println("account -", account, "-")
-	fmt.Println("code -", code, "-")
-	fmt.Println("month -", month, "-")
-	fmt.Println("year -", year, "-")
+		fmt.Println("First -", firstName, "-")
+		fmt.Println("Last -", lastName, "-")
+		fmt.Println("account -", account, "-")
+		fmt.Println("code -", code, "-")
+		fmt.Println("month -", month, "-")
+		fmt.Println("year -", year, "-")
 	*/
 
 	_, err = config.BT.Customer().Create(&braintree.Customer{
@@ -547,6 +547,12 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32, fact
 		return
 	}
 
+	price := int64(process.Price * factor * 100)
+
+	if price == 0 {
+		return
+	}
+
 	if process.AccountNumber, process.Code, err = decryptAccount(
 		process.AccountType, process.AccountNumber, process.Code,
 	); err != nil {
@@ -567,7 +573,7 @@ func processPayment(tx *sql.Tx, userServiceId, userPaymentId, userId int32, fact
 	if _, err = config.BT.Transaction().Create(
 		&braintree.Transaction{
 			Type:   "sale",
-			Amount: braintree.NewDecimal(int64(process.Price*factor*100), 2),
+			Amount: braintree.NewDecimal(price, 2),
 			CreditCard: &braintree.CreditCard{
 				Number:          process.AccountNumber,
 				CVV:             process.Code,

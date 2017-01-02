@@ -323,6 +323,36 @@ INSERT INTO service_addon (service_id, name, price) VALUES
 INSERT INTO service_addon (service_id, name, note, price, max, unit) VALUES
 (11, 'Extra Synthetic Oil', 'per quart', 8, 30, 'quart');
 
+INSERT INTO service (id, name, type, description, note, items, estimated_price, estimated_time) VALUES
+(12, 'Ultimate', 'CAR_WASH', 'Wash Car', '', '[
+"Full Exterior Hand Wash",
+"Interior Vacuum",
+"Interior Wipe-down with Protectants",
+"Tire Shine & Rim Cleaning",
+"Total Interior Wipe-down",
+"Trunk Vacuum",
+"Undercarriage Rinse",
+"Windshield Protectant"
+]', 239, 240);
+
+INSERT INTO service_addon (service_id, name, note, price, time) VALUES
+(12, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
+(12, "Engine Cleaning", "", 50, 30),
+(12, "Headlight Reconditioning", "", 65, 60),
+(12, "Hot Carpet Extraction", "", 15, 30),
+(12, "Paint Protectant", "Multi-layer", 50, 60),
+(12, "Wax & Polish", "Multi-layer", 75, 60);
+
+INSERT INTO service_addon (service_id, name, price) VALUES
+(12, "Hand Wax", 0),
+(12, "Leather Cleaning and Protectant", 0),
+(12, "Paint Protectant", 0),
+(12, "Premium Paint Gaze", 0),
+(12, "Clay Bar", 0),
+(12, "Exterior Polish", 0),
+(12, "Double Layer Paint Protectant", 0),
+(12, "Detailed Interior Shampoo", 0),
+(12, "Q-Tip Cleaning", 0);
 
 INSERT INTO car_maker (id, name, title) VALUES
 (1, 'ACURA', 'Acura'),
@@ -1838,12 +1868,6 @@ INSERT INTO service_addon (service_id, name, note, price) VALUES (6, "Paint Prot
 -- ------------------------------ --
 
 ALTER TABLE user MODIFY COLUMN discount INT NOT NULL DEFAULT 0;
-
-ALTER TABLE user_opening CHANGE mixed task VARCHAR(32) NOT NULL DEFAULT 'UNKNOWN';
-
-ALTER TABLE user_service DROP COLUMN assignee;
-
-ALTER TABLE fleet_service DROP COLUMN assignee;
 
 UPDATE user_opening SET task = 'OIL_CHANGE' WHERE user_id = 2;
 UPDATE user_opening SET task = 'CAR_WASH' WHERE user_id = 3;
