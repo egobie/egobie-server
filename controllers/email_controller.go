@@ -58,9 +58,9 @@ func sendNewResidentialUserEmail(address string) {
 		<html><body>
 		<p style="font-size: 17px">Welcome to eGobie!  We hope you will enjoy our services and help us spread the word if you are satisfied. </p>
 		<ul style="font-size: 13px; margin-bottom: 20px">
-			<li style="margin-bottom: 5px">As a promotion, we will take <u><b>50% off your first service order</b></u>, automatically taken out during reservation.  We want you to try out our service with a peace of mind.</li>
+			<li style="margin-bottom: 5px">As a promotion, we will take <u><b>15% off your first service order</b></u>, automatically taken out during reservation.  We want you to try out our service with a peace of mind.</li>
 			<li style="margin-bottom: 5px">If you order both oil change and car wash service, you will receive another 10% discount!</li>
-			<li style="margin-bottom: 5px">Combining the 2 offers, you can receive up to 55% (cumulative) discount off your first order!</li>
+			<li style="margin-bottom: 5px">Combining the 2 offers, you can receive up to 23% (cumulative) discount off your first order!</li>
 		</ul>
 		<p style="font-size: 17px">Want an Extra 10% Off Starting on the Second Order?</p>
 		<p style="font-size: 13px; margin-bottom: 30px">Check the <u><b>Get Your Gift</b></u> Section on your App - Share "Your Code" with your friends via text or Social Media and Get another <u><b>10% Off</b></u> when they use your code to register an eGobie account! (Limit 1 certificate per order.  10% discount will be automatically deducted starting from your second order)</p>
