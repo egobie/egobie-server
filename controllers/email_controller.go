@@ -70,7 +70,7 @@ func sendNewResidentialUserEmail(address string) {
 	`
 
 	sendEmail(
-		address, "Up to 55% off for First Time eGobie Users!",
+		address, "Up to 15% off for First Time eGobie Users!",
 		message, true, true,
 	)
 }
