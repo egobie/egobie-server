@@ -126,8 +126,8 @@ func getFleetUserByUserId(userId int32) (user modules.FleetUser, err error) {
 	return getFleetUser("id = ?", userId)
 }
 
-func getFleetUserByUsername(username string) (user modules.FleetUser, err error) {
-	return getFleetUser("username = ?", username)
+func getFleetUserByEmail(email string) (user modules.FleetUser, err error) {
+	return getFleetUser("email = ?", email)
 }
 
 func GetFleetService(c *gin.Context) {

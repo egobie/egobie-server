@@ -19,7 +19,7 @@ import (
 
 func getUser(condition string, args ...interface{}) (user modules.User, err error) {
 	query := `
-		select id, type, username, password, first_time,
+		select id, type, password, first_time,
 			email, phone_number, coupon, discount,
 			first_name, last_name, middle_name,
 			home_address_state, home_address_zip,
@@ -30,7 +30,7 @@ func getUser(condition string, args ...interface{}) (user modules.User, err erro
 	`
 
 	if err = config.DB.QueryRow(query+" "+condition, args...).Scan(
-		&user.Id, &user.Type, &user.Username, &user.Password, &user.FirstTime,
+		&user.Id, &user.Type, &user.Password, &user.FirstTime,
 		&user.Email, &user.PhoneNumber, &user.Coupon, &user.Discount,
 		&user.FirstName, &user.LastName, &user.MiddleName,
 		&user.HomeAddressState, &user.HomeAddressZip,
@@ -48,8 +48,8 @@ func getUserById(id int32) (user modules.User, err error) {
 	return getUser("id = ?", id)
 }
 
-func getUserByUsername(username string) (user modules.User, err error) {
-	return getUser("username = ?", username)
+func getUserByEmail(email string) (user modules.User, err error) {
+	return getUser("email = ?", email)
 }
 
 func getUserToken(userType, password string) string {

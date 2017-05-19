@@ -1743,10 +1743,10 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (1313, 71, 'GVX', 'GVX'),
 (1314, 71, 'YUOTH', 'Other Yugo Models');
 
-INSERT INTO user (id, type, username, password, email, phone_number, discount) VALUES
-(1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
-(2, 'EGOBIE', 'em1', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em1@egobie.com', '2019120383', 0),
-(3, 'EGOBIE', 'em2', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em2@egobie.com', '2019120383', 0),
+INSERT INTO user (id, type, password, email, phone_number, discount) VALUES
+(1, 'RESIDENTIAL', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
+(2, 'EGOBIE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em1@egobie.com', '2019120383', 0),
+(3, 'EGOBIE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em2@egobie.com', '2019120383', 0),
 (4, 'RESIDENTIAL', 'egobie', 'b623e6fda297e4b589815902c5ec3bee0cf75891cd5fbb64', 'egobie@egobie.com', '1234567890', 0);
 
 UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
@@ -1834,8 +1834,8 @@ DELIMITER ;
 
 ALTER TABLE user CHANGE type type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'SALE', 'FLEET');
 
-INSERT INTO user (type, username, password, email, phone_number) VALUES
-('SALE', 's', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'b@egobie.com', '2019120383');
+INSERT INTO user (type, password, email, phone_number) VALUES
+('SALE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'b@egobie.com', '2019120383');
 
 INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 (0, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),

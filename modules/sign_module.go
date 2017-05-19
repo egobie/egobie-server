@@ -2,18 +2,20 @@ package modules
 
 /**
 {
-	"username": "test_user",
 	"password": "a123456",
 	"email": "test@test.com",
-	"phone_number": "1234567890",
+	"phoneNumber": "1234567890",
+	"firstName": "First",
+	"lastName": "Last",
 	"coupon": "A1B2C"
 }
 **/
 type SignUp struct {
-	Username    string `json:"username"`
 	Password    string `json:"password"`
 	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
+	PhoneNumber string `json:"phoneNumber"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
 	Coupon      string `json:"coupon"`
 }
 
@@ -21,25 +23,23 @@ type SignUp struct {
 {
 	"email": "test@test.com",
 	"token": "747AD",
-	"username": "fleet-1",
 	"password": "12345678"
 }
 **/
 type SignUpFleet struct {
 	Email    string `json:"email"`
 	Token    string `json:"token"`
-	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 /**
 {
-	"username": "test_user",
+	"email": "test@example.com",
 	"password": "a123456"
 }
 **/
 type SignIn struct {
-	Username string `json:"username"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -53,21 +53,20 @@ type Check struct {
 }
 
 type ResetPasswordStep1 struct {
-	Username string `json:"username"`
+	Email string `json:"email"`
 }
 
 type ResetPasswordStep2 struct {
-	UserId int32  `json:"user_id"`
+	UserId int32  `json:"userId"`
 	Token  string `json:"token"`
 }
 
 type ResetPasswordStep3 struct {
-	UserId   int32  `json:"user_id"`
+	UserId   int32  `json:"userId"`
 	Token    string `json:"token"`
 	Password string `json:"password"`
 }
 
 type ResetPasswordResend struct {
-	UserId   int32  `json:"user_id"`
-	Username string `json:"username"`
+	UserId int32 `json:"userId"`
 }
