@@ -402,7 +402,7 @@ func ResetPasswordStep2(c *gin.Context) {
 	}
 
 	if len(request.Token) < 5 || len(request.Token) > 10 {
-		err = errors.New("Invalid request")
+		err = errors.New("Invalid Token")
 		return
 	}
 
@@ -414,7 +414,7 @@ func ResetPasswordStep2(c *gin.Context) {
 		&userId,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			err = errors.New("Invalid request")
+			err = errors.New("Invalid Token")
 		}
 
 		return
