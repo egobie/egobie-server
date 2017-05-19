@@ -11,8 +11,8 @@ package modules
 }
 **/
 type SignUp struct {
-	Password    string `json:"password"`
 	Email       string `json:"email"`
+	Password    string `json:"password"`
 	PhoneNumber string `json:"phoneNumber"`
 	FirstName   string `json:"firstName"`
 	LastName    string `json:"lastName"`
