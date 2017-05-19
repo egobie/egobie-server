@@ -22,7 +22,7 @@ type History struct {
 	State         string          `json:"state"`
 	Year          int32           `json:"year"`
 	Color         string          `json:"color"`
-	Maker         string          `json:"maker"`
+	Make          string          `json:"make"`
 	Model         string          `json:"model"`
 	StartTime     string          `json:"start_time"`
 	EndTime       string          `json:"end_time"`
@@ -32,7 +32,6 @@ type History struct {
 
 /**
 {
-	"user_id": 1,
 	"page": 0
 }
 **/
@@ -44,7 +43,6 @@ type HistoryRequest struct {
 
 /**
 {
-	"user_id": 1,
 	"service_id": 1,
 	"rating": 3.5,
 	"note": "this is awesome"

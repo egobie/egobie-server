@@ -25,7 +25,7 @@ type UserTask struct {
 	CarState   string          `json:"car_state"`
 	Color      string          `json:"color"`
 	Year       string          `json:"year"`
-	Maker      string          `json:"maker"`
+	Make       string          `json:"make"`
 	Model      string          `json:"model"`
 	Services   []SimpleService `json:"services"`
 	Addons     []SimpleAddon   `json:"addons"`
@@ -52,7 +52,7 @@ type TaskRequest struct {
 
 /**
 {
-	"user_id": 1,
+	"userId": 1,
 	"user_token": "abcd",
 	"car_id": 1,
 	"service_id": 1,

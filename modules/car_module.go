@@ -7,30 +7,30 @@ import (
 /**
 {
 	"id": 1,
-	"user_id": 1,
+	"userId": 1,
 	"report_id": 1,
 	"plate": "Y96EUV",
 	"state": "NJ",
 	"year": 2012,
 	"color": "GRAY",
-	"maker": "Honda",
+	"make": "Honda",
 	"model": "Accord",
-	"maker_id": 13,
-	"model_id": 251
+	"makeId": 13,
+	"modelId": 251
 }
 **/
 type Car struct {
 	Id       int32    `json:"id"`
-	UserId   int32    `json:"user_id"`
+	UserId   int32    `json:"userId"`
 	ReportId null.Int `json:"report_id"`
 	Plate    string   `json:"plate"`
 	State    string   `json:"state"`
 	Year     int32    `json:"year"`
 	Color    string   `json:"color"`
-	Maker    string   `json:"maker"`
+	Make     string   `json:"make"`
 	Model    string   `json:"model"`
-	MakerId  int32    `json:"maker_id"`
-	ModelId  int32    `json:"model_id"`
+	MakeId   int32    `json:"makeId"`
+	ModelId  int32    `json:"modelId"`
 	Reserved int32    `json:"reserved"`
 }
 
@@ -40,7 +40,7 @@ type Car struct {
 	"title": "Honda"
 }
 **/
-type CarMaker struct {
+type CarMake struct {
 	Id    int32  `json:"id"`
 	Title string `json:"title"`
 }
@@ -48,70 +48,69 @@ type CarMaker struct {
 /**
 {
 	"id": 1,
-	"maker_id": 2,
+	"makeId": 2,
 	"title": "Accord"
 }
 **/
 type CarModel struct {
-	Id      int32  `json:"id"`
-	MakerId int32  `json:"maker_id"`
-	Title   string `json:"title"`
+	Id     int32  `json:"id"`
+	MakeId int32  `json:"makeId"`
+	Title  string `json:"title"`
 }
 
 /**
 {
-	"id": 1,
-	"user_id": 1
+	"id": 1
 }
 **/
 type CarRequst struct {
 	BaseRequest
 
-	Id     int32 `json:"id"`
+	Id int32 `json:"id"`
 }
 
 /**
 {
-	"user_id": 1,
+	"userId": 1,
 	"plate": "Y96EUV",
 	"state": "NJ",
 	"year": 2012,
 	"color": "GRAY",
-	"maker": 13,
+	"make": 13,
 	"model": 256
 }
 **/
 type CarNew struct {
 	BaseRequest
 
-	Plate  string `json:"plate"`
-	State  string `json:"state"`
-	Year   int32  `json:"year"`
-	Color  string `json:"color"`
-	Maker  int32  `json:"maker"`
-	Model  int32  `json:"model"`
+	Plate string `json:"plate"`
+	State string `json:"state"`
+	Year  int32  `json:"year"`
+	Color string `json:"color"`
+	Make  int32  `json:"make"`
+	Model int32  `json:"model"`
 }
 
 /**
 {
 	"id": 1,
-	"user_id": 1,
+	"userId": 1,
 	"plate": "Y96EUV",
 	"state": "NJ",
 	"year": 2012,
 	"color": "GRAY",
-	"maker": 13,
+	"make": 13,
 	"model": 256
 }
 **/
 type UpdateCar struct {
 	BaseRequest
 
-	Id     int32  `json:"id"`
-	Plate  string `json:"plate"`
-	State  string `json:"state"`
-	Year   int32  `json:"year"`
-	Color  string `json:"color"`
-	Maker  int32  `json:"maker"`
-	Model  int32  `json:"model"`
+	Id    int32  `json:"id"`
+	Plate string `json:"plate"`
+	State string `json:"state"`
+	Year  int32  `json:"year"`
+	Color string `json:"color"`
+	Make  int32  `json:"make"`
+	Model int32  `json:"model"`
 }

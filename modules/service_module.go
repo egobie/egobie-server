@@ -98,7 +98,6 @@ type SimpleAddon struct {
 /**
 {
 	"id": 1,
-	"user_id": 1,
 	"car_id": 1,
 	"plate": "Y96EUV",
 	"payment_id": 1,
@@ -185,7 +184,6 @@ type Opening struct {
 
 /**
 {
-	"user_id": 1,
 	"car_id": 1,
 	"payment_id": 1,
 	"services": [1,2,3],
@@ -229,7 +227,6 @@ type OpeningRequest struct {
 /**
 {
 	"id": 1,
-	"user_id": 1
 }
 **/
 type CancelRequest struct {
