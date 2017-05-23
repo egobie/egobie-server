@@ -504,6 +504,43 @@ func filterOpening(gap int32, openings []modules.Opening) (
 	return result, nil
 }
 
+func GetPlaceOpening(c *gin.Context) {
+	request := modules.PlaceOpeningRequest{}
+	var (
+		err   error
+		body  []byte
+		place modules.Place
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if request.Id != -1 {
+		if place, ok := cache.PLACES_MAP[request.Id]; ok {
+			query := `
+				select * from place_opening where place_id = ? and day = ?
+			`
+
+		} else {
+			c.JSON()
+		}
+	} else {
+
+	}
+}
+
 func PlaceOrder(c *gin.Context) {
 	request := modules.OrderRequest{}
 	car := modules.Car{}
