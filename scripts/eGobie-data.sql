@@ -1911,11 +1911,11 @@ DELIMITER ;
 /**
   1.  Kearny Point
     (78 John Miller Way, Kearny, NJ 07032)
-    (40.7245431,-74.1117641)
+    (40.72450439999999,-74.10944999999998)
 
   2.  555 US 1, Iselin
     (555 US-1, Iselin, NJ 08830)
-    (40.5593721,-74.3080084)
+    (40.5592582,-74.30493790000003)
 
   3.  2200 Fletcher, Fort Lee
     (2200 Fletcher Ave, Fort Lee, NJ 07024)
@@ -1923,25 +1923,35 @@ DELIMITER ;
 
   4.  100, 110 Jefferson, Whippany
     (100 -110 South Jefferson Road, Whippany, NJ 07981)
-    (40.8177753,-74.4452347)
+    (40.8600983,-73.9697514)
 
- ?5.  101, 103, 105 Eisenhower, Roseland
+  5. 101, 103, 105 Eisenhower, Roseland
+	(101 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.8278267,-74.32097820000001)
+
+    (103 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.8293318,-74.3195599)
+
+    (105 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.830956,-74.31865040000002)
 
   6.  333 Meadowlands, Secaucus
     (333 Meadowlands Pkwy, Secaucus, NJ 07094)
-    (40.7795858,-74.0843779)
+    (40.7795858,-74.08218390000002)
 
   7.  510 Thornall, Edison
     (510 Thornall St, Edison, NJ 08837)
-    (40.5654171,-74.3342411)
+    (40.5654171,-74.33204710000001)
 
  ?8.  4,5,6 Enterprise Drive, Parsippany
 
   9.  1 Bloomfield, Mountain Lakes
     (1 Bloomfield Ave, Mountain Lakes, NJ 07046)
-    (40.876568,-74.439565)
+    (40.876568,-74.43737099999998)
 
   10. Xchange, Secaucus
     (4000 Riverside Station Blvd, Secaucus, NJ 07094)
-    (40.7641645,-74.0858669)
+    (40.76416450000001,-74.08367290000001)
 **/
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('Kearny Point', '78 John Miller Way, Kearny, NJ 07032', )
