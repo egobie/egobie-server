@@ -1891,3 +1891,57 @@ CREATE PROCEDURE INSERT_COUPON(IN count INT) BEGIN
     END WHILE;
 END $$
 DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS INSERT_PLACE_RESERVATIOM_ID;
+
+DELIMITER $$
+CREATE TRIGGER INSERT_PLACE_RESERVATIOM_ID BEFORE INSERT ON place_service FOR EACH ROW
+BEGIN
+    DECLARE id INT DEFAULT 0;
+
+    SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
+    WHERE TABLE_NAME = 'place_service' and TABLE_SCHEMA = database();
+
+    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 7, 14));
+END $$
+DELIMITER ;
+
+
+/**
+  1.  Kearny Point
+    (78 John Miller Way, Kearny, NJ 07032)
+    (40.7245431,-74.1117641)
+
+  2.  555 US 1, Iselin
+    (555 US-1, Iselin, NJ 08830)
+    (40.5593721,-74.3080084)
+
+  3.  2200 Fletcher, Fort Lee
+    (2200 Fletcher Ave, Fort Lee, NJ 07024)
+    (40.8600983,-73.9719454)
+
+  4.  100, 110 Jefferson, Whippany
+    (100 -110 South Jefferson Road, Whippany, NJ 07981)
+    (40.8177753,-74.4452347)
+
+ ?5.  101, 103, 105 Eisenhower, Roseland
+
+  6.  333 Meadowlands, Secaucus
+    (333 Meadowlands Pkwy, Secaucus, NJ 07094)
+    (40.7795858,-74.0843779)
+
+  7.  510 Thornall, Edison
+    (510 Thornall St, Edison, NJ 08837)
+    (40.5654171,-74.3342411)
+
+ ?8.  4,5,6 Enterprise Drive, Parsippany
+
+  9.  1 Bloomfield, Mountain Lakes
+    (1 Bloomfield Ave, Mountain Lakes, NJ 07046)
+    (40.876568,-74.439565)
+
+  10. Xchange, Secaucus
+    (4000 Riverside Station Blvd, Secaucus, NJ 07094)
+    (40.7641645,-74.0858669)
+**/
