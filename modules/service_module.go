@@ -182,24 +182,15 @@ type Opening struct {
 	Range []Period `json:"range"`
 }
 
-/**
-{
-	"car_id": 1,
-	"payment_id": 1,
-	"services": [1,2,3],
-	"note": "This is awesome!",
-	"Opening": 1
-}
-**/
 type OrderRequest struct {
 	BaseRequest
 
-	CarId     int32          `json:"car_id"`
-	PaymentId int32          `json:"payment_id"`
-	Note      string         `json:"note"`
-	Opening   int32          `json:"opening"`
-	Services  []int32        `json:"services"`
-	Addons    []AddonRequest `json:"addons"`
+	CarId    int32          `json:"carId"`
+	Note     string         `json:"note"`
+	Opening  int32          `json:"opening"`
+	PickUpBy int32          `json:"pickUpBy"`
+	Services []int32        `json:"services"`
+	Addons   []AddonRequest `json:"addons"`
 }
 
 type AddonRequest struct {

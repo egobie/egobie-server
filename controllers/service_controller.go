@@ -506,16 +506,20 @@ func filterOpening(gap int32, openings []modules.Opening) (
 
 func GetPlaceOpening(c *gin.Context) {
 	request := modules.PlaceOpeningRequest{}
+	today := utils.TodayDay()
 	var (
-		err   error
-		body  []byte
-		place modules.Place
+		err      error
+		body     []byte
+		rows     *sql.Rows
+		openings []modules.PlaceOpening
 	)
 
 	defer func() {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())
 			c.Abort()
+		} else {
+			c.JSON(http.StatusOK, openings)
 		}
 	}()
 
@@ -529,22 +533,67 @@ func GetPlaceOpening(c *gin.Context) {
 
 	if request.Id != -1 {
 		if place, ok := cache.PLACES_MAP[request.Id]; ok {
-			query := `
-				select * from place_opening where place_id = ? and day = ?
-			`
+			if rows, err = config.DB.Query(
+				"select id, day from place_opening where place_id = ? and day >= ?",
+				place.Id, today,
+			); err != nil {
+				return
+			}
+			defer rows.Close()
 
-		} else {
-			c.JSON()
+			for rows.Next() {
+				opening := modules.PlaceOpening{}
+				if err = rows.Scan(&opening.Id, &opening.Day); err != nil {
+					return
+				}
+				openings = append(openings, opening)
+			}
 		}
-	} else {
+	}
+}
 
+func GetPlaceOpeningToday(c *gin.Context) {
+	request := modules.PlaceOpeningTodayRequest{}
+	today := utils.TodayDay()
+	var (
+		err  error
+		body []byte
+		val1 int32
+		val2 int32
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		} else {
+			c.JSON(http.StatusOK, val1+val2)
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	if request.Id != -1 {
+		if place, ok := cache.PLACES_MAP[request.Id]; ok {
+			if err = config.DB.QueryRow(
+				"select pick_up_by_1, pick_up_by_5 from place_opening where place_id = ? and day = ?",
+				place.Id, today,
+			).Scan(&val1, &val2); err != nil {
+				return
+			}
+		}
 	}
 }
 
 func PlaceOrder(c *gin.Context) {
 	request := modules.OrderRequest{}
 	car := modules.Car{}
-	payment := modules.Payment{}
 	user := modules.User{}
 
 	var (
@@ -581,15 +630,6 @@ func PlaceOrder(c *gin.Context) {
 	updateOpeningDemand(request.Opening)
 
 	if user, err = getUserById(request.UserId); err != nil {
-		if err == sql.ErrNoRows {
-			err = errors.New("User not found")
-		}
-		return
-	}
-
-	if payment, err = getPaymentByIdAndUserId(
-		request.PaymentId, request.UserId,
-	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("User not found")
 		}
@@ -704,17 +744,15 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	insertUserService := `
-		insert into user_service (
-			user_id, user_car_id, user_payment_id, opening_id,
-			reserved_start_timestamp, gap, estimated_time, estimated_price,
-			status, types
+	insertPlaceService := `
+		insert into place_service (
+			user_id, user_car_id, place_opening_id, pick_up_by,
+			estimated_time, estimated_price, status, types
 		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	if result, err = tx.Exec(insertUserService,
-		user.Id, car.Id, payment.Id, request.Opening, reserved,
-		gap, time, price, "RESERVED", types,
+	if result, err = tx.Exec(insertPlaceService,
+		user.Id, car.Id, request.Opening, request.PickUpBy, time, price, "RESERVED", types,
 	); err != nil {
 		return
 	}
@@ -723,55 +761,43 @@ func PlaceOrder(c *gin.Context) {
 		return
 	}
 
-	user_service_id := int32(insertedId)
+	place_service_id := int32(insertedId)
 
-	if err = assignService(
-		tx, user_service_id, request.Opening, gap, types, "USER_SERVICE",
-	); err != nil {
-		return
-	}
-
-	if err = tx.QueryRow(`
-		select reservation_id from user_service where id = ?`, user_service_id,
+	if err = tx.QueryRow("select reservation_id from place_service where id = ?",
+		place_service_id,
 	).Scan(&reservationNumber); err != nil {
 		return
 	}
 
-	queryUserServiceList := `
-		insert into user_service_list (
-			service_id, user_service_id
+	queryPlaceServiceList := `
+		insert into place_service_list (
+			service_id, place_service_id
 		) values (?, ?)
 	`
 
 	for _, id := range request.Services {
-		if _, err = tx.Exec(
-			queryUserServiceList, id, user_service_id,
+		if _, err = tx.Exec(queryPlaceServiceList,
+			id, place_service_id,
 		); err != nil {
 			return
 		}
 	}
 
-	queryUserServiceAddonList := `
-		insert into user_service_addon_list (
-			service_addon_id, user_service_id, amount
-		) values (?, ?, ?)
-	`
+	queryPlaceOpening := ""
 
-	for _, addon := range request.Addons {
-		if _, err = tx.Exec(
-			queryUserServiceAddonList, addon.Id, user_service_id, addon.Amount,
-		); err != nil {
-			return
-		}
+	if request.PickUpBy == 1 {
+		queryPlaceOpening = "update place_opening set pick_up_by_1 = pick_up_by_1 + 1 where id = ?"
+	} else {
+		queryPlaceOpening = "update place_opening set pick_up_by_5 = pick_up_by_5 + 1 where id = ?"
+	}
+
+	if _, err = tx.Exec(queryPlaceOpening, request.Opening); err != nil {
+		return
 	}
 
 	go makeReservation(request.UserId)
 
 	if err = lockCar(tx, request.CarId, request.UserId); err != nil {
-		return
-	}
-
-	if err = lockPayment(tx, request.PaymentId, request.UserId); err != nil {
 		return
 	}
 }
@@ -931,11 +957,10 @@ func FreeCancelOrder(c *gin.Context) {
 func cancel(c *gin.Context, force, free bool) {
 	request := modules.CancelRequest{}
 	temp := struct {
-		CarId     int32
-		PaymentId int32
-		Opening   int32
-		Gap       int32
-		Types     string
+		CarId    int32
+		Opening  int32
+		Types    string
+		pickUpBy int32
 	}{}
 
 	var (
@@ -976,21 +1001,15 @@ func cancel(c *gin.Context, force, free bool) {
 	}()
 
 	query := `
-		select user_car_id, user_payment_id, opening_id, gap, types
-		from user_service
+		select user_car_id, place_opening_id, types, pick_up_by,
+		from place_service
 		where id = ? and user_id = ? and status = 'RESERVED'
 	`
-
-	if !force {
-		query += `
-			and DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY) < reserved_start_timestamp
-		`
-	}
 
 	if err = tx.QueryRow(
 		query, request.Id, request.UserId,
 	).Scan(
-		&temp.CarId, &temp.PaymentId, &temp.Opening, &temp.Gap, &temp.Types,
+		&temp.CarId, &temp.Opening, &temp.Types, &temp.pickUpBy,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = nil
@@ -1001,7 +1020,7 @@ func cancel(c *gin.Context, force, free bool) {
 	}
 
 	query = `
-		update user_service set status = 'CANCEL'
+		update place_service set status = 'CANCEL'
 		where id = ? and user_id = ?
 	`
 	if _, err = tx.Exec(
@@ -1018,26 +1037,20 @@ func cancel(c *gin.Context, force, free bool) {
 		return
 	}
 
-	if err = unlockPayment(tx, temp.PaymentId, request.UserId); err != nil {
-		return
+	if temp.pickUpBy == 1 {
+		query = `
+			update place_opening set pick_up_by_1 = pick_up_by_1 - 1
+			where id = ? and pick_up_by_1 > 0
+		`
+	} else {
+		query = `
+			update place_opening set pick_up_by_5 = pick_up_by_5 - 1
+			where id = ? and pick_up_by_5 > 0
+		`
 	}
 
-	if err = releaseOpening(tx, temp.Opening, temp.Gap, temp.Types); err != nil {
+	if _, err = tx.Exec(query, request.Id); err != nil {
 		return
-	}
-
-	if err = revokeUserOpening(
-		tx, request.Id, temp.Opening, temp.Gap, "USER_SERVICE",
-	); err != nil {
-		return
-	}
-
-	if force && !free {
-		if err = processPayment(
-			tx, request.Id, temp.PaymentId, request.UserId, 0.5,
-		); err != nil {
-			return
-		}
 	}
 
 	c.JSON(http.StatusOK, "OK")
