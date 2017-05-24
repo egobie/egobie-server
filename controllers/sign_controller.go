@@ -91,6 +91,9 @@ func SignUp(c *gin.Context) {
 		referred     string
 		matched      bool
 		discount     int32
+		fullName     string
+		firstName    string
+		lastName     string
 	)
 
 	defer func() {
@@ -127,9 +130,20 @@ func SignUp(c *gin.Context) {
 		discount = 0
 	}
 
+	fullName = strings.TrimSpace(request.FullName)
+	names := strings.Split(fullName, " ")
+
+	if len(names) == 2 {
+		firstName = names[0]
+		lastName = names[1]
+	} else {
+		firstName = names[0]
+		lastName = names[len(names)-1]
+	}
+
 	if result, err = config.DB.Exec(
-		query, enPassword, request.Email, request.FirstName,
-		request.LastName, request.PhoneNumber, referred, discount,
+		query, enPassword, request.Email, firstName, lastName,
+		request.PhoneNumber, referred, discount,
 	); err != nil {
 		if isDuplicateEntryError(err) {
 			err = errors.New("user already exists!")

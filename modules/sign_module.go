@@ -14,8 +14,7 @@ type SignUp struct {
 	Email       string `json:"email"`
 	Password    string `json:"password"`
 	PhoneNumber string `json:"phoneNumber"`
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
+	FullName    string `json:"fullName"`
 	Coupon      string `json:"coupon"`
 }
 
