@@ -152,6 +152,74 @@ func GetReservation(c *gin.Context) {
 	}
 }
 
+func GetPlaceReservation(c *gin.Context) {
+	request := modules.BaseRequest{}
+	var (
+		err           error
+		body          []byte
+		rows          *sql.Rows
+		placeServices []modules.PlaceService
+		currLength    int
+	)
+
+	defer func() {
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			c.Abort()
+		}
+	}()
+
+	if body, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	query := `
+		select ps.id, ps.reservation_id, uc.plate, ps.pick_up_by, po.day, ps.estimated_price, ps.status, p.address,
+				s.id, s.name, s.type, s.note, s.description, s.estimated_time, s.estimated_price
+		from place_service ps
+		inner join user_car uc on uc.id = ps.user_car_id
+		inner join place_service_list psl on psl.place_service_id = ps.id
+		inner join place_opening po on po.id = ps.place_opening_id
+		inner join place p on p.id = po.place_id
+		inner join service s on s.id = psl.service_id
+		where ps.user_id = ? and (status = 'RESERVED' or status = 'IN_PROGRESS')
+		order by ps.id
+	`
+
+	if rows, err = config.DB.Query(query, request.UserId); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		placeService := modules.PlaceService{}
+		service := modules.Service{}
+
+		if err = rows.Scan(
+			&placeService.Id, &placeService.ReservationId, &placeService.CarPlate, &placeService.PickUpBy,
+			&placeService.Day, &placeService.Price, &placeService.Status, &placeService.Location,
+			&service.Id, &service.Name, &service.Note, &service.Description, &service.Time, &service.Price,
+		); err != nil {
+			return
+		}
+
+		currLength = len(placeServices)
+
+		if currLength != 0 && placeServices[currLength-1].Id == placeService.Id {
+			placeServices[currLength-1].ServiceList = append(placeServices[currLength-1].ServiceList, service)
+		} else {
+			placeService.ServiceList = append(placeService.ServiceList, service)
+			placeServices = append(placeServices, placeService)
+		}
+	}
+
+	c.JSON(http.StatusOK, placeServices)
+}
+
 func GetUserServiceReserved(c *gin.Context) {
 	request := modules.BaseRequest{}
 	var (
