@@ -572,6 +572,10 @@ func filterOpening(gap int32, openings []modules.Opening) (
 	return result, nil
 }
 
+func GetPlace(c *gin.Context) {
+	c.JSON(http.StatusOK, cache.PLACES_ARRAY)
+}
+
 func GetPlaceOpening(c *gin.Context) {
 	request := modules.PlaceOpeningRequest{}
 	today := utils.TodayDay()
@@ -671,7 +675,6 @@ func PlaceOrder(c *gin.Context) {
 		err               error
 		price             float32
 		time              int32
-		gap               int32
 		insertedId        int64
 		reserved          string
 		reservationNumber string
@@ -694,8 +697,6 @@ func PlaceOrder(c *gin.Context) {
 	if err = json.Unmarshal(body, &request); err != nil {
 		return
 	}
-
-	updateOpeningDemand(request.Opening)
 
 	if user, err = getUserById(request.UserId); err != nil {
 		if err == sql.ErrNoRows {
@@ -757,7 +758,6 @@ func PlaceOrder(c *gin.Context) {
 	}
 
 	price = float32(int(price*107)) / 100
-	gap = calculateGap(time)
 
 	if tx, err = config.DB.Begin(); err != nil {
 		return
@@ -802,13 +802,15 @@ func PlaceOrder(c *gin.Context) {
 		}
 	}
 
-	if err = holdOpening(
-		tx, request.Opening, request.Opening+gap, types,
-	); err != nil {
-		return
-	}
+	count := 0
+	validateQuery := `
+		select count(*) from place_opening where id = ? and place_id = ?
+	`
 
-	if reserved, err = calculateReservedTime(tx, request.Opening); err != nil {
+	if err = tx.QueryRow(validateQuery, request.Opening, request.PlaceId).Scan(&count); err != nil {
+		return
+	} else if count == 0 {
+		err = errors.New("Invalid Request")
 		return
 	}
 

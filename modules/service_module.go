@@ -187,6 +187,7 @@ type OrderRequest struct {
 
 	CarId    int32          `json:"carId"`
 	Note     string         `json:"note"`
+	PlaceId  int32          `json:"placeId"`
 	Opening  int32          `json:"opening"`
 	PickUpBy int32          `json:"pickUpBy"`
 	Services []int32        `json:"services"`

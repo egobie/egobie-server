@@ -10,6 +10,7 @@ import (
 )
 
 var PLACES_MAP map[int32]modules.Place
+var PLACES_ARRAY []modules.Place
 
 func init() {
 	PLACES_MAP = make(map[int32]modules.Place)
@@ -47,5 +48,6 @@ func cachePlace() {
 		}
 
 		PLACES_MAP[place.Id] = place
+		PLACES_ARRAY = append(PLACES_ARRAY, place)
 	}
 }
