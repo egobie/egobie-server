@@ -307,7 +307,7 @@ func lockCar(tx *sql.Tx, id, userId int32) (err error) {
 		update user_car set reserved = reserved + 1 where id = ? and user_id = ?
 	`
 
-	if _, err = config.DB.Exec(
+	if _, err = tx.Exec(
 		query, id, userId,
 	); err != nil {
 		fmt.Println("Lock Car - Error - ", err.Error())

@@ -1903,7 +1903,7 @@ BEGIN
     SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
     WHERE TABLE_NAME = 'place_service' and TABLE_SCHEMA = database();
 
-    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 7, 14));
+    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 7, 8));
 END $$
 DELIMITER ;
 
@@ -1986,3 +1986,15 @@ VALUES ('1 Bloomfield, Mountain Lakes', '1 Bloomfield Ave, Mountain Lakes, NJ 07
 
 INSERT INTO place (name, address, latitude, longitude)
 VALUES ('Xchange, Secaucus', '4000 Riverside Station Blvd, Secaucus, NJ 07094', 40.76416450000001, -74.08367290000001);
+
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-01');
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-28');
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-29');
+INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-30');
+INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-31');
+INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-05');
+INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-07');
+INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-29');
+INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-31');
+INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-04');
+INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-03');

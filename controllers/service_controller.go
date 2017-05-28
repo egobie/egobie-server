@@ -578,7 +578,6 @@ func GetPlace(c *gin.Context) {
 
 func GetPlaceOpening(c *gin.Context) {
 	request := modules.PlaceOpeningRequest{}
-	today := utils.TodayDay()
 	var (
 		err      error
 		body     []byte
@@ -606,8 +605,7 @@ func GetPlaceOpening(c *gin.Context) {
 	if request.Id != -1 {
 		if place, ok := cache.PLACES_MAP[request.Id]; ok {
 			if rows, err = config.DB.Query(
-				"select id, day from place_opening where place_id = ? and day >= ?",
-				place.Id, today,
+				"select id, day from place_opening where place_id = ? and day >= CURDATE()", place.Id,
 			); err != nil {
 				if err == sql.ErrNoRows {
 					err = nil
@@ -824,7 +822,7 @@ func PlaceOrder(c *gin.Context) {
 		insert into place_service (
 			user_id, user_car_id, place_opening_id, pick_up_by,
 			estimated_time, estimated_price, status, types
-		) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) values (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	if result, err = tx.Exec(insertPlaceService,
