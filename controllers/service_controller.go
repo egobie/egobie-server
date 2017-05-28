@@ -202,7 +202,7 @@ func GetPlaceReservation(c *gin.Context) {
 		if err = rows.Scan(
 			&placeService.Id, &placeService.ReservationId, &placeService.CarPlate, &placeService.PickUpBy,
 			&placeService.Day, &placeService.Price, &placeService.Status, &placeService.Location,
-			&service.Id, &service.Name, &service.Note, &service.Description, &service.Time, &service.Price,
+			&service.Id, &service.Name, &service.Type, &service.Note, &service.Description, &service.Time, &service.Price,
 		); err != nil {
 			return
 		}
