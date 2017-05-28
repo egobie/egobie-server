@@ -4,8 +4,8 @@ type Place struct {
 	Id        int32   `json:"id"`
 	Name      string  `json:"name"`
 	Address   string  `json:"address"`
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longtitude"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type PlaceOpening struct {
@@ -17,16 +17,16 @@ type PlaceOpeningRequest struct {
 	BaseRequest
 
 	Id        int32   `json:"id"`
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longtitude"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type PlaceOpeningTodayRequest struct {
 	BaseRequest
 
 	Id        int32   `json:"id"`
-	Latitude  float32 `json:"latitude"`
-	Longitude float32 `json:"longtitude"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 type PlaceService struct {

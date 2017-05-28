@@ -609,6 +609,9 @@ func GetPlaceOpening(c *gin.Context) {
 				"select id, day from place_opening where place_id = ? and day >= ?",
 				place.Id, today,
 			); err != nil {
+				if err == sql.ErrNoRows {
+					err = nil
+				}
 				return
 			}
 			defer rows.Close()
@@ -657,6 +660,9 @@ func GetPlaceOpeningToday(c *gin.Context) {
 				"select pick_up_by_1, pick_up_by_5 from place_opening where place_id = ? and day = ?",
 				place.Id, today,
 			).Scan(&val1, &val2); err != nil {
+				if err == sql.ErrNoRows {
+					err = nil
+				}
 				return
 			}
 		}
