@@ -1029,6 +1029,7 @@ func FreeCancelOrder(c *gin.Context) {
 }
 
 func cancel(c *gin.Context, force, free bool) {
+
 	request := modules.CancelRequest{}
 	temp := struct {
 		CarId    int32
@@ -1075,9 +1076,9 @@ func cancel(c *gin.Context, force, free bool) {
 	}()
 
 	query := `
-		select user_car_id, place_opening_id, types, pick_up_by,
+		select user_car_id, place_opening_id, types, pick_up_by
 		from place_service
-		where id = ? and user_id = ? and status = 'RESERVED'
+		where id = ? and user_id = ? and (status = 'RESERVED' or status = 'IN_PROGRESS')
 	`
 
 	if err = tx.QueryRow(
@@ -1104,7 +1105,7 @@ func cancel(c *gin.Context, force, free bool) {
 	}
 
 	if !free {
-		go cancelReservation(request.UserId)
+		// go cancelReservation(request.UserId)
 	}
 
 	if err = unlockCar(tx, temp.CarId, request.UserId); err != nil {
