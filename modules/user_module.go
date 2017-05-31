@@ -67,7 +67,6 @@ type UserRequest struct {
 	"userToken": "abcd",
 	"firstName": "Bo",
 	"lastName": "Huang",
-	"middleName": "X",
 	"email": "abc@test.com",
 	"phoneNumber": "1231231234"
 }
@@ -75,11 +74,10 @@ type UserRequest struct {
 type UpdateUser struct {
 	BaseRequest
 
-	FirstName   string      `json:"firstName"`
-	LastName    string      `json:"lastName"`
-	MiddleName  null.String `json:"middleName"`
-	Email       string      `json:"email"`
-	PhoneNumber string      `json:"phoneNumber"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phoneNumber"`
 }
 
 /**

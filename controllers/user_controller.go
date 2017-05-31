@@ -132,8 +132,7 @@ func GetDiscount(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	query := `
 		update user
-		set first_name = ?, last_name = ?, middle_name = ?,
-			email = ?, phone_number = ?
+		set first_name = ?, last_name = ?, email = ?, phone_number = ?
 		where id = ? and password like ?
 	`
 	request := modules.UpdateUser{}
@@ -158,13 +157,11 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	if _, err = config.DB.Exec(query,
-		request.FirstName, request.LastName, request.MiddleName, request.Email,
-		utils.FormatPhone(request.PhoneNumber), request.UserId, request.UserToken+"%",
+		request.FirstName, request.LastName, request.Email, utils.FormatPhone(request.PhoneNumber),
+		request.UserId, request.UserToken+"%",
 	); err != nil {
 		return
 	}
-
-	go changeUser(request.UserId)
 
 	if user, err := getUserById(request.UserId); err == nil {
 		user.Password = getUserToken(user.Type, user.Password)
