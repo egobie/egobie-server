@@ -137,8 +137,9 @@ func UpdateUser(c *gin.Context) {
 	`
 	request := modules.UpdateUser{}
 	var (
-		body []byte
-		err  error
+		body  []byte
+		err   error
+		count int32
 	)
 
 	defer func() {
@@ -153,6 +154,16 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	if err = json.Unmarshal(body, &request); err != nil {
+		return
+	}
+
+	checkQuery := "select count(*) from user where id != ? and email = ?"
+	if err = config.DB.QueryRow(
+		checkQuery, request.UserId, request.Email,
+	).Scan(&count); err != nil {
+		return
+	} else if count >= 1 {
+		c.JSON(http.StatusBadRequest, "The email address '"+request.Email+"' is already in use.")
 		return
 	}
 

@@ -65,7 +65,7 @@ func check(c *gin.Context, query, errorMessage string) {
 	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
 		return
 	} else if count >= 1 {
-		c.JSON(http.StatusAccepted, errorMessage+" is already in use")
+		c.JSON(http.StatusOK, errorMessage+" is already in use")
 	} else {
 		c.JSON(http.StatusOK, "OK")
 	}
@@ -78,7 +78,7 @@ func CheckEmail(c *gin.Context) {
 func SignUp(c *gin.Context) {
 	query := `
 		insert into user (type, password, email, first_name, last_name, phone_number, referred, discount)
-		values ('RESIDENTIAL', ?, ?, ?, ?, ?)
+		values ('RESIDENTIAL', ?, ?, ?, ?, ?, ?, ?)
 	`
 	request := modules.SignUp{}
 	pattern := "^([A-Z0-9]{5})$"
