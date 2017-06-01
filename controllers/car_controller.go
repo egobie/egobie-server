@@ -297,8 +297,6 @@ func checkCarStatus(id, userId int32) bool {
 		return true
 	}
 
-	fmt.Println("temp = ", temp)
-
 	return temp > 0
 }
 
