@@ -31,7 +31,7 @@ func cacheService() {
 		select id, name, type, items, description, note,
 			estimated_price, estimated_time
 		from service
-		where type != 'DETAILING' and id not in (4, 5, 6)
+		where type = 'CAR_WASH' and id not in (4, 5, 6)
 		order by id
 	`
 	index := make(map[int32]int)
