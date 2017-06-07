@@ -395,7 +395,6 @@ CREATE TABLE place_service (
     status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
     create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (user_car_id) REFERENCES user_car(id),
     FOREIGN KEY (place_opening_id) REFERENCES place_opening(id),
     INDEX(status)
 );
