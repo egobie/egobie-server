@@ -1954,47 +1954,120 @@ DELIMITER ;
     (40.76416450000001,-74.08367290000001)
 **/
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('Kearny Point', '78 John Miller Way, Kearny, NJ 07032', 40.72450439999999, -74.10944999999998);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (1, 'Xchange at Secaucus Junction', '7000 Riverside Station Boulevard, Secaucus, NJ 07094', 40.7657505, -74.0823153);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('555 US 1, Iselin', '555 US-1, Iselin, NJ 08830', 40.5592582, -74.30493790000003);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (2, 'Kearny Point', '78 John Miller Parkway, Kearny, NJ 07032', 40.72450439999999, -74.10944999999998);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('2200 Fletcher, Fort Lee', '2200 Fletcher Ave, Fort Lee, NJ 07024', 40.8600983, -73.9719454);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (3, '2200 Fletcher, Fort Lee', '2200 Fletcher Avenue, Fort Lee, NJ 07024', 40.8600983, -73.9719454);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('100, 110 Jefferson, Whippany', '100 - 110 South Jefferson Road, Whippany, NJ 07981', 40.8600983, -73.9697514);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (4, '101 Eisenhower Parkway, Roseland', '101 Eisenhower Parkway, Roseland, NJ 07068', 40.8278267, -74.32097820000001);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('101 Eisenhower, Roseland', '101 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.8278267, -74.32097820000001);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (5, '103 Eisenhower Parkway, Roseland', '103 Eisenhower Parkway, Roseland, NJ 07068', 40.8293318, -74.3195599);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('103 Eisenhower, Roseland', '103 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.8293318, -74.3195599);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (6, '105 Eisenhower Parkway, Roseland', '105 Eisenhower Parkway, Roseland, NJ 07068', 40.830956, -74.31865040000002);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('105 Eisenhower, Roseland', '105 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.830956, -74.31865040000002);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (7, '201 Route 17 North, Rutherford', '201 Route 17 North, Rutherford, NJ 07070', 40.8171237, -74.10148509999999);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('333 Meadowlands, Secaucus', '333 Meadowlands Pkwy, Secaucus, NJ 07094', 40.7795858, -74.08218390000002);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (8, '301 Route 17 North, Rutherford', '301 Route 17 North, Rutherford, NJ 07070', 40.8178045, -74.1012943);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('510 Thornall, Edison', '510 Thornall St, Edison, NJ 08837', 40.5654171, -74.33204710000001);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (9, '555 US 1, Iselin', '555 US-1, Iselin, NJ 08830', 40.5592582, -74.30493790000003);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('1 Bloomfield, Mountain Lakes', '1 Bloomfield Ave, Mountain Lakes, NJ 07046', 40.876568, -74.43737099999998);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (10, '510 Thornhall Street, Edison', '510 Thornhall Street, Edison, NJ 08837', 40.5654171, -74.33204710000001);
 
-INSERT INTO place (name, address, latitude, longitude)
-VALUES ('Xchange, Secaucus', '4000 Riverside Station Blvd, Secaucus, NJ 07094', 40.76416450000001, -74.08367290000001);
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (11, '333 Meadowlands Parkway, Secaucus', '333 Meadowlands Parkway, Secaucus, NJ 07094', 40.7795858, -74.08218390000002);
 
-INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-01');
-INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-28');
-INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-29');
-INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-30');
-INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-31');
-INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-05');
-INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-07');
-INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-29');
-INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-31');
-INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-04');
-INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-03');
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (12, '4 Century Drive, Parsippany', '4 Century Drive, Parsippany, NJ 07054', 40.850838, -74.4544694);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (13, '5 Century Drive, Parsippany', '5 Century Drive, Parsippany, NJ 07054', 40.8485577, -74.45460450000002);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (14, '6 Century Drive, Parsippany', '6 Century Drive, Parsippany, NJ 07054', 40.8490242, -74.45402460000003);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (15, '100 South Jefferson Road, Whippany', '100 South Jefferson Road, Whippany, NJ 07981', 40.8178412, -74.4430499);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (16, '110 South Jefferson Road, Whippany', '110 South Jefferson Road, Whippany, NJ 07981', 40.8167625, -74.44320809999999);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (17, '1 Bloomfield Avenue, Mountain Lakes', '1 Bloomfield Avenue, Mountain Lakes, NJ, 07046', 40.876568, -74.43737099999998);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (18, '49 Bloomfield Avenue, Mountain Lakes', '49 Bloomfield Avenue, Mountain Lakes, NJ, 07046', 40.875523, -74.4369451);
+
+INSERT INTO place (id, name, address, latitude, longitude)
+VALUES (19, '330 Changebridge Road, Pine Brook', '330 Changebridge Road, Pine Brook, NJ 07058', 40.8650216, -74.34607369999998);
+
+
+INSERT INTO place_opening (place_id, day) VALUES
+(1, '2017-06-10'), (1, '2017-06-11'), (1, '2017-06-17'), (1, '2017-06-18');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(2, '2017-06-12'), (2, '2017-06-19');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(3, '2017-06-13'), (3, '2017-06-27'), (3, '2017-07-11'), (3, '2017-07-25'), (3, '2017-08-08'), (3, '2017-08-22');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(4, '2017-06-14'), (4, '2017-06-21');
+INSERT INTO place_opening (place_id, day) VALUES
+(5, '2017-06-14'), (5, '2017-06-21');
+INSERT INTO place_opening (place_id, day) VALUES
+(6, '2017-06-14'), (6, '2017-06-21');
+INSERT INTO place_opening (place_id, day) VALUES
+(7, '2017-06-14'), (7, '2017-06-21');
+INSERT INTO place_opening (place_id, day) VALUES
+(8, '2017-06-14'), (8, '2017-06-21');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(9, '2017-06-19'), (9, '2017-07-03'), (9, '2017-07-17'), (9, '2017-07-31'), (9, '2017-08-14'), (9, '2017-08-28');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(10, '2017-06-15'), (10, '2017-06-29'), (10, '2017-07-13'), (10, '2017-07-27'), (10, '2017-08-10'), (10, '2017-08-24');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(11, '2017-06-23'), (11, '2017-07-07'), (11, '2017-07-21'), (11, '2017-08-04'), (11, '2017-08-18'), (11, '2017-09-01');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(12, '2017-06-15'), (12, '2017-06-22');
+INSERT INTO place_opening (place_id, day) VALUES
+(13, '2017-06-15'), (13, '2017-06-22');
+INSERT INTO place_opening (place_id, day) VALUES
+(14, '2017-06-15'), (14, '2017-06-22');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(15, '2017-06-13');
+INSERT INTO place_opening (place_id, day) VALUES
+(16, '2017-06-13');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(17, '2017-06-23'), (17, '2017-07-07'), (17, '2017-07-21'), (17, '2017-08-04'), (17, '2017-08-18'), (17, '2017-09-01');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(18, '2017-06-16'), (18, '2017-06-30'), (18, '2017-07-14'), (18, '2017-07-28'), (18, '2017-08-11'), (18, '2017-08-25');
+
+INSERT INTO place_opening (place_id, day) VALUES
+(19, '2017-06-15'), (19, '2017-06-29'), (19, '2017-07-13'), (19, '2017-07-27'), (19, '2017-08-10'), (19, '2017-08-24');
+
+
+
+select * from place;
+select * from place_opening;
+
+-- drop table place_service_list;
+-- drop table place_service;
+-- drop table place_opening;
+-- drop table place;
