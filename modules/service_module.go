@@ -98,7 +98,6 @@ type SimpleAddon struct {
 /**
 {
 	"id": 1,
-	"user_id": 1,
 	"car_id": 1,
 	"plate": "Y96EUV",
 	"payment_id": 1,
@@ -183,25 +182,16 @@ type Opening struct {
 	Range []Period `json:"range"`
 }
 
-/**
-{
-	"user_id": 1,
-	"car_id": 1,
-	"payment_id": 1,
-	"services": [1,2,3],
-	"note": "This is awesome!",
-	"Opening": 1
-}
-**/
 type OrderRequest struct {
 	BaseRequest
 
-	CarId     int32          `json:"car_id"`
-	PaymentId int32          `json:"payment_id"`
-	Note      string         `json:"note"`
-	Opening   int32          `json:"opening"`
-	Services  []int32        `json:"services"`
-	Addons    []AddonRequest `json:"addons"`
+	CarId    int32          `json:"carId"`
+	Note     string         `json:"note"`
+	PlaceId  int32          `json:"placeId"`
+	Opening  int32          `json:"opening"`
+	PickUpBy int32          `json:"pickUpBy"`
+	Services []int32        `json:"services"`
+	Addons   []AddonRequest `json:"addons"`
 }
 
 type AddonRequest struct {
@@ -229,7 +219,6 @@ type OpeningRequest struct {
 /**
 {
 	"id": 1,
-	"user_id": 1
 }
 **/
 type CancelRequest struct {

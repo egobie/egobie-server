@@ -8,17 +8,27 @@ func initServiceRoutes() {
 	// Get all services
 	serviceRouter.POST("", controllers.GetService)
 
-	serviceRouter.POST("/reservation", controllers.GetReservation)
+	// serviceRouter.POST("/reservation", controllers.GetReservation)
+
+	serviceRouter.POST("/reservation", controllers.GetPlaceReservation)
 
 	serviceRouter.POST("/reserved", controllers.GetUserServiceReserved)
 
 	serviceRouter.POST("/done", controllers.GetUserServiceDone)
 
-	serviceRouter.POST("/opening", controllers.GetOpening)
+	serviceRouter.POST("/place", controllers.GetPlace)
+
+	// serviceRouter.POST("/opening", controllers.GetOpening)
+
+	serviceRouter.POST("/opening", controllers.GetPlaceOpening)
+
+	serviceRouter.POST("/opening/today", controllers.GetPlaceOpeningToday)
 
 	serviceRouter.POST("/order", controllers.PlaceOrder)
 
-	serviceRouter.POST("/cancel", controllers.CancelOrder)
+	// serviceRouter.POST("/cancel", controllers.CancelOrder)
+
+	serviceRouter.POST("/cancel", controllers.FreeCancelOrder)
 
 	serviceRouter.POST("/cancel/force", controllers.ForceCancelOrder)
 

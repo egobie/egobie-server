@@ -14,7 +14,6 @@ CREATE TABLE user (
     first_name VARCHAR(32) NULL DEFAULT '',
     last_name VARCHAR(32) NULL DEFAULT '',
     middle_name VARCHAR(32) NULL DEFAULT '',
-    username VARCHAR(16) NOT NULL DEFAULT '' UNIQUE KEY,
     email VARCHAR(64) NOT NULL DEFAULT '' UNIQUE KEY,
     phone_number VARCHAR(16) NOT NULL DEFAULT '',
     password VARCHAR(128) NOT NULL,
@@ -364,4 +363,47 @@ CREATE TABLE user_coupon (
     UNIQUE KEY (user_id, coupon_id),
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (coupon_id) REFERENCES coupon(id)
+);
+
+CREATE TABLE place (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    address VARCHAR(128) NOT NULL,
+    latitude DOUBLE NOT NULL,
+    longitude DOUBLE NOT NULL
+);
+
+CREATE TABLE place_opening (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    place_id INT NOT NULL,
+    day DATE NOT NULL,
+    pick_up_by_1 INT NOT NULL DEFAULT 0,
+    pick_up_by_5 INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (place_id) REFERENCES place(id)
+);
+
+CREATE TABLE place_service (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    reservation_id VARCHAR(8) NOT NULL DEFAULT '',
+    user_id INT NOT NULL,
+    user_car_id INT NOT NULL,
+    place_opening_id INT NOT NULL,
+    pick_up_by INT NOT NULL DEFAULT 5,
+    types VARCHAR(32) NOT NULL,
+    estimated_time INT NOT NULL,
+    estimated_price FLOAT NOT NULL,
+    status ENUM('RESERVED', 'IN_PROGRESS', 'DONE', 'CANCEL'),
+    create_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (user_car_id) REFERENCES user_car(id),
+    FOREIGN KEY (place_opening_id) REFERENCES place_opening(id),
+    INDEX(status)
+);
+
+CREATE TABLE place_service_list (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    service_id INT NOT NULL,
+    place_service_id INT NOT NULL,
+    FOREIGN KEY (service_id) REFERENCES service(id),
+    FOREIGN KEY (place_service_id) REFERENCES place_service(id)
 );

@@ -7,7 +7,7 @@ import (
 func initCarRoutes() {
 	carRouter.POST("", controllers.GetCarById)
 
-	carRouter.POST("/maker", controllers.GetCarMake)
+	carRouter.POST("/make", controllers.GetCarMake)
 
 	carRouter.POST("/model", controllers.GetCarModel)
 

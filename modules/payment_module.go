@@ -3,7 +3,7 @@ package modules
 /**
 {
 	"id": 1,
-	"user_id": 1,
+	"userId": 1,
 	"account_name": "Test Test",
 	"account_number": "1234",
 	"account_type": "CREDIT",
@@ -15,7 +15,7 @@ package modules
 **/
 type Payment struct {
 	Id            int32  `json:"id"`
-	UserId        int32  `json:"user_id"`
+	UserId        int32  `json:"userId"`
 	AccountName   string `json:"account_name"`
 	AccountNumber string `json:"account_number"`
 	AccountType   string `json:"account_type"`
@@ -29,7 +29,6 @@ type Payment struct {
 
 /**
 {
-	"user_id": 1,
 	"account_name": "Test Test",
 	"account_number": "1234123412341234",
 	"account_type": "CREDIT",
@@ -56,19 +55,17 @@ type PaymentNew struct {
 /**
 {
 	"id": 1,
-	"user_id": 1
 }
 **/
 type PaymentRequest struct {
 	BaseRequest
 
-	Id     int32 `json:"id"`
+	Id int32 `json:"id"`
 }
 
 /**
 {
 	"id": 1,
-	"user_id": 1,
 	"account_name": "Test Test",
 	"account_number": "1234123412341234",
 	"account_type": "CREDIT",
@@ -95,7 +92,6 @@ type UpdatePayment struct {
 
 /**
 {
-	"user_id": 1,
 	"service_id": 1
 }
 **/

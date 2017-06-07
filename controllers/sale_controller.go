@@ -17,10 +17,10 @@ import (
 
 func NewFleetUser(c *gin.Context) {
 	queryUser := `
-		insert into user (type, username, password, first_name, last_name,
+		insert into user (type, password, first_name, last_name,
 			middle_name, email, phone_number, work_address_street,
 			work_address_city, work_address_state, work_address_zip)
-		values ('FLEET', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		values ('FLEET', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	queryFLeet := `
 		insert into fleet (name, user_id, sale_user_id)
@@ -33,7 +33,7 @@ func NewFleetUser(c *gin.Context) {
 		err        error
 		result     sql.Result
 		userId     int64
-		username   string
+		email      string
 		enPassword string
 		info       modules.FleetUserInfo
 	)
@@ -66,9 +66,7 @@ func NewFleetUser(c *gin.Context) {
 		return
 	}
 
-	username = "fleet-" + secures.RandString(8)
-
-	if enPassword, err = secures.EncryptPassword(username); err != nil {
+	if enPassword, err = secures.EncryptPassword(email); err != nil {
 		return
 	}
 
@@ -85,7 +83,7 @@ func NewFleetUser(c *gin.Context) {
 	}()
 
 	if result, err = tx.Exec(
-		queryUser, username, enPassword, request.FirstName, request.LastName,
+		queryUser, enPassword, request.FirstName, request.LastName,
 		request.MiddleName, request.Email, request.Phone, request.Street,
 		request.City, request.State, request.Zip,
 	); err != nil {
@@ -145,8 +143,8 @@ func ResendEmail(c *gin.Context) {
 		return
 	}
 
-	if (temp.Setup == 1) {
-		err = errors.New("Fleet user had been activated");
+	if temp.Setup == 1 {
+		err = errors.New("Fleet user had been activated")
 		return
 	}
 

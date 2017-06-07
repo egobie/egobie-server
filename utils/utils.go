@@ -2,7 +2,11 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/egobie/egobie-server/config"
 )
 
 func ToStringList(ints []int32) string {
@@ -57,4 +61,10 @@ func formatNumber(num string) string {
 	}
 
 	return buf.String()
+}
+
+func TodayDay() string {
+	now := time.Now().In(config.NEW_YORK)
+
+	return fmt.Sprintf("$d-$02d-$02d", now.Year(), now.Month(), now.Day())
 }
