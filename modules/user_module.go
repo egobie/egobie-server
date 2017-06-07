@@ -5,36 +5,35 @@ import (
 )
 
 type UserContact struct {
-	FirstName   null.String `json:"first_name"`
-	LastName    null.String `json:"last_name"`
-	MiddleName  null.String `json:"middle_name"`
+	FirstName   null.String `json:"firstName"`
+	LastName    null.String `json:"lastName"`
+	MiddleName  null.String `json:"middleName"`
 	Email       null.String `json:"email"`
-	PhoneNumber null.String `json:"phone_number"`
+	PhoneNumber null.String `json:"phoneNumber"`
 }
 
 type UserHomeAddress struct {
-	HomeAddressState  null.String `json:"home_address_state"`
-	HomeAddressZip    null.String `json:"home_address_zip"`
-	HomeAddressCity   null.String `json:"home_address_city"`
-	HomeAddressStreet null.String `json:"home_address_street"`
+	HomeAddressState  null.String `json:"homeAddressState"`
+	HomeAddressZip    null.String `json:"homeAddressZip"`
+	HomeAddressCity   null.String `json:"homeAddressCity"`
+	HomeAddressStreet null.String `json:"homeAddressStreet"`
 }
 
 type UserWorkAddress struct {
-	WorkAddressState  null.String `json:"work_address_state"`
-	WorkAddressZip    null.String `json:"work_address_zip"`
-	WorkAddressCity   null.String `json:"work_address_city"`
-	WorkAddressStreet null.String `json:"work_address_street"`
+	WorkAddressState  null.String `json:"workAddressState"`
+	WorkAddressZip    null.String `json:"workAddressZip"`
+	WorkAddressCity   null.String `json:"workAddressCity"`
+	WorkAddressStreet null.String `json:"workAddressStreet"`
 }
 
 type User struct {
 	Id             int32  `json:"id"`
 	Type           string `json:"type"`
-	Username       string `json:"username"`
 	Password       string `json:"password"`
 	Coupon         string `json:"coupon"`
 	Discount       int32  `json:"discount"`
-	FirstTime      int32  `json:"first_time"`
-	CouponDiscount int32  `json:"coupon_discount"`
+	FirstTime      int32  `json:"firstTime"`
+	CouponDiscount int32  `json:"couponDiscount"`
 
 	UserContact
 	UserHomeAddress
@@ -54,8 +53,8 @@ type UserInfo struct {
 
 /**
 {
-	"user_id": 1,
-	"user_token": "abcd",
+	"userId": 1,
+	"userToken": "abcd",
 }
 **/
 type UserRequest struct {
@@ -64,44 +63,42 @@ type UserRequest struct {
 
 /**
 {
-	"user_id": 1,
-	"user_token": "abcd",
-	"first_name": "Bo",
-	"last_name": "Huang",
-	"middle_name": "X",
+	"userId": 1,
+	"userToken": "abcd",
+	"firstName": "Bo",
+	"lastName": "Huang",
 	"email": "abc@test.com",
-	"phone_number": "1231231234"
+	"phoneNumber": "1231231234"
 }
 **/
 type UpdateUser struct {
 	BaseRequest
 
-	FirstName   string      `json:"first_name"`
-	LastName    string      `json:"last_name"`
-	MiddleName  null.String `json:"middle_name"`
-	Email       string      `json:"email"`
-	PhoneNumber string      `json:"phone_number"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phoneNumber"`
 }
 
 /**
 {
-	"user_id": 1,
-	"user_token": "abcd",
+	"userId": 1,
+	"userToken": "abcd",
 	"password": "123456",
-	"new_password": "654321"
+	"newPassword": "654321"
 }
 **/
 type UpdatePassword struct {
 	BaseRequest
 
 	Password    string `json:"password"`
-	NewPassword string `json:"new_password"`
+	NewPassword string `json:"newPassword"`
 }
 
 /**
 {
-	"user_id": 1,
-	"user_token": "abcd",
+	"userId": 1,
+	"userToken": "abcd",
 	"state": "NJ",
 	"zip": "07601",
 	"city": "Hackensack",

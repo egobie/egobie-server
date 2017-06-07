@@ -2,8 +2,6 @@ package modules
 
 /**
 {
-	"user_id": 2,
-	"user_token": "bc25",
 	"fleet_name": "Paramus Car Dealer",
 	"first_name": "Bo",
 	"last_name": "Huang",
@@ -46,5 +44,5 @@ type PriceRequest struct {
 type SendEmailRequest struct {
 	BaseRequest
 
-	FleetUserId int32 `json:"fleet_user_id"`
+	FleetUserId int32 `json:"fleetUserId"`
 }

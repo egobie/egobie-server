@@ -27,8 +27,8 @@ func getCarByIdAndUserId(carId, userId int32) (car modules.Car, err error) {
 
 	if err = config.DB.QueryRow(query, carId, userId).Scan(
 		&car.Id, &car.UserId, &car.ReportId, &car.Plate,
-		&car.State, &car.Year, &car.Color, &car.Maker,
-		&car.Model, &car.MakerId, &car.ModelId, &car.Reserved,
+		&car.State, &car.Year, &car.Color, &car.Make,
+		&car.Model, &car.MakeId, &car.ModelId, &car.Reserved,
 	); err != nil {
 		return
 	}
@@ -59,8 +59,8 @@ func getCarByUserId(userId int32) (cars []modules.Car, err error) {
 
 		if err = rows.Scan(
 			&car.Id, &car.UserId, &car.ReportId, &car.Plate,
-			&car.State, &car.Year, &car.Color, &car.Maker,
-			&car.Model, &car.MakerId, &car.ModelId, &car.Reserved,
+			&car.State, &car.Year, &car.Color, &car.Make,
+			&car.Model, &car.MakeId, &car.ModelId, &car.Reserved,
 		); err != nil {
 			return
 		}
@@ -171,7 +171,7 @@ func UpdateCar(c *gin.Context) {
 
 	if result, err = config.DB.Exec(query,
 		request.Plate, request.State, request.Year,
-		request.Color, request.Maker, request.Model,
+		request.Color, request.Make, request.Model,
 		request.Id, request.UserId); err != nil {
 		return
 	} else if affectedRow, err = result.RowsAffected(); err != nil {
@@ -220,7 +220,7 @@ func CreateCar(c *gin.Context) {
 
 	if result, err = config.DB.Exec(query,
 		request.UserId, request.Plate, request.State,
-		request.Year, request.Color, request.Maker, request.Model,
+		request.Year, request.Color, request.Make, request.Model,
 	); err != nil {
 		return
 	} else if newId, err = result.LastInsertId(); err != nil {
@@ -297,8 +297,6 @@ func checkCarStatus(id, userId int32) bool {
 		return true
 	}
 
-	fmt.Println("temp = ", temp)
-
 	return temp > 0
 }
 
@@ -307,7 +305,7 @@ func lockCar(tx *sql.Tx, id, userId int32) (err error) {
 		update user_car set reserved = reserved + 1 where id = ? and user_id = ?
 	`
 
-	if _, err = config.DB.Exec(
+	if _, err = tx.Exec(
 		query, id, userId,
 	); err != nil {
 		fmt.Println("Lock Car - Error - ", err.Error())

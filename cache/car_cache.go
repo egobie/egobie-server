@@ -1,22 +1,22 @@
 package cache
 
 import (
-	"os"
 	"database/sql"
 	"fmt"
+	"os"
 
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 )
 
-var CAR_MAKES_MAP map[int32]modules.CarMaker
-var CAR_MAKES_ARRAY []modules.CarMaker
+var CAR_MAKES_MAP map[int32]modules.CarMake
+var CAR_MAKES_ARRAY []modules.CarMake
 
 var CAR_MODELS_MAP map[int32]modules.CarModel
 var CAR_MODELS_ARRAY []modules.CarModel
 
 func init() {
-	CAR_MAKES_MAP = make(map[int32]modules.CarMaker)
+	CAR_MAKES_MAP = make(map[int32]modules.CarMake)
 	CAR_MODELS_MAP = make(map[int32]modules.CarModel)
 
 	cacheCarMake()
@@ -28,8 +28,8 @@ func cacheCarMake() {
 		select id, title from car_maker order by title;
 	`
 	var (
-		err    error
-		rows   *sql.Rows
+		err  error
+		rows *sql.Rows
 	)
 
 	defer func() {
@@ -45,14 +45,14 @@ func cacheCarMake() {
 	defer rows.Close()
 
 	for rows.Next() {
-		maker := modules.CarMaker{}
+		make := modules.CarMake{}
 
-		if err = rows.Scan(&maker.Id, &maker.Title); err != nil {
+		if err = rows.Scan(&make.Id, &make.Title); err != nil {
 			return
 		}
 
-		CAR_MAKES_ARRAY = append(CAR_MAKES_ARRAY, maker)
-		CAR_MAKES_MAP[maker.Id] = maker
+		CAR_MAKES_ARRAY = append(CAR_MAKES_ARRAY, make)
+		CAR_MAKES_MAP[make.Id] = make
 	}
 }
 
@@ -61,8 +61,8 @@ func cacheCarModel() {
 		select id, car_maker_id, title from car_model
 	`
 	var (
-		err    error
-		rows   *sql.Rows
+		err  error
+		rows *sql.Rows
 	)
 
 	defer func() {
@@ -81,7 +81,7 @@ func cacheCarModel() {
 		model := modules.CarModel{}
 
 		if err = rows.Scan(
-			&model.Id, &model.MakerId, &model.Title,
+			&model.Id, &model.MakeId, &model.Title,
 		); err != nil {
 			return
 		}

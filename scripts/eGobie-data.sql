@@ -1743,10 +1743,10 @@ INSERT INTO car_model (id, car_maker_id, name, title) VALUES
 (1313, 71, 'GVX', 'GVX'),
 (1314, 71, 'YUOTH', 'Other Yugo Models');
 
-INSERT INTO user (id, type, username, password, email, phone_number, discount) VALUES
-(1, 'RESIDENTIAL', 'e', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
-(2, 'EGOBIE', 'em1', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em1@egobie.com', '2019120383', 0),
-(3, 'EGOBIE', 'em2', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em2@egobie.com', '2019120383', 0),
+INSERT INTO user (id, type, password, email, phone_number, discount) VALUES
+(1, 'RESIDENTIAL', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'e@egobie.com', '2019120383', 10),
+(2, 'EGOBIE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em1@egobie.com', '2019120383', 0),
+(3, 'EGOBIE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'em2@egobie.com', '2019120383', 0),
 (4, 'RESIDENTIAL', 'egobie', 'b623e6fda297e4b589815902c5ec3bee0cf75891cd5fbb64', 'egobie@egobie.com', '1234567890', 0);
 
 UPDATE user set first_name = 'Bo', middle_name = 'Y', last_name = 'Huang', home_address_state = 'NJ',
@@ -1834,8 +1834,8 @@ DELIMITER ;
 
 ALTER TABLE user CHANGE type type ENUM('RESIDENTIAL', 'BUSINESS', 'EGOBIE', 'SALE', 'FLEET');
 
-INSERT INTO user (type, username, password, email, phone_number) VALUES
-('SALE', 's', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'b@egobie.com', '2019120383');
+INSERT INTO user (type, password, email, phone_number) VALUES
+('SALE', 'bc254388680ed7c7e426b417e81f41b6af7ef319', 'b@egobie.com', '2019120383');
 
 INSERT INTO service_addon (service_id, name, note, price, time) VALUES
 (0, "Detailed Shampoo", "Seating & Mats & Carpets", 60, 60),
@@ -1891,3 +1891,110 @@ CREATE PROCEDURE INSERT_COUPON(IN count INT) BEGIN
     END WHILE;
 END $$
 DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS INSERT_PLACE_RESERVATIOM_ID;
+
+DELIMITER $$
+CREATE TRIGGER INSERT_PLACE_RESERVATIOM_ID BEFORE INSERT ON place_service FOR EACH ROW
+BEGIN
+    DECLARE id INT DEFAULT 0;
+
+    SELECT AUTO_INCREMENT INTO id FROM information_schema.tables
+    WHERE TABLE_NAME = 'place_service' and TABLE_SCHEMA = database();
+
+    SET NEW.reservation_id = UPPER(SUBSTRING(SHA2(id, 256), 7, 8));
+END $$
+DELIMITER ;
+
+
+/**
+  1.  Kearny Point
+    (78 John Miller Way, Kearny, NJ 07032)
+    (40.72450439999999,-74.10944999999998)
+
+  2.  555 US 1, Iselin
+    (555 US-1, Iselin, NJ 08830)
+    (40.5592582,-74.30493790000003)
+
+  3.  2200 Fletcher, Fort Lee
+    (2200 Fletcher Ave, Fort Lee, NJ 07024)
+    (40.8600983,-73.9719454)
+
+  4.  100, 110 Jefferson, Whippany
+    (100 -110 South Jefferson Road, Whippany, NJ 07981)
+    (40.8600983,-73.9697514)
+
+  5. 101, 103, 105 Eisenhower, Roseland
+	(101 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.8278267,-74.32097820000001)
+
+    (103 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.8293318,-74.3195599)
+
+    (105 Eisenhower Pkwy, Roseland, NJ 07068, USA)
+    (40.830956,-74.31865040000002)
+
+  6.  333 Meadowlands, Secaucus
+    (333 Meadowlands Pkwy, Secaucus, NJ 07094)
+    (40.7795858,-74.08218390000002)
+
+  7.  510 Thornall, Edison
+    (510 Thornall St, Edison, NJ 08837)
+    (40.5654171,-74.33204710000001)
+
+ ?8.  4,5,6 Enterprise Drive, Parsippany
+
+  9.  1 Bloomfield, Mountain Lakes
+    (1 Bloomfield Ave, Mountain Lakes, NJ 07046)
+    (40.876568,-74.43737099999998)
+
+  10. Xchange, Secaucus
+    (4000 Riverside Station Blvd, Secaucus, NJ 07094)
+    (40.76416450000001,-74.08367290000001)
+**/
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('Kearny Point', '78 John Miller Way, Kearny, NJ 07032', 40.72450439999999, -74.10944999999998);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('555 US 1, Iselin', '555 US-1, Iselin, NJ 08830', 40.5592582, -74.30493790000003);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('2200 Fletcher, Fort Lee', '2200 Fletcher Ave, Fort Lee, NJ 07024', 40.8600983, -73.9719454);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('100, 110 Jefferson, Whippany', '100 - 110 South Jefferson Road, Whippany, NJ 07981', 40.8600983, -73.9697514);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('101 Eisenhower, Roseland', '101 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.8278267, -74.32097820000001);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('103 Eisenhower, Roseland', '103 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.8293318, -74.3195599);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('105 Eisenhower, Roseland', '105 Eisenhower Pkwy, Roseland, NJ 07068, USA', 40.830956, -74.31865040000002);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('333 Meadowlands, Secaucus', '333 Meadowlands Pkwy, Secaucus, NJ 07094', 40.7795858, -74.08218390000002);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('510 Thornall, Edison', '510 Thornall St, Edison, NJ 08837', 40.5654171, -74.33204710000001);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('1 Bloomfield, Mountain Lakes', '1 Bloomfield Ave, Mountain Lakes, NJ 07046', 40.876568, -74.43737099999998);
+
+INSERT INTO place (name, address, latitude, longitude)
+VALUES ('Xchange, Secaucus', '4000 Riverside Station Blvd, Secaucus, NJ 07094', 40.76416450000001, -74.08367290000001);
+
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-01');
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-28');
+INSERT INTO place_opening (place_id, day) VALUES (1, '2017-05-29');
+INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-30');
+INSERT INTO place_opening (place_id, day) VALUES (2, '2017-05-31');
+INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-05');
+INSERT INTO place_opening (place_id, day) VALUES (3, '2017-06-07');
+INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-29');
+INSERT INTO place_opening (place_id, day) VALUES (4, '2017-05-31');
+INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-04');
+INSERT INTO place_opening (place_id, day) VALUES (5, '2017-06-03');

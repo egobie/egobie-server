@@ -12,7 +12,7 @@ type FleetUserBasicInfo struct {
 }
 
 type FleetUserInfo struct {
-	UserId int32 `json:"user_id"`
+	UserId int32 `json:"userId"`
 
 	UserContact
 	UserWorkAddress

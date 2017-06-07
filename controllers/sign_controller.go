@@ -65,7 +65,7 @@ func check(c *gin.Context, query, errorMessage string) {
 	if err = config.DB.QueryRow(query, request.Value).Scan(&count); err != nil {
 		return
 	} else if count >= 1 {
-		c.JSON(http.StatusAccepted, errorMessage+" is already in use")
+		c.JSON(http.StatusOK, errorMessage+" is already in use")
 	} else {
 		c.JSON(http.StatusOK, "OK")
 	}
@@ -75,14 +75,10 @@ func CheckEmail(c *gin.Context) {
 	check(c, "select count(*) from user where email = ?", "Email address")
 }
 
-func CheckUsername(c *gin.Context) {
-	check(c, "select count(*) from user where username = ?", "Username")
-}
-
 func SignUp(c *gin.Context) {
 	query := `
-		insert into user (type, username, password, email, phone_number, referred, discount)
-		values ('RESIDENTIAL', ?, ?, ?, ?, ?, ?)
+		insert into user (type, password, email, first_name, last_name, phone_number, referred, discount)
+		values ('RESIDENTIAL', ?, ?, ?, ?, ?, ?, ?)
 	`
 	request := modules.SignUp{}
 	pattern := "^([A-Z0-9]{5})$"
@@ -95,6 +91,9 @@ func SignUp(c *gin.Context) {
 		referred     string
 		matched      bool
 		discount     int32
+		fullName     string
+		firstName    string
+		lastName     string
 	)
 
 	defer func() {
@@ -131,8 +130,19 @@ func SignUp(c *gin.Context) {
 		discount = 0
 	}
 
+	fullName = strings.TrimSpace(request.FullName)
+	names := strings.Split(fullName, " ")
+
+	if len(names) == 2 {
+		firstName = names[0]
+		lastName = names[1]
+	} else {
+		firstName = names[0]
+		lastName = names[len(names)-1]
+	}
+
 	if result, err = config.DB.Exec(
-		query, request.Username, enPassword, request.Email,
+		query, enPassword, request.Email, firstName, lastName,
 		request.PhoneNumber, referred, discount,
 	); err != nil {
 		if isDuplicateEntryError(err) {
@@ -168,7 +178,7 @@ func SignUpFleet(c *gin.Context) {
 		where u.email = ? and f.token = ?
 	`
 	queryUser := `
-		update user set username = ?, password = ? where id = ?
+		update user set email = ?, password = ? where id = ?
 	`
 	querySetUp := `
 		update fleet set setup = 1 where id = ? and user_id = ?
@@ -253,7 +263,7 @@ func SignUpFleet(c *gin.Context) {
 	}
 
 	if _, err = tx.Exec(
-		queryUser, request.Username, enPassword, temp.UserId,
+		queryUser, request.Email, enPassword, temp.UserId,
 	); err != nil {
 		return
 	}
@@ -287,7 +297,7 @@ func SignIn(c *gin.Context) {
 		return
 	}
 
-	if user, err = getUserByUsername(request.Username); err != nil {
+	if user, err = getUserByEmail(request.Email); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("User not found")
 		}
@@ -328,7 +338,6 @@ func ResetPasswordStep1(c *gin.Context) {
 		data   []byte
 		err    error
 		userId int32
-		email  string
 		token  string
 		name   string
 	)
@@ -340,14 +349,12 @@ func ResetPasswordStep1(c *gin.Context) {
 			return
 		}
 
-		go sendResetPasswordEmail(email, name, token)
+		go sendResetPasswordEmail(request.Email, name, token)
 
 		c.JSON(http.StatusOK, struct {
-			UserId   int32  `json:"user_id"`
-			Username string `json:"username"`
+			UserId int32 `json:"userId"`
 		}{
-			UserId:   userId,
-			Username: request.Username,
+			UserId: userId,
 		})
 	}()
 
@@ -360,10 +367,10 @@ func ResetPasswordStep1(c *gin.Context) {
 	}
 
 	query := `
-		select id, email, first_name from user where username = ?
+		select id, first_name from user where email = ?
 	`
-	if err = config.DB.QueryRow(query, request.Username).Scan(
-		&userId, &email, &name,
+	if err = config.DB.QueryRow(query, request.Email).Scan(
+		&userId, &name,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = errors.New("User not found")
@@ -409,7 +416,7 @@ func ResetPasswordStep2(c *gin.Context) {
 	}
 
 	if len(request.Token) < 5 || len(request.Token) > 10 {
-		err = errors.New("Invalid request")
+		err = errors.New("Invalid Token")
 		return
 	}
 
@@ -421,7 +428,7 @@ func ResetPasswordStep2(c *gin.Context) {
 		&userId,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			err = errors.New("Invalid request")
+			err = errors.New("Invalid Token")
 		}
 
 		return
@@ -525,9 +532,9 @@ func ResetPasswordResend(c *gin.Context) {
 	query := `
 		select u.email, u.first_name, r.token from user u
 		inner join reset_password r on r.user_id = u.id
-		where r.user_id = ? and u.username = ?
+		where r.user_id = ?
 	`
-	if err = config.DB.QueryRow(query, request.UserId, request.Username).Scan(
+	if err = config.DB.QueryRow(query, request.UserId).Scan(
 		&email, &name, &token,
 	); err != nil {
 		return

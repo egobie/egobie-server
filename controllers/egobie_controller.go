@@ -16,8 +16,8 @@ import (
 func GetTask(c *gin.Context) {
 	request := modules.TaskRequest{}
 	var (
-		data  []byte
-		err   error
+		data []byte
+		err  error
 		task modules.Task
 	)
 
@@ -48,20 +48,20 @@ func GetTask(c *gin.Context) {
 }
 
 func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
-//	query := `
-//		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
-//				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
-//				u.home_address_city, u.home_address_street, uc.plate, uc.state,
-//				uc.color, uc.year, cma.title, cmo.title
-//		from user_service us
-//		inner join user u on u.id = us.user_id
-//		inner join user_car uc on uc.id = us.user_car_id
-//		inner join car_maker cma on cma.id = uc.car_maker_id
-//		inner join car_model cmo on cmo.id = uc.car_model_id
-//		inner join user_service_assignee_list usal on usal.user_service_id = us.id
-//		where us.status != "CANCEL" and usal.user_id = ?
-//		order by us.reserved_start_timestamp
-//	`
+	//	query := `
+	//		select us.id, us.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
+	//				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
+	//				u.home_address_city, u.home_address_street, uc.plate, uc.state,
+	//				uc.color, uc.year, cma.title, cmo.title
+	//		from user_service us
+	//		inner join user u on u.id = us.user_id
+	//		inner join user_car uc on uc.id = us.user_car_id
+	//		inner join car_maker cma on cma.id = uc.car_maker_id
+	//		inner join car_model cmo on cmo.id = uc.car_model_id
+	//		inner join user_service_assignee_list usal on usal.user_service_id = us.id
+	//		where us.status != "CANCEL" and usal.user_id = ?
+	//		order by us.reserved_start_timestamp
+	//	`
 	query := `
 		select us.id, usal.status, us.reserved_start_timestamp, u.first_name, u.middle_name,
 				u.last_name, u.phone_number, u.home_address_state, u.home_address_zip,
@@ -98,7 +98,7 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 			&task.Id, &task.Status, &task.Start, &task.FirstName, &task.MiddleName,
 			&task.LastName, &task.Phone, &task.State, &task.Zip, &task.City,
 			&task.Street, &task.Plate, &task.CarState, &task.Color, &task.Year,
-			&task.Maker, &task.Model,
+			&task.Make, &task.Model,
 		); err != nil {
 			return
 		}
@@ -132,17 +132,17 @@ func getUserTask(userId int32) (tasks []modules.UserTask, err error) {
 }
 
 func getFleetTask(userId int32) (tasks []modules.FleetTask, err error) {
-//	query := `
-//		select fs.id, f.name, fs.note, fsal.status, fs.reserved_start_timestamp,
-//				u.first_name, u.last_name, u.phone_number, u.work_address_state,
-//				u.work_address_city, u.work_address_street, u.work_address_zip
-//		from fleet_service fs
-//		inner join fleet f on f.user_id = fs.user_id
-//		inner join user u on u.id = f.user_id
-//		inner join fleet_service_assignee_list fsal on fsal.fleet_service_id = fs.id
-//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fsal.user_id = ?
-//		order by fs.reserved_start_timestamp
-//	`
+	//	query := `
+	//		select fs.id, f.name, fs.note, fsal.status, fs.reserved_start_timestamp,
+	//				u.first_name, u.last_name, u.phone_number, u.work_address_state,
+	//				u.work_address_city, u.work_address_street, u.work_address_zip
+	//		from fleet_service fs
+	//		inner join fleet f on f.user_id = fs.user_id
+	//		inner join user u on u.id = f.user_id
+	//		inner join fleet_service_assignee_list fsal on fsal.fleet_service_id = fs.id
+	//		where fs.status in ('RESERVED', 'IN_PROGRESS', 'DONE') and fsal.user_id = ?
+	//		order by fs.reserved_start_timestamp
+	//	`
 	query := `
 		select fs.id, f.name, fs.note, fsal.status, fs.reserved_start_timestamp,
 				u.first_name, u.last_name, u.phone_number, u.work_address_state,

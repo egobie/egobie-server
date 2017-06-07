@@ -64,7 +64,7 @@ func GetHistory(c *gin.Context) {
 
 		if err = rows.Scan(
 			&history.Id, &history.Rating, &history.Note, &history.Plate,
-			&history.State, &history.Maker, &history.Model, &history.Year,
+			&history.State, &history.Make, &history.Model, &history.Year,
 			&history.Color, &history.AccountName, &history.AccountNumber,
 			&history.AccountType, &history.Price, &history.UserServiceId,
 			&history.ReservationId, &history.StartTime, &history.EndTime,
