@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"fmt"
+	"net/smtp"
 	"text/template"
 
 	"github.com/egobie/egobie-server/config"
@@ -145,13 +146,13 @@ func sendEmail(address, subject, body string, html, sendToCEO bool) {
 		fmt.Println("Error - Execute Template - ", err.Error())
 	}
 
-	// if err = smtp.SendMail(
-	// 	config.EmailAddress,
-	// 	config.Email,
-	// 	config.EmailSender,
-	// 	addrs,
-	// 	doc.Bytes(),
-	// ); err != nil {
-	// 	fmt.Println("Error - Send Email - ", err.Error())
-	// }
+	if err = smtp.SendMail(
+		config.EmailAddress,
+		config.Email,
+		config.EmailSender,
+		addrs,
+		doc.Bytes(),
+	); err != nil {
+		fmt.Println("Error - Send Email - ", err.Error())
+	}
 }
