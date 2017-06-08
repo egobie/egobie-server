@@ -1124,7 +1124,7 @@ func cancel(c *gin.Context, force, free bool) {
 		`
 	}
 
-	if _, err = tx.Exec(query, request.Id); err != nil {
+	if _, err = tx.Exec(query, temp.Opening); err != nil {
 		return
 	}
 
