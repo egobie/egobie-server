@@ -31,6 +31,24 @@ type UserTask struct {
 	Addons     []SimpleAddon   `json:"addons"`
 }
 
+type PlaceTask struct {
+	Id        int32                `json:"id"`
+	Status    string               `json:"status"`
+	Price     float32              `json:"price"`
+	PickUpBy  int32                `json:"PickUpBy"`
+	FirstName string               `json:"first"`
+	LastName  string               `json:"last"`
+	Phone     string               `json:"phone"`
+	Address   string               `json:"address"`
+	Plate     string               `json:"plate"`
+	State     string               `json:"state"`
+	Color     string               `json:"color"`
+	Year      string               `json:"year"`
+	Make      string               `json:"make"`
+	Model     string               `json:"model"`
+	Services  []SimplePlaceService `json:"services"`
+}
+
 type FleetTask struct {
 	Id        int32       `json:"id"`
 	Status    string      `json:"status"`

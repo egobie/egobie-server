@@ -86,6 +86,13 @@ type SimpleService struct {
 	UserServiceId int32  `json:"user_service_id"`
 }
 
+type SimplePlaceService struct {
+	Id             int32  `json:"id"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	PlaceServiceId int32  `json:"placeServiceId"`
+}
+
 type SimpleAddon struct {
 	Id            int32  `json:"id"`
 	Name          string `json:"name"`

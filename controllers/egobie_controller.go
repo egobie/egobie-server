@@ -10,6 +10,7 @@ import (
 	"github.com/egobie/egobie-server/config"
 	"github.com/egobie/egobie-server/modules"
 
+	"github.com/egobie/egobie-server/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,10 +42,60 @@ func GetTask(c *gin.Context) {
 	if task.UserTasks, err = getUserTask(request.UserId); err != nil {
 		return
 	}
+}
 
-	if task.FleetTasks, err = getFleetTask(request.UserId); err != nil {
+func getPlaceTask(placeIds []int32) (tasks []modules.PlaceTask, err error) {
+	query := `
+		select ps.id, ps.pick_up_by, ps.estimated_price, ps.status, p.name,
+			u.first_name, u.last_name, u.phone_number,
+			uc.plate, uc.state, uc.year, uc.color, cma.title, cmo.title
+		from place_service ps
+		inner join place_opening po on po.id = ps.place_opening_id and po.place_id in (` + utils.ToStringList(placeIds) + `)
+		inner join place p on p.id = po.place_id
+		inner join user u on u.id = ps.user_id
+		inner join user_car uc on uc.id = ps.user_car_id
+		inner join car_maker cma on cma.id = uc.car_maker_id
+		inner join car_model cmo on cmo.id = uc.car_model_id
+	`
+	index := make(map[int32]int32)
+	var (
+		rows          *sql.Rows
+		placeServices []int32
+		taskServices  []modules.SimplePlaceService
+	)
+
+	if rows, err = config.DB.Query(query); err != nil {
 		return
 	}
+	defer rows.Close()
+
+	for rows.Next() {
+		task := modules.PlaceTask{}
+
+		if err = rows.Scan(
+			&task.Id, &task.PickUpBy, &task.Price, &task.Status, &task.Address,
+			&task.FirstName, &task.LastName, &task.Phone,
+			&task.Plate, &task.State, &task.Year, &task.Color, &task.Make, &task.Model,
+		); err != nil {
+			return
+		}
+
+		index[task.Id] = int32(len(tasks))
+		tasks = append(tasks, task)
+		placeServices = append(placeServices, task.Id)
+	}
+
+	if taskServices, err = getSimplePlaceService(placeServices); err != nil {
+		return
+	}
+
+	for _, taskService := range taskServices {
+		tasks[index[taskService.PlaceServiceId]].Services = append(
+			tasks[index[taskService.PlaceServiceId]].Services, taskService,
+		)
+	}
+
+	return
 }
 
 func getUserTask(userId int32) (tasks []modules.UserTask, err error) {

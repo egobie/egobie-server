@@ -1682,6 +1682,38 @@ func getSimpleAddon(userServices []int32) (addons []modules.SimpleAddon, err err
 	return
 }
 
+func getSimplePlaceService(placeServices []int32) (services []modules.SimplePlaceService, err error) {
+	query := `
+		select s.id, s.name, s.type, psl.place_service_id
+		from place_service s
+		inner join place_service_list psl on psl.service_id = s.id
+		where psl.place_service_id in (` + utils.ToStringList(placeServices) + `)
+		order by psl.place_service_id
+	`
+	var (
+		rows *sql.Rows
+	)
+
+	if rows, err = config.DB.Query(query); err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		service := modules.SimplePlaceService{}
+
+		if err = rows.Scan(
+			&service.Id, &service.Name, &service.Type, &service.PlaceServiceId,
+		); err != nil {
+			return
+		}
+
+		services = append(services, service)
+	}
+
+	return
+}
+
 func calculateDiscount(discount string) float32 {
 	return 1 - float32(cache.DISCOUNT_MAP[discount])/100.0
 }
