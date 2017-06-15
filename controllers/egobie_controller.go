@@ -39,12 +39,12 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
-	if task.UserTasks, err = getUserTask(request.UserId); err != nil {
+	if task.PlaceTasks, err = getPlaceTask(request.PlaceIds, request.Day); err != nil {
 		return
 	}
 }
 
-func getPlaceTask(placeIds []int32) (tasks []modules.PlaceTask, err error) {
+func getPlaceTask(placeIds []int32, day string) (tasks []modules.PlaceTask, err error) {
 	query := `
 		select ps.id, ps.pick_up_by, ps.estimated_price, ps.status, p.name,
 			u.first_name, u.last_name, u.phone_number,
@@ -56,6 +56,7 @@ func getPlaceTask(placeIds []int32) (tasks []modules.PlaceTask, err error) {
 		inner join user_car uc on uc.id = ps.user_car_id
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
+		where po.day = ?
 	`
 	index := make(map[int32]int32)
 	var (
@@ -64,7 +65,7 @@ func getPlaceTask(placeIds []int32) (tasks []modules.PlaceTask, err error) {
 		taskServices  []modules.SimplePlaceService
 	)
 
-	if rows, err = config.DB.Query(query); err != nil {
+	if rows, err = config.DB.Query(query, day); err != nil {
 		return
 	}
 	defer rows.Close()

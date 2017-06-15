@@ -6,9 +6,11 @@ import (
 
 func initEgobieRoutes() {
 
-	egobieRouter.POST("/service/task", controllers.GetTask)
+	egobieRouter.POST("/place", controllers.GetPlace)
 
-	egobieRouter.POST("/service/task/detail", controllers.GetFleetReservationDetail)
+	egobieRouter.POST("/task", controllers.GetTask)
+
+	egobieRouter.POST("/task/detail", controllers.GetFleetReservationDetail)
 
 	egobieRouter.POST("/service/user/done", controllers.MakeUserServiceDone)
 

@@ -5,8 +5,7 @@ import (
 )
 
 type Task struct {
-	UserTasks  []UserTask  `json:"user_tasks"`
-	FleetTasks []FleetTask `json:"fleet_tasks"`
+	PlaceTasks []PlaceTask `json:"placeTasks"`
 }
 
 type UserTask struct {
@@ -66,6 +65,9 @@ type FleetTask struct {
 
 type TaskRequest struct {
 	BaseRequest
+
+	PlaceIds []int32 `json:"placeIds"`
+	Day      string  `json:"day"`
 }
 
 /**
