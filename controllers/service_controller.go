@@ -1683,9 +1683,13 @@ func getSimpleAddon(userServices []int32) (addons []modules.SimpleAddon, err err
 }
 
 func getSimplePlaceService(placeServices []int32) (services []modules.SimplePlaceService, err error) {
+	if len(placeServices) == 0 {
+		return
+	}
+
 	query := `
 		select s.id, s.name, s.type, psl.place_service_id
-		from place_service s
+		from service s
 		inner join place_service_list psl on psl.service_id = s.id
 		where psl.place_service_id in (` + utils.ToStringList(placeServices) + `)
 		order by psl.place_service_id

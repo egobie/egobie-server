@@ -34,9 +34,10 @@ type PlaceTask struct {
 	Id        int32                `json:"id"`
 	Status    string               `json:"status"`
 	Price     float32              `json:"price"`
-	PickUpBy  int32                `json:"PickUpBy"`
-	FirstName string               `json:"first"`
-	LastName  string               `json:"last"`
+	Day       string               `json:"day"`
+	PickUpBy  int32                `json:"pickUpBy"`
+	FirstName string               `json:"firstName"`
+	LastName  string               `json:"lastName"`
 	Phone     string               `json:"phone"`
 	Address   string               `json:"address"`
 	Plate     string               `json:"plate"`
@@ -82,7 +83,7 @@ type TaskRequest struct {
 type ChangeServiceStatus struct {
 	BaseRequest
 
-	ServiceId int32 `json:"service_id"`
+	ServiceId int32 `json:"serviceId"`
 }
 
 type TaskInfo struct {

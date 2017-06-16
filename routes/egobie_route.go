@@ -10,6 +10,10 @@ func initEgobieRoutes() {
 
 	egobieRouter.POST("/task", controllers.GetTask)
 
+	egobieRouter.POST("/task/progress", controllers.MakePlaceServiceInProgress)
+
+	egobieRouter.POST("/task/done", controllers.MakePlaceServiceDone)
+
 	egobieRouter.POST("/task/detail", controllers.GetFleetReservationDetail)
 
 	egobieRouter.POST("/service/user/done", controllers.MakeUserServiceDone)

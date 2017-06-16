@@ -17,9 +17,9 @@ import (
 func GetTask(c *gin.Context) {
 	request := modules.TaskRequest{}
 	var (
-		data []byte
-		err  error
-		task modules.Task
+		data       []byte
+		err        error
+		placeTasks []modules.PlaceTask
 	)
 
 	defer func() {
@@ -28,7 +28,7 @@ func GetTask(c *gin.Context) {
 			c.Abort()
 			return
 		}
-		c.JSON(http.StatusOK, task)
+		c.JSON(http.StatusOK, placeTasks)
 	}()
 
 	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
@@ -39,14 +39,14 @@ func GetTask(c *gin.Context) {
 		return
 	}
 
-	if task.PlaceTasks, err = getPlaceTask(request.PlaceIds, request.Day); err != nil {
+	if placeTasks, err = getPlaceTask(request.PlaceIds, request.Day); err != nil {
 		return
 	}
 }
 
 func getPlaceTask(placeIds []int32, day string) (tasks []modules.PlaceTask, err error) {
 	query := `
-		select ps.id, ps.pick_up_by, ps.estimated_price, ps.status, p.name,
+		select ps.id, po.day, ps.pick_up_by, ps.estimated_price, ps.status, p.name,
 			u.first_name, u.last_name, u.phone_number,
 			uc.plate, uc.state, uc.year, uc.color, cma.title, cmo.title
 		from place_service ps
@@ -56,7 +56,7 @@ func getPlaceTask(placeIds []int32, day string) (tasks []modules.PlaceTask, err 
 		inner join user_car uc on uc.id = ps.user_car_id
 		inner join car_maker cma on cma.id = uc.car_maker_id
 		inner join car_model cmo on cmo.id = uc.car_model_id
-		where po.day = ?
+		where po.day = ? and ps.status != 'CANCEL'
 	`
 	index := make(map[int32]int32)
 	var (
@@ -74,7 +74,7 @@ func getPlaceTask(placeIds []int32, day string) (tasks []modules.PlaceTask, err 
 		task := modules.PlaceTask{}
 
 		if err = rows.Scan(
-			&task.Id, &task.PickUpBy, &task.Price, &task.Status, &task.Address,
+			&task.Id, &task.Day, &task.PickUpBy, &task.Price, &task.Status, &task.Address,
 			&task.FirstName, &task.LastName, &task.Phone,
 			&task.Plate, &task.State, &task.Year, &task.Color, &task.Make, &task.Model,
 		); err != nil {
@@ -479,6 +479,103 @@ func changeFleetServiceStatus(c *gin.Context, status string) (err error) {
 
 	if status == "DONE" {
 		err = createFleetHistory(tx, request.ServiceId)
+	}
+
+	return
+}
+
+func MakePlaceServiceInProgress(c *gin.Context) {
+	if err := changePlaceServiceStatus(c, "IN_PROGRESS"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func MakePlaceServiceDone(c *gin.Context) {
+	if err := changePlaceServiceStatus(c, "DONE"); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		c.Abort()
+		return
+	}
+
+	c.JSON(http.StatusOK, "OK")
+}
+
+func changePlaceServiceStatus(c *gin.Context, status string) (err error) {
+	queryPlaceService := `
+		update place_service set status = ?
+	`
+	selectQuery := `
+		select status, user_id, user_car_id
+		from place_service
+		where id = ?
+	`
+
+	request := modules.ChangeServiceStatus{}
+	taskInfo := modules.TaskInfo{}
+
+	var (
+		data []byte
+		tx   *sql.Tx
+	)
+
+	if data, err = ioutil.ReadAll(c.Request.Body); err != nil {
+		return
+	}
+
+	if err = json.Unmarshal(data, &request); err != nil {
+		return
+	}
+
+	if tx, err = config.DB.Begin(); err != nil {
+		return
+	}
+
+	args := []interface{}{
+		status, request.ServiceId,
+	}
+
+	if status == "IN_PROGRESS" {
+		queryPlaceService += `
+			where id = ? and status = 'RESERVED'
+		`
+	} else if status == "DONE" {
+		queryPlaceService += `
+			where id = ? and status = 'IN_PROGRESS'
+		`
+	}
+
+	defer func() {
+		if err != nil {
+			if err1 := tx.Rollback(); err1 != nil {
+				fmt.Println("Error - Rollback - ", err1.Error())
+			}
+		} else {
+			if err1 := tx.Commit(); err1 != nil {
+				fmt.Println("Error - Commit - ", err1.Error())
+			}
+		}
+	}()
+
+	if _, err = tx.Exec(queryPlaceService, args...); err != nil {
+		return
+	}
+
+	if err = tx.QueryRow(selectQuery, request.ServiceId).Scan(
+		&taskInfo.Status, &taskInfo.UserId, &taskInfo.UserCarId,
+	); err != nil {
+		return
+	}
+
+	if taskInfo.Status == "DONE" {
+		if err = unlockCar(
+			tx, taskInfo.UserCarId, taskInfo.UserId,
+		); err != nil {
+			return
+		}
 	}
 
 	return
